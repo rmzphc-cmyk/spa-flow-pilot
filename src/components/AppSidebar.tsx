@@ -41,6 +41,7 @@ const secondaryLinks = [
   { label: "Rapports passés", url: "/rapports", icon: FileText },
   { label: "Historique spa", url: "/historique", icon: History },
   { label: "Config KPI", url: "/admin/kpi", icon: Settings },
+  { label: "Config Resp.", url: "/admin/responsabilites", icon: Users },
 ];
 
 const mainNavItems = [
