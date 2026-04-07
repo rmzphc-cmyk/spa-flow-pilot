@@ -35,6 +35,7 @@ const App = () => (
             <Route path="/objectifs" element={<Objectifs />} />
             <Route path="/admin/kpi" element={<KpiConfig />} />
             <Route path="/admin/responsabilites" element={<RespConfig />} />
+            <Route path="/parametres" element={<UserSettingsPage />} />
           </Route>
           <Route path="/reunion/:id" element={<MeetingMode />} />
           <Route path="/post-reunion/:id" element={<PostMeetingMode />} />
