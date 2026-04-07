@@ -1,4 +1,4 @@
-import { AppHeader } from "@/components/AppHeader";
+
 
 const stats = [
   {
@@ -38,7 +38,7 @@ const stats = [
 export default function Dashboard() {
   return (
     <>
-      <AppHeader title="Dashboard" />
+      <h1 className="text-2xl font-bold text-foreground mb-6">Dashboard</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
         {stats.map((stat) => (
