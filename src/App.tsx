@@ -10,6 +10,8 @@ import RapportDetail from "./pages/RapportDetail";
 import MeetingMode from "./pages/MeetingMode";
 import PostMeetingMode from "./pages/PostMeetingMode";
 import DirectionView from "./pages/DirectionView";
+import DirectionOverview from "./pages/DirectionOverview";
+import DirectionSpaDetail from "./pages/DirectionSpaDetail";
 import SpaHistory from "./pages/SpaHistory";
 import Todos from "./pages/Todos";
 import Objectifs from "./pages/Objectifs";
@@ -36,6 +38,8 @@ const App = () => (
             <Route path="/admin/kpi" element={<KpiConfig />} />
             <Route path="/admin/responsabilites" element={<RespConfig />} />
             <Route path="/parametres" element={<UserSettingsPage />} />
+            <Route path="/direction" element={<DirectionOverview />} />
+            <Route path="/direction/spa/:id" element={<DirectionSpaDetail />} />
           </Route>
           <Route path="/reunion/:id" element={<MeetingMode />} />
           <Route path="/post-reunion/:id" element={<PostMeetingMode />} />
