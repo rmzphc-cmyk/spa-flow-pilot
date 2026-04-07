@@ -8,6 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import Rapports from "./pages/Rapports";
 import RapportDetail from "./pages/RapportDetail";
 import MeetingMode from "./pages/MeetingMode";
+import PostMeetingMode from "./pages/PostMeetingMode";
 import Todos from "./pages/Todos";
 import Objectifs from "./pages/Objectifs";
 import NotFound from "./pages/NotFound";
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/objectifs" element={<Objectifs />} />
           </Route>
           <Route path="/reunion/:id" element={<MeetingMode />} />
+          <Route path="/post-reunion/:id" element={<PostMeetingMode />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
