@@ -28,6 +28,7 @@ const App = () => (
             <Route path="/todos" element={<Todos />} />
             <Route path="/objectifs" element={<Objectifs />} />
           </Route>
+          <Route path="/reunion/:id" element={<MeetingMode />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
