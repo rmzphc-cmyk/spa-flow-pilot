@@ -40,7 +40,7 @@ const reportSections: ReportSection[] = [
 const secondaryLinks = [
   { label: "Rapports passés", url: "/rapports", icon: FileText },
   { label: "Historique spa", url: "/historique", icon: History },
-  { label: "Paramètres", url: "/parametres", icon: Settings },
+  { label: "Config KPI", url: "/admin/kpi", icon: Settings },
 ];
 
 const mainNavItems = [

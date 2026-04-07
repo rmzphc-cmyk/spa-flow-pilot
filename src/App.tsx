@@ -13,6 +13,7 @@ import DirectionView from "./pages/DirectionView";
 import SpaHistory from "./pages/SpaHistory";
 import Todos from "./pages/Todos";
 import Objectifs from "./pages/Objectifs";
+import KpiConfig from "./pages/KpiConfig";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/rapport/:id" element={<RapportDetail />} />
             <Route path="/todos" element={<Todos />} />
             <Route path="/objectifs" element={<Objectifs />} />
+            <Route path="/admin/kpi" element={<KpiConfig />} />
           </Route>
           <Route path="/reunion/:id" element={<MeetingMode />} />
           <Route path="/post-reunion/:id" element={<PostMeetingMode />} />
