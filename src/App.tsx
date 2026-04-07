@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Rapports from "./pages/Rapports";
+import RapportDetail from "./pages/RapportDetail";
 import Todos from "./pages/Todos";
 import Objectifs from "./pages/Objectifs";
 import NotFound from "./pages/NotFound";
@@ -22,6 +23,7 @@ const App = () => (
           <Route element={<AppLayout />}>
             <Route path="/" element={<Dashboard />} />
             <Route path="/rapports" element={<Rapports />} />
+            <Route path="/rapport/:id" element={<RapportDetail />} />
             <Route path="/todos" element={<Todos />} />
             <Route path="/objectifs" element={<Objectifs />} />
           </Route>
