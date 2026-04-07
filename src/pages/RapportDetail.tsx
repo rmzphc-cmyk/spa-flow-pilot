@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { useParams } from "react-router-dom";
+import { useParams, useOutletContext } from "react-router-dom";
 import { ReportHeader } from "@/components/rapport/ReportHeader";
 import { SectionKpi } from "@/components/rapport/SectionKpi";
 import { SectionCheckin } from "@/components/rapport/SectionCheckin";
@@ -14,6 +14,15 @@ import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip
 import { Save, Send } from "lucide-react";
 
 export type ReportType = "monthly" | "weekly";
+export type SectionId = "kpi" | "checkin" | "responsabilites" | "todo" | "objectifs" | "ids" | "cloture";
+export type SectionStatus = "complete" | "incomplete" | "warning";
+
+interface OutletContext {
+  activeSection: SectionId;
+  setActiveSection: (s: SectionId) => void;
+  sectionStatuses: Record<SectionId, SectionStatus>;
+  setSectionStatuses: React.Dispatch<React.SetStateAction<Record<SectionId, SectionStatus>>>;
+}
 
 const reportData: Record<string, { label: string; period: string; type: ReportType }> = {
   r1: { label: "Monthly — Mars 2026", period: "1 mars → 31 mars 2026", type: "monthly" },
@@ -21,29 +30,17 @@ const reportData: Record<string, { label: string; period: string; type: ReportTy
   r3: { label: "Monthly — Février 2026", period: "1 fév → 28 fév 2026", type: "monthly" },
   r4: { label: "Weekly — Semaine 11", period: "11 → 17 mars 2026", type: "weekly" },
   r5: { label: "Monthly — Janvier 2026", period: "1 jan → 31 jan 2026", type: "monthly" },
+  r6: { label: "Weekly — Semaine 13", period: "25 → 31 mars 2026", type: "weekly" },
 };
-
-export type SectionId = "kpi" | "checkin" | "responsabilites" | "todo" | "objectifs" | "ids" | "cloture";
-export type SectionStatus = "complete" | "incomplete" | "warning";
 
 export default function RapportDetail() {
   const { id } = useParams<{ id: string }>();
   const report = reportData[id ?? ""] ?? { label: `Rapport ${id}`, period: "", type: "monthly" as ReportType };
-
-  const [activeSection, setActiveSection] = useState<SectionId>("kpi");
-  const [sectionStatuses, setSectionStatuses] = useState<Record<SectionId, SectionStatus>>({
-    kpi: "incomplete",
-    checkin: "incomplete",
-    responsabilites: "incomplete",
-    todo: "incomplete",
-    objectifs: "incomplete",
-    ids: "incomplete",
-    cloture: "incomplete",
-  });
+  const { activeSection, sectionStatuses, setSectionStatuses } = useOutletContext<OutletContext>();
 
   const updateSectionStatus = useCallback((section: SectionId, status: SectionStatus) => {
     setSectionStatuses((prev) => ({ ...prev, [section]: status }));
-  }, []);
+  }, [setSectionStatuses]);
 
   const canSubmit = useMemo(() => {
     return sectionStatuses.kpi === "complete" && sectionStatuses.checkin === "complete";
@@ -65,25 +62,16 @@ export default function RapportDetail() {
       />
 
       {activeSection === "kpi" && (
-        <SectionKpi
-          reportType={report.type}
-          onStatusChange={(s) => updateSectionStatus("kpi", s)}
-        />
+        <SectionKpi reportType={report.type} onStatusChange={(s) => updateSectionStatus("kpi", s)} />
       )}
       {activeSection === "checkin" && (
-        <SectionCheckin
-          onStatusChange={(s) => updateSectionStatus("checkin", s)}
-        />
+        <SectionCheckin onStatusChange={(s) => updateSectionStatus("checkin", s)} />
       )}
       {activeSection === "responsabilites" && (
-        <SectionResponsabilites
-          onStatusChange={(s) => updateSectionStatus("responsabilites", s)}
-        />
+        <SectionResponsabilites onStatusChange={(s) => updateSectionStatus("responsabilites", s)} />
       )}
       {activeSection === "todo" && <SectionTodo />}
-      {activeSection === "objectifs" && (
-        <SectionObjectifs reportType={report.type} />
-      )}
+      {activeSection === "objectifs" && <SectionObjectifs reportType={report.type} />}
       {activeSection === "ids" && <SectionIds reportType={report.type} />}
       {activeSection === "cloture" && <SectionCloture reportType={report.type} />}
 
