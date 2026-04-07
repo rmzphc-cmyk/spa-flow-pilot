@@ -1,6 +1,6 @@
-import { useState } from "react";
 import { useLocation } from "react-router-dom";
-import { ChevronDown, Globe, User, Settings, LogOut } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { ChevronDown, User, Settings, LogOut } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,28 +9,24 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-const languages = ["FR", "EN", "ES"];
-
-const statusMap: Record<string, { label: string; bg: string; text: string }> = {
-  draft_preparation: { label: "En préparation", bg: "bg-muted", text: "text-muted-foreground" },
-  ready_for_review: { label: "Prêt pour réunion", bg: "bg-amber-100", text: "text-amber-800" },
-  in_meeting: { label: "En réunion", bg: "bg-orange-100", text: "text-orange-800" },
-  validated: { label: "Validé", bg: "bg-emerald-100", text: "text-emerald-800" },
-};
+const langCodes = [
+  { code: "fr", label: "FR" },
+  { code: "en", label: "EN" },
+  { code: "es", label: "ES" },
+];
 
 export function AppHeader() {
-  const [activeLang, setActiveLang] = useState("FR");
+  const { t, i18n } = useTranslation();
   const location = useLocation();
 
   const isInReport = location.pathname.startsWith("/rapport/");
   const currentCycle = "monthly" as "weekly" | "monthly";
   const currentStatus = isInReport ? "draft_preparation" : null;
-  const status = currentStatus ? statusMap[currentStatus] : null;
 
   return (
     <header className="h-14 border-b border-border bg-card flex items-center px-4 shrink-0 z-30">
       <div className="flex items-center gap-3">
-        <h1 className="text-lg font-bold text-primary">SPA OMS</h1>
+        <h1 className="text-lg font-bold text-primary">{t("app.name")}</h1>
         <span
           className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${
             currentCycle === "weekly"
@@ -39,31 +35,31 @@ export function AppHeader() {
           }`}
         >
           {currentCycle === "weekly" ? "🟢" : "🔵"}{" "}
-          {currentCycle === "weekly" ? "Weekly" : "Monthly"}
+          {t(`app.cycle.${currentCycle}`)}
         </span>
       </div>
 
       <div className="flex-1" />
 
       <div className="flex items-center gap-3">
-        {status && (
-          <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${status.bg} ${status.text}`}>
-            {status.label}
+        {currentStatus && (
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
+            {t(`status.${currentStatus}`)}
           </span>
         )}
 
         <div className="flex items-center gap-0.5 border border-border rounded-md">
-          {languages.map((lang) => (
+          {langCodes.map((lang) => (
             <button
-              key={lang}
-              onClick={() => setActiveLang(lang)}
+              key={lang.code}
+              onClick={() => i18n.changeLanguage(lang.code)}
               className={`text-xs px-2 py-1 font-medium transition-colors ${
-                activeLang === lang
+                i18n.language === lang.code
                   ? "bg-primary text-primary-foreground rounded-md"
                   : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {lang}
+              {lang.label}
             </button>
           ))}
         </div>
@@ -80,14 +76,14 @@ export function AppHeader() {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuItem className="gap-2">
-              <User className="h-4 w-4" /> Profil
+              <User className="h-4 w-4" /> {t("header.profile")}
             </DropdownMenuItem>
             <DropdownMenuItem className="gap-2">
-              <Settings className="h-4 w-4" /> Paramètres
+              <Settings className="h-4 w-4" /> {t("header.settings")}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem className="gap-2 text-destructive">
-              <LogOut className="h-4 w-4" /> Déconnexion
+              <LogOut className="h-4 w-4" /> {t("header.logout")}
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

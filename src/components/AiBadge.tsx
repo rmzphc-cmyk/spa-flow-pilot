@@ -1,12 +1,13 @@
 import { Sparkles } from "lucide-react";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { useTranslation } from "react-i18next";
 
 interface AiBadgeProps {
-  label?: string;
   className?: string;
 }
 
-export function AiBadge({ label = "Suggestion IA", className = "" }: AiBadgeProps) {
+export function AiBadge({ className = "" }: AiBadgeProps) {
+  const { t } = useTranslation();
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -15,11 +16,11 @@ export function AiBadge({ label = "Suggestion IA", className = "" }: AiBadgeProp
           style={{ backgroundColor: "#E0F2F1", color: "#006B6B" }}
         >
           <Sparkles className="h-3 w-3" />
-          {label}
+          {t("ai.badge")}
         </span>
       </TooltipTrigger>
       <TooltipContent className="max-w-[260px] text-xs">
-        Ce contenu a été généré par l'IA. Vous pouvez le modifier ou l'ignorer.
+        {t("ai.tooltip")}
       </TooltipContent>
     </Tooltip>
   );
