@@ -107,5 +107,23 @@
   },
   "period": {
     "march2026": "March 2026"
+  },
+  "kpi": {
+    "title": "KPIs of the month",
+    "subtitle": "Enter the actual values for the period",
+    "previousCycle": "Previous cycle",
+    "notAvailable": "KPI not available this cycle",
+    "naReason": "Reason (max 80 char.)",
+    "target": "Target",
+    "commentRequired": "Comment required",
+    "comment": {
+      "placeholder": {
+        "green": "Any trend to note?",
+        "amber": "What explains the gap?",
+        "red": "Root cause and planned action?"
+      }
+    },
+    "sparklineLabel": "Last 4 periods",
+    "vsTarget": "vs target"
   }
 }
