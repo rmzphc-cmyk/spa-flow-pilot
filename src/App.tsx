@@ -7,6 +7,7 @@ import { AppLayout } from "@/components/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Rapports from "./pages/Rapports";
 import RapportDetail from "./pages/RapportDetail";
+import MeetingMode from "./pages/MeetingMode";
 import Todos from "./pages/Todos";
 import Objectifs from "./pages/Objectifs";
 import NotFound from "./pages/NotFound";
