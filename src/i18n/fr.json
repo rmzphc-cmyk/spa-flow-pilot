@@ -1,0 +1,111 @@
+{
+  "app": {
+    "name": "SPA OMS",
+    "cycle": {
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    }
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "reports": "Mes rapports",
+    "todos": "To-do",
+    "objectives": "Objectifs",
+    "pastReports": "Rapports passés",
+    "spaHistory": "Historique spa",
+    "configKpi": "Config KPI",
+    "configResp": "Config Resp.",
+    "backToReports": "Retour aux rapports",
+    "submitForReview": "Soumettre pour revue"
+  },
+  "sections": {
+    "kpi": "KPI",
+    "checkin": "Check-in",
+    "responsabilites": "Responsabilités",
+    "todo": "To-do",
+    "objectifs": "Objectifs",
+    "ids": "IDS",
+    "cloture": "Clôture"
+  },
+  "header": {
+    "profile": "Profil",
+    "settings": "Paramètres",
+    "logout": "Déconnexion"
+  },
+  "status": {
+    "draft_preparation": "En préparation",
+    "ready_for_review": "Prêt pour réunion",
+    "in_meeting": "En réunion",
+    "validated": "Validé"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "language": {
+      "title": "Langue de l'interface",
+      "aiNote": "L'IA produira ses réponses dans la langue sélectionnée.",
+      "personalNote": "Ce paramètre est personnel et n'affecte pas les autres utilisateurs."
+    },
+    "notifications": {
+      "title": "Notifications",
+      "preBrief": "Pré-brief J-2 avant réunion",
+      "preBriefDesc": "Email + push",
+      "aiSynthesis": "Synthèse IA disponible",
+      "aiSynthesisDesc": "Notification quand la synthèse est prête",
+      "reportValidated": "Rapport validé",
+      "reportValidatedDesc": "Notification quand un rapport est validé",
+      "emailLabel": "Email de notification"
+    },
+    "cycle": {
+      "title": "Configuration cycle",
+      "reportingCycle": "Cycle de reporting",
+      "frequencyLabel": "fréquence : tous les {{count}} jours",
+      "monthlyCycle": "cycle mensuel",
+      "adminOnly": "Modifiable par l'Admin",
+      "submissionDay": "Jour de soumission préféré",
+      "submissionDayDesc": "Détermine le jour J du calcul du pré-brief J-2"
+    },
+    "account": {
+      "title": "Compte",
+      "displayName": "Nom affiché",
+      "email": "Email",
+      "emailNote": "Modifiable via admin uniquement",
+      "role": "Rôle",
+      "spa": "Spa assigné",
+      "changePassword": "Changer mon mot de passe"
+    },
+    "accessibility": {
+      "title": "Accessibilité",
+      "textSize": "Taille de texte",
+      "textNormal": "Normal",
+      "textLarge": "Grand",
+      "contrast": "Contraste",
+      "contrastStandard": "Standard",
+      "contrastHigh": "Élevé"
+    },
+    "passwordRedirect": {
+      "title": "Redirection",
+      "description": "Vous allez être redirigé vers le flux de changement de mot de passe."
+    }
+  },
+  "roles": {
+    "manager": "Spa Manager",
+    "direction": "Direction",
+    "admin": "Administrateur"
+  },
+  "days": {
+    "lundi": "Lundi",
+    "mardi": "Mardi",
+    "mercredi": "Mercredi",
+    "jeudi": "Jeudi",
+    "vendredi": "Vendredi",
+    "samedi": "Samedi",
+    "dimanche": "Dimanche"
+  },
+  "ai": {
+    "badge": "Suggestion IA",
+    "tooltip": "Ce contenu a été généré par l'IA. Vous pouvez le modifier ou l'ignorer."
+  },
+  "period": {
+    "march2026": "Mars 2026"
+  }
+}
