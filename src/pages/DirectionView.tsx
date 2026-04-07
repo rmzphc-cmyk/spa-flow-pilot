@@ -104,9 +104,6 @@ const statusBadge: Record<string, { label: string; classes: string }> = {
   post_meeting_generated: { label: "Post-réunion", classes: "bg-violet-100 text-violet-800" },
 };
 
-const kpiStatusDot: Record<string, string> = {
-  green: "bg-emerald-500", amber: "bg-amber-500", red: "bg-red-500",
-};
 
 const objStyles: Record<string, { label: string; bg: string; text: string }> = {
   on_track: { label: "En bonne voie", bg: "bg-emerald-50", text: "text-emerald-800" },
