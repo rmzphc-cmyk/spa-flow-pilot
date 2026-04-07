@@ -74,7 +74,7 @@ export default function RapportDetail() {
       {/* HEADER */}
       <header className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-foreground pl-10 lg:pl-0">{report.label}</h1>
+          <h1 className="text-2xl font-bold text-foreground">{report.label}</h1>
           <p className="text-sm text-muted-foreground mt-1">{report.period}</p>
         </div>
         <div className="flex items-center gap-3 shrink-0">
