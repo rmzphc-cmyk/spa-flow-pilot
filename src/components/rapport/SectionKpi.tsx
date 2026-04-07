@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
-import { KpiCardSaisie, getKpiStatus } from "@/components/KpiCard";
+import { KpiCardSaisie, KpiCardSaisieWeekly, getKpiStatus } from "@/components/KpiCard";
 import type { KpiData, KpiCardValue } from "@/components/KpiCard";
 import type { SectionStatus } from "@/pages/RapportDetail";
 
@@ -22,6 +22,8 @@ interface Props {
 
 export function SectionKpi({ reportType, onStatusChange }: Props) {
   const { t } = useTranslation();
+  const isWeekly = reportType === "weekly";
+
   const [cardValues, setCardValues] = useState<Record<string, KpiCardValue>>(() => {
     const init: Record<string, KpiCardValue> = {};
     for (const kpi of kpis) {
@@ -38,11 +40,18 @@ export function SectionKpi({ reportType, onStatusChange }: Props) {
         continue;
       }
       if (!cv.value || isNaN(Number(cv.value))) return false;
-      const status = getKpiStatus(cv.value, kpi.target);
-      if ((status === "amber" || status === "red") && !cv.comment.trim()) return false;
+
+      if (isWeekly) {
+        // Weekly: only red KPIs (vs N-1) require comment
+        const weeklyStatus = getWeeklyStatus(Number(cv.value), kpi.n1);
+        if (weeklyStatus === "red" && !cv.comment.trim()) return false;
+      } else {
+        const status = getKpiStatus(cv.value, kpi.target);
+        if ((status === "amber" || status === "red") && !cv.comment.trim()) return false;
+      }
     }
     return true;
-  }, [cardValues]);
+  }, [cardValues, isWeekly]);
 
   useEffect(() => {
     onStatusChange(isComplete ? "complete" : "incomplete");
@@ -50,19 +59,40 @@ export function SectionKpi({ reportType, onStatusChange }: Props) {
 
   return (
     <section className="mb-8">
-      <h2 className="text-lg font-semibold text-foreground">{t("kpi.title")}</h2>
-      <p className="text-sm text-muted-foreground mb-4">{t("kpi.subtitle")}</p>
+      <h2 className="text-lg font-semibold text-foreground">
+        {isWeekly ? "KPI de la semaine" : t("kpi.title")}
+      </h2>
+      <p className="text-sm text-muted-foreground mb-4">
+        {isWeekly ? "Tendances par rapport à la semaine précédente" : t("kpi.subtitle")}
+      </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {kpis.map((kpi) => (
-          <KpiCardSaisie
-            key={kpi.id}
-            kpi={kpi}
-            cardValue={cardValues[kpi.id]}
-            onChange={(newVal) => setCardValues((p) => ({ ...p, [kpi.id]: newVal }))}
-          />
-        ))}
+        {kpis.map((kpi) =>
+          isWeekly ? (
+            <KpiCardSaisieWeekly
+              key={kpi.id}
+              kpi={kpi}
+              cardValue={cardValues[kpi.id]}
+              onChange={(newVal) => setCardValues((p) => ({ ...p, [kpi.id]: newVal }))}
+            />
+          ) : (
+            <KpiCardSaisie
+              key={kpi.id}
+              kpi={kpi}
+              cardValue={cardValues[kpi.id]}
+              onChange={(newVal) => setCardValues((p) => ({ ...p, [kpi.id]: newVal }))}
+            />
+          )
+        )}
       </div>
     </section>
   );
+}
+
+/** Weekly status: compare vs previous week (N-1), not target */
+function getWeeklyStatus(value: number, n1: number): "green" | "amber" | "red" {
+  const ratio = n1 === 0 ? 1 : value / n1;
+  if (ratio >= 1) return "green";
+  if (ratio >= 0.85) return "amber";
+  return "red";
 }

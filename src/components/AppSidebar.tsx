@@ -23,6 +23,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { spas } from "@/data/directionMockData";
 import type { SectionId } from "@/pages/RapportDetail";
+import type { ReportType } from "@/pages/RapportDetail";
 
 interface ReportSection {
   id: SectionId;
@@ -31,7 +32,7 @@ interface ReportSection {
   overdue?: number;
 }
 
-const reportSections: ReportSection[] = [
+const allReportSections: ReportSection[] = [
   { id: "kpi", labelKey: "sections.kpi", icon: BarChart3 },
   { id: "checkin", labelKey: "sections.checkin", icon: MessageSquare },
   { id: "responsabilites", labelKey: "sections.responsabilites", icon: Users },
@@ -40,6 +41,13 @@ const reportSections: ReportSection[] = [
   { id: "ids", labelKey: "sections.ids", icon: Lightbulb },
   { id: "cloture", labelKey: "sections.cloture", icon: Lock },
 ];
+
+const weeklySectionIds: SectionId[] = ["kpi", "checkin", "ids"];
+
+const weeklyLabelOverrides: Partial<Record<SectionId, string>> = {
+  checkin: "Check-in rapide",
+  ids: "IDS — Capture",
+};
 
 const secondaryLinks = [
   { labelKey: "nav.pastReports", url: "/rapports", icon: FileText },
@@ -65,15 +73,24 @@ interface Props {
   activeSection?: SectionId;
   onSectionChange?: (section: SectionId) => void;
   sectionStatuses?: Record<SectionId, string>;
+  reportType?: ReportType;
 }
 
-export function AppSidebar({ activeSection, onSectionChange, sectionStatuses }: Props) {
+export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, reportType = "monthly" }: Props) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const isInReport = location.pathname.startsWith("/rapport/");
   const isDirection = location.pathname.startsWith("/direction");
+
+  const isWeekly = reportType === "weekly";
+  const reportSections = isWeekly
+    ? allReportSections.filter((s) => weeklySectionIds.includes(s.id))
+    : allReportSections;
+
+  const totalSections = reportSections.length;
+  const completedCount = reportSections.filter((s) => sectionStatuses?.[s.id] === "complete").length;
 
   const sidebarContent = (
     <div className="flex flex-col h-full overflow-y-auto">
@@ -201,10 +218,29 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses }: 
               {t("nav.backToReports")}
             </NavLink>
           </div>
-          <nav className="px-3 mt-1 space-y-0.5">
+
+          {/* Progress indicator */}
+          <div className="px-4 mt-2 mb-1">
+            <span className="text-xs text-muted-foreground">{completedCount}/{totalSections} sections</span>
+            <div className="flex gap-1 h-1.5 mt-1">
+              {reportSections.map((s, i) => (
+                <div
+                  key={s.id}
+                  className={`flex-1 rounded-full transition-colors ${
+                    sectionStatuses?.[s.id] === "complete" ? "bg-primary" : "bg-border"
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+
+          <nav className="px-3 mt-2 space-y-0.5">
             {reportSections.map((section) => {
               const isActive = activeSection === section.id;
               const sStatus = sectionStatuses?.[section.id] ?? "incomplete";
+              const label = isWeekly && weeklyLabelOverrides[section.id]
+                ? weeklyLabelOverrides[section.id]
+                : t(section.labelKey);
               return (
                 <button
                   key={section.id}
@@ -219,9 +255,9 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses }: 
                   }`}
                 >
                   <section.icon className={`h-4 w-4 shrink-0 ${isActive ? "text-primary" : ""}`} />
-                  <span className="flex-1 lg:inline hidden">{t(section.labelKey)}</span>
+                  <span className="flex-1 lg:inline hidden">{label}</span>
                   <span className="lg:inline hidden">{statusIcon(sStatus)}</span>
-                  {section.overdue && (
+                  {!isWeekly && section.overdue && (
                     <span className="bg-destructive text-destructive-foreground text-xs font-semibold rounded-full h-5 min-w-[20px] px-1 flex items-center justify-center lg:flex hidden">
                       {section.overdue}
                     </span>
@@ -234,7 +270,7 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses }: 
           <div className="px-3 mt-4">
             <Button className="w-full gap-1.5 lg:flex hidden" size="sm">
               <Send className="h-4 w-4" />
-              <span>{t("nav.submitForReview")}</span>
+              <span>{isWeekly ? "Valider et envoyer" : t("nav.submitForReview")}</span>
             </Button>
           </div>
         </>
