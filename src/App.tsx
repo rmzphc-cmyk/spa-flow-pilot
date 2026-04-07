@@ -15,6 +15,7 @@ import Todos from "./pages/Todos";
 import Objectifs from "./pages/Objectifs";
 import KpiConfig from "./pages/KpiConfig";
 import RespConfig from "./pages/RespConfig";
+import UserSettingsPage from "./pages/UserSettings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/objectifs" element={<Objectifs />} />
             <Route path="/admin/kpi" element={<KpiConfig />} />
             <Route path="/admin/responsabilites" element={<RespConfig />} />
+            <Route path="/parametres" element={<UserSettingsPage />} />
           </Route>
           <Route path="/reunion/:id" element={<MeetingMode />} />
           <Route path="/post-reunion/:id" element={<PostMeetingMode />} />
