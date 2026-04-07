@@ -107,5 +107,23 @@
   },
   "period": {
     "march2026": "Marzo 2026"
+  },
+  "kpi": {
+    "title": "KPI del mes",
+    "subtitle": "Ingrese los valores reales del período",
+    "previousCycle": "Ciclo anterior",
+    "notAvailable": "KPI no disponible este ciclo",
+    "naReason": "Razón (máx. 80 car.)",
+    "target": "Objetivo",
+    "commentRequired": "Comentario requerido",
+    "comment": {
+      "placeholder": {
+        "green": "¿Alguna tendencia a destacar?",
+        "amber": "¿Qué explica la diferencia?",
+        "red": "¿Causa principal y acción prevista?"
+      }
+    },
+    "sparklineLabel": "Últimos 4 períodos",
+    "vsTarget": "vs objetivo"
   }
 }
