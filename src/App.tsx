@@ -13,6 +13,7 @@ import DirectionView from "./pages/DirectionView";
 import SpaHistory from "./pages/SpaHistory";
 import Todos from "./pages/Todos";
 import Objectifs from "./pages/Objectifs";
+import KpiConfig from "./pages/KpiConfig";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
