@@ -14,11 +14,14 @@ import {
   LayoutDashboard,
   ChevronRight,
   Send,
+  Eye,
+  ArrowLeft,
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
+import { spas } from "@/data/directionMockData";
 import type { SectionId } from "@/pages/RapportDetail";
 
 interface ReportSection {
@@ -70,15 +73,94 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses }: 
   const location = useLocation();
   const navigate = useNavigate();
   const isInReport = location.pathname.startsWith("/rapport/");
+  const isDirection = location.pathname.startsWith("/direction");
 
   const sidebarContent = (
     <div className="flex flex-col h-full overflow-y-auto">
       <div className="p-4 pb-2">
-        <h2 className="text-sm font-bold text-foreground">Spa Le Domaine</h2>
-        <p className="text-xs text-muted-foreground mt-0.5">{t("period.march2026")}</p>
+        {isDirection ? (
+          <>
+            <div className="flex items-center gap-2">
+              <Eye className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-bold text-foreground">{t("direction.title")}</h2>
+            </div>
+          </>
+        ) : (
+          <>
+            <h2 className="text-sm font-bold text-foreground">Spa Le Domaine</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">{t("period.march2026")}</p>
+          </>
+        )}
       </div>
 
-      {!isInReport && (
+      {/* Direction mode sidebar */}
+      {isDirection && (
+        <>
+          <nav className="px-3 mt-2 space-y-0.5">
+            <NavLink
+              to="/direction"
+              end
+              onClick={() => setMobileOpen(false)}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  isActive && !location.pathname.includes("/spa/")
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`
+              }
+            >
+              <LayoutDashboard className="h-4 w-4 shrink-0" />
+              <span className="lg:inline hidden">{t("direction.overview")}</span>
+            </NavLink>
+          </nav>
+
+          <div className="px-4 mt-4 mb-1">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Spas</p>
+          </div>
+          <nav className="px-3 space-y-0.5">
+            {spas.map((spa) => {
+              const isActive = location.pathname === `/direction/spa/${spa.id}`;
+              const dotColor = spa.alerts.some((a) => a.level === "red")
+                ? "bg-destructive"
+                : spa.alerts.some((a) => a.level === "orange")
+                ? "bg-amber-500"
+                : "bg-emerald-500";
+
+              return (
+                <button
+                  key={spa.id}
+                  onClick={() => {
+                    navigate(`/direction/spa/${spa.id}`);
+                    setMobileOpen(false);
+                  }}
+                  className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full text-left ${
+                    isActive
+                      ? "bg-primary/10 text-primary font-semibold"
+                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                  }`}
+                >
+                  <span className={`h-2 w-2 rounded-full shrink-0 ${dotColor}`} />
+                  <span className="lg:inline hidden truncate">{spa.name}</span>
+                </button>
+              );
+            })}
+          </nav>
+
+          <div className="flex-1" />
+          <div className="p-3 border-t border-border">
+            <NavLink
+              to="/"
+              className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <ArrowLeft className="h-3.5 w-3.5" />
+              <span className="lg:inline hidden">{t("direction.backToManager")}</span>
+            </NavLink>
+          </div>
+        </>
+      )}
+
+      {/* Manager mode — default nav */}
+      {!isInReport && !isDirection && (
         <nav className="px-3 mt-2 space-y-0.5">
           {mainNavItems.map((item) => (
             <NavLink
@@ -106,6 +188,7 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses }: 
         </nav>
       )}
 
+      {/* Report mode sidebar */}
       {isInReport && (
         <>
           <div className="px-4 mt-3 mb-1">
@@ -157,34 +240,38 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses }: 
         </>
       )}
 
-      <div className="flex-1" />
+      {/* Bottom section for non-direction modes */}
+      {!isDirection && (
+        <>
+          <div className="flex-1" />
+          <div className="border-t border-border mx-3 my-2" />
+          <nav className="px-3 space-y-0.5 pb-2">
+            {secondaryLinks.map((link) => (
+              <NavLink
+                key={link.url}
+                to={link.url}
+                onClick={() => setMobileOpen(false)}
+                className="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              >
+                <link.icon className="h-4 w-4 shrink-0" />
+                <span className="lg:inline hidden">{t(link.labelKey)}</span>
+              </NavLink>
+            ))}
+          </nav>
 
-      <div className="border-t border-border mx-3 my-2" />
-      <nav className="px-3 space-y-0.5 pb-2">
-        {secondaryLinks.map((link) => (
-          <NavLink
-            key={link.url}
-            to={link.url}
-            onClick={() => setMobileOpen(false)}
-            className="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-          >
-            <link.icon className="h-4 w-4 shrink-0" />
-            <span className="lg:inline hidden">{t(link.labelKey)}</span>
-          </NavLink>
-        ))}
-      </nav>
-
-      <div className="p-3 border-t border-border">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold shrink-0">
-            MD
+          <div className="p-3 border-t border-border">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold shrink-0">
+                MD
+              </div>
+              <div className="lg:block hidden">
+                <p className="text-sm font-medium text-foreground leading-tight">Marie Dupont</p>
+                <p className="text-xs text-muted-foreground">Spa Manager</p>
+              </div>
+            </div>
           </div>
-          <div className="lg:block hidden">
-            <p className="text-sm font-medium text-foreground leading-tight">Marie Dupont</p>
-            <p className="text-xs text-muted-foreground">Spa Manager</p>
-          </div>
-        </div>
-      </div>
+        </>
+      )}
     </div>
   );
 

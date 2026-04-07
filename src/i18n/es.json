@@ -125,5 +125,29 @@
     },
     "sparklineLabel": "Últimos 4 períodos",
     "vsTarget": "vs objetivo"
+  },
+  "direction": {
+    "title": "Vista Dirección",
+    "subtitle": "{{count}} spas · Período: Marzo 2026",
+    "overview": "Vista general",
+    "manager": "Manager",
+    "viewDetail": "Ver detalle",
+    "otherAlerts": "otros",
+    "kpiResp": "Responsabilidades",
+    "lastReport": "Último informe",
+    "alertBanner": "{{count}} alertas en {{spas}} spas",
+    "backToAll": "Todos los spas",
+    "backToManager": "Vista Manager",
+    "spaNotFound": "Spa no encontrado",
+    "notSubmittedNote": "El informe aún no ha sido enviado. Los datos a continuación son del último informe validado.",
+    "lastValidatedTitle": "Último informe validado — {{period}}",
+    "validatedOn": "Validado el {{date}}",
+    "kpiValue": "Valor",
+    "kpiTarget": "Objetivo",
+    "kpiGap": "Diferencia",
+    "kpiStatus": "Estado",
+    "respGlobal": "Puntuación global de responsabilidades",
+    "resolved": "Resuelto",
+    "inProgress": "En curso"
   }
 }
