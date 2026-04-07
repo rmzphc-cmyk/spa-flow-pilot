@@ -14,6 +14,7 @@ import SpaHistory from "./pages/SpaHistory";
 import Todos from "./pages/Todos";
 import Objectifs from "./pages/Objectifs";
 import KpiConfig from "./pages/KpiConfig";
+import RespConfig from "./pages/RespConfig";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
