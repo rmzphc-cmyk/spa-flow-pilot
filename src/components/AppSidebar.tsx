@@ -15,40 +15,41 @@ import {
   ChevronRight,
   Send,
 } from "lucide-react";
-import { NavLink, useLocation, useSearchParams, useNavigate } from "react-router-dom";
+import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import type { SectionId } from "@/pages/RapportDetail";
 
 interface ReportSection {
   id: SectionId;
-  label: string;
+  labelKey: string;
   icon: typeof BarChart3;
   overdue?: number;
 }
 
 const reportSections: ReportSection[] = [
-  { id: "kpi", label: "KPI", icon: BarChart3 },
-  { id: "checkin", label: "Check-in", icon: MessageSquare },
-  { id: "responsabilites", label: "Responsabilités", icon: Users },
-  { id: "todo", label: "To-do", icon: CheckSquare, overdue: 3 },
-  { id: "objectifs", label: "Objectifs", icon: Target },
-  { id: "ids", label: "IDS", icon: Lightbulb },
-  { id: "cloture", label: "Clôture", icon: Lock },
+  { id: "kpi", labelKey: "sections.kpi", icon: BarChart3 },
+  { id: "checkin", labelKey: "sections.checkin", icon: MessageSquare },
+  { id: "responsabilites", labelKey: "sections.responsabilites", icon: Users },
+  { id: "todo", labelKey: "sections.todo", icon: CheckSquare, overdue: 3 },
+  { id: "objectifs", labelKey: "sections.objectifs", icon: Target },
+  { id: "ids", labelKey: "sections.ids", icon: Lightbulb },
+  { id: "cloture", labelKey: "sections.cloture", icon: Lock },
 ];
 
 const secondaryLinks = [
-  { label: "Rapports passés", url: "/rapports", icon: FileText },
-  { label: "Historique spa", url: "/historique", icon: History },
-  { label: "Config KPI", url: "/admin/kpi", icon: Settings },
-  { label: "Config Resp.", url: "/admin/responsabilites", icon: Users },
+  { labelKey: "nav.pastReports", url: "/rapports", icon: FileText },
+  { labelKey: "nav.spaHistory", url: "/historique", icon: History },
+  { labelKey: "nav.configKpi", url: "/admin/kpi", icon: Settings },
+  { labelKey: "nav.configResp", url: "/admin/responsabilites", icon: Users },
 ];
 
 const mainNavItems = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Mes rapports", url: "/rapports", icon: FileText },
-  { title: "To-do", url: "/todos", icon: CheckSquare, badge: 3 },
-  { title: "Objectifs", url: "/objectifs", icon: Target },
+  { titleKey: "nav.dashboard", url: "/", icon: LayoutDashboard },
+  { titleKey: "nav.reports", url: "/rapports", icon: FileText },
+  { titleKey: "nav.todos", url: "/todos", icon: CheckSquare, badge: 3 },
+  { titleKey: "nav.objectives", url: "/objectifs", icon: Target },
 ];
 
 const statusIcon = (status: string) => {
@@ -65,19 +66,18 @@ interface Props {
 
 export function AppSidebar({ activeSection, onSectionChange, sectionStatuses }: Props) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const isInReport = location.pathname.startsWith("/rapport/");
 
   const sidebarContent = (
     <div className="flex flex-col h-full overflow-y-auto">
-      {/* Spa name + period */}
       <div className="p-4 pb-2">
         <h2 className="text-sm font-bold text-foreground">Spa Le Domaine</h2>
-        <p className="text-xs text-muted-foreground mt-0.5">Mars 2026</p>
+        <p className="text-xs text-muted-foreground mt-0.5">{t("period.march2026")}</p>
       </div>
 
-      {/* Main navigation */}
       {!isInReport && (
         <nav className="px-3 mt-2 space-y-0.5">
           {mainNavItems.map((item) => (
@@ -95,7 +95,7 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses }: 
               }
             >
               <item.icon className="h-4 w-4 shrink-0" />
-              <span className="lg:inline hidden">{item.title}</span>
+              <span className="lg:inline hidden">{t(item.titleKey)}</span>
               {item.badge && (
                 <span className="ml-auto bg-destructive text-destructive-foreground text-xs font-semibold rounded-full h-5 w-5 flex items-center justify-center lg:flex hidden">
                   {item.badge}
@@ -106,7 +106,6 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses }: 
         </nav>
       )}
 
-      {/* Report sections */}
       {isInReport && (
         <>
           <div className="px-4 mt-3 mb-1">
@@ -116,7 +115,7 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses }: 
               className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
             >
               <ChevronRight className="h-3 w-3 rotate-180" />
-              Retour aux rapports
+              {t("nav.backToReports")}
             </NavLink>
           </div>
           <nav className="px-3 mt-1 space-y-0.5">
@@ -137,7 +136,7 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses }: 
                   }`}
                 >
                   <section.icon className={`h-4 w-4 shrink-0 ${isActive ? "text-primary" : ""}`} />
-                  <span className="flex-1 lg:inline hidden">{section.label}</span>
+                  <span className="flex-1 lg:inline hidden">{t(section.labelKey)}</span>
                   <span className="lg:inline hidden">{statusIcon(sStatus)}</span>
                   {section.overdue && (
                     <span className="bg-destructive text-destructive-foreground text-xs font-semibold rounded-full h-5 min-w-[20px] px-1 flex items-center justify-center lg:flex hidden">
@@ -149,11 +148,10 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses }: 
             })}
           </nav>
 
-          {/* Submit button */}
           <div className="px-3 mt-4">
             <Button className="w-full gap-1.5 lg:flex hidden" size="sm">
               <Send className="h-4 w-4" />
-              <span>Soumettre pour revue</span>
+              <span>{t("nav.submitForReview")}</span>
             </Button>
           </div>
         </>
@@ -161,7 +159,6 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses }: 
 
       <div className="flex-1" />
 
-      {/* Secondary links */}
       <div className="border-t border-border mx-3 my-2" />
       <nav className="px-3 space-y-0.5 pb-2">
         {secondaryLinks.map((link) => (
@@ -172,12 +169,11 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses }: 
             className="flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
             <link.icon className="h-4 w-4 shrink-0" />
-            <span className="lg:inline hidden">{link.label}</span>
+            <span className="lg:inline hidden">{t(link.labelKey)}</span>
           </NavLink>
         ))}
       </nav>
 
-      {/* User */}
       <div className="p-3 border-t border-border">
         <div className="flex items-center gap-2">
           <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold shrink-0">

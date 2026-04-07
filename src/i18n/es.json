@@ -1,0 +1,111 @@
+{
+  "app": {
+    "name": "SPA OMS",
+    "cycle": {
+      "weekly": "Weekly",
+      "monthly": "Monthly"
+    }
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "reports": "Mis informes",
+    "todos": "Tareas",
+    "objectives": "Objetivos",
+    "pastReports": "Informes anteriores",
+    "spaHistory": "Historial spa",
+    "configKpi": "Config KPI",
+    "configResp": "Config Resp.",
+    "backToReports": "Volver a informes",
+    "submitForReview": "Enviar para revisión"
+  },
+  "sections": {
+    "kpi": "KPI",
+    "checkin": "Check-in",
+    "responsabilites": "Responsabilidades",
+    "todo": "Tareas",
+    "objectifs": "Objetivos",
+    "ids": "IDS",
+    "cloture": "Cierre"
+  },
+  "header": {
+    "profile": "Perfil",
+    "settings": "Configuración",
+    "logout": "Cerrar sesión"
+  },
+  "status": {
+    "draft_preparation": "En preparación",
+    "ready_for_review": "Listo para reunión",
+    "in_meeting": "En reunión",
+    "validated": "Validado"
+  },
+  "settings": {
+    "title": "Configuración",
+    "language": {
+      "title": "Idioma de la interfaz",
+      "aiNote": "La IA producirá sus respuestas en el idioma seleccionado.",
+      "personalNote": "Esta configuración es personal y no afecta a otros usuarios."
+    },
+    "notifications": {
+      "title": "Notificaciones",
+      "preBrief": "Pre-brief D-2 antes de reunión",
+      "preBriefDesc": "Email + push",
+      "aiSynthesis": "Síntesis IA disponible",
+      "aiSynthesisDesc": "Notificación cuando la síntesis está lista",
+      "reportValidated": "Informe validado",
+      "reportValidatedDesc": "Notificación cuando un informe es validado",
+      "emailLabel": "Email de notificación"
+    },
+    "cycle": {
+      "title": "Configuración de ciclo",
+      "reportingCycle": "Ciclo de informes",
+      "frequencyLabel": "frecuencia: cada {{count}} días",
+      "monthlyCycle": "ciclo mensual",
+      "adminOnly": "Modificable solo por el Admin",
+      "submissionDay": "Día de envío preferido",
+      "submissionDayDesc": "Determina el día D del cálculo del pre-brief D-2"
+    },
+    "account": {
+      "title": "Cuenta",
+      "displayName": "Nombre mostrado",
+      "email": "Email",
+      "emailNote": "Modificable solo por admin",
+      "role": "Rol",
+      "spa": "Spa asignado",
+      "changePassword": "Cambiar mi contraseña"
+    },
+    "accessibility": {
+      "title": "Accesibilidad",
+      "textSize": "Tamaño de texto",
+      "textNormal": "Normal",
+      "textLarge": "Grande",
+      "contrast": "Contraste",
+      "contrastStandard": "Estándar",
+      "contrastHigh": "Alto"
+    },
+    "passwordRedirect": {
+      "title": "Redirección",
+      "description": "Serás redirigido al flujo de cambio de contraseña."
+    }
+  },
+  "roles": {
+    "manager": "Spa Manager",
+    "direction": "Dirección",
+    "admin": "Administrador"
+  },
+  "days": {
+    "lundi": "Lunes",
+    "mardi": "Martes",
+    "mercredi": "Miércoles",
+    "jeudi": "Jueves",
+    "vendredi": "Viernes",
+    "samedi": "Sábado",
+    "dimanche": "Domingo"
+  },
+  "ai": {
+    "badge": "Sugerencia IA",
+    "tooltip": "Este contenido fue generado por IA. Puedes editarlo o ignorarlo."
+  },
+  "period": {
+    "march2026": "Marzo 2026"
+  }
+}
