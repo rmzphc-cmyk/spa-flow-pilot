@@ -7,6 +7,7 @@ import { AppLayout } from "@/components/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Rapports from "./pages/Rapports";
 import RapportDetail from "./pages/RapportDetail";
+import MeetingMode from "./pages/MeetingMode";
 import Todos from "./pages/Todos";
 import Objectifs from "./pages/Objectifs";
 import NotFound from "./pages/NotFound";
@@ -27,6 +28,7 @@ const App = () => (
             <Route path="/todos" element={<Todos />} />
             <Route path="/objectifs" element={<Objectifs />} />
           </Route>
+          <Route path="/reunion/:id" element={<MeetingMode />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
