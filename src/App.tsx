@@ -30,6 +30,7 @@ const App = () => (
             <Route path="/objectifs" element={<Objectifs />} />
           </Route>
           <Route path="/reunion/:id" element={<MeetingMode />} />
+          <Route path="/post-reunion/:id" element={<PostMeetingMode />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
