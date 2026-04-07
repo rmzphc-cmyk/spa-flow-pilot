@@ -1,4 +1,3 @@
-import { AppHeader } from "@/components/AppHeader";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileText, ArrowRight, Eye, Check } from "lucide-react";
