@@ -1,4 +1,4 @@
-import { AppHeader } from "@/components/AppHeader";
+
 
 const stats = [
   {
