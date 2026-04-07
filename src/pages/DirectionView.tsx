@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { KpiCardLecture } from "@/components/KpiCard";
 import {
   ChevronLeft,
   ArrowRight,
