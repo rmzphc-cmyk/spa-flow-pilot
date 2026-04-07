@@ -9,6 +9,7 @@ import Rapports from "./pages/Rapports";
 import RapportDetail from "./pages/RapportDetail";
 import MeetingMode from "./pages/MeetingMode";
 import PostMeetingMode from "./pages/PostMeetingMode";
+import DirectionView from "./pages/DirectionView";
 import Todos from "./pages/Todos";
 import Objectifs from "./pages/Objectifs";
 import NotFound from "./pages/NotFound";
@@ -31,6 +32,7 @@ const App = () => (
           </Route>
           <Route path="/reunion/:id" element={<MeetingMode />} />
           <Route path="/post-reunion/:id" element={<PostMeetingMode />} />
+          <Route path="/direction/:id" element={<DirectionView />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
