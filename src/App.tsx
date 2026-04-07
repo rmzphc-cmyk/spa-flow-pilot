@@ -9,6 +9,7 @@ import Rapports from "./pages/Rapports";
 import RapportDetail from "./pages/RapportDetail";
 import MeetingMode from "./pages/MeetingMode";
 import PostMeetingMode from "./pages/PostMeetingMode";
+import DirectionView from "./pages/DirectionView";
 import Todos from "./pages/Todos";
 import Objectifs from "./pages/Objectifs";
 import NotFound from "./pages/NotFound";
