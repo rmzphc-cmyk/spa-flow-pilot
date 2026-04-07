@@ -221,26 +221,9 @@ export default function DirectionView() {
       <section className="mb-8">
         <h2 className="text-base font-semibold text-foreground mb-3">KPI clés</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          {sortedKpis.map((kpi, i) => {
-            const ecart = ((kpi.value - kpi.target) / kpi.target * 100).toFixed(1);
-            return (
-              <Tooltip key={i}>
-                <TooltipTrigger asChild>
-                  <div className="bg-card border border-border rounded-xl p-4 shadow-sm cursor-default">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs text-muted-foreground">{kpi.label}</span>
-                      <div className={`w-2.5 h-2.5 rounded-full ${kpiStatusDot[kpi.status]}`} />
-                    </div>
-                    <p className="text-xl font-bold text-foreground">{kpi.value.toLocaleString("fr-FR")}<span className="text-sm font-normal text-muted-foreground">{kpi.unit}</span></p>
-                    <p className={`text-xs font-medium mt-0.5 ${Number(ecart) >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                      {Number(ecart) >= 0 ? "+" : ""}{ecart}% vs cible
-                    </p>
-                  </div>
-                </TooltipTrigger>
-                {kpi.comment && <TooltipContent className="max-w-[250px]">{kpi.comment}</TooltipContent>}
-              </Tooltip>
-            );
-          })}
+          {sortedKpis.map((kpi, i) => (
+            <KpiCardLecture key={i} kpi={kpi} />
+          ))}
         </div>
       </section>
 
