@@ -53,7 +53,7 @@ export default function Rapports() {
 
   return (
     <>
-      <AppHeader title="Mes rapports" />
+      <h1 className="text-2xl font-bold text-foreground mb-6">Mes rapports</h1>
 
       {/* Filters */}
       <div className="flex gap-2 mb-6 flex-wrap">

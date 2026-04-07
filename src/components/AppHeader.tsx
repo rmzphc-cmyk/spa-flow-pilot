@@ -23,7 +23,7 @@ export function AppHeader() {
   const location = useLocation();
 
   const isInReport = location.pathname.startsWith("/rapport/");
-  const currentCycle: "weekly" | "monthly" = "monthly";
+  const currentCycle = "monthly" as "weekly" | "monthly";
   const currentStatus = isInReport ? "draft_preparation" : null;
   const status = currentStatus ? statusMap[currentStatus] : null;
 
