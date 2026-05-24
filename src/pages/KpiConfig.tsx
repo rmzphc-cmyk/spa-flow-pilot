@@ -185,7 +185,7 @@ export default function KpiConfig() {
           }
           const m = String(r.Mois || "").trim();
           if (!m) return;
-          const wk = weeksInMonth(m);
+          const wk = weeksForMeetings(m, schedule.weekly_day);
           const weekly_targets: Record<string, number> = {};
           wk.forEach((w, i) => {
             const v = r[`S${i + 1}`];
