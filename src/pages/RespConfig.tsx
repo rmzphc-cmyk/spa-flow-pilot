@@ -135,7 +135,7 @@ const loadAssignments = (): Record<string, SpaAssignment[]> => {
   return initialSpaAssignments;
 };
 
-const spaList = [
+const ALL_SPAS = [
   { key: "spa-le-domaine", name: "Spa Le Domaine" },
   { key: "spa-riviera", name: "Spa Riviera" },
 ];
