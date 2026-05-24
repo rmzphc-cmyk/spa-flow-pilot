@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -6,6 +6,13 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
+import {
+  loadSchedule,
+  saveSchedule,
+  DAY_LABELS_FR,
+  WEEK_LABELS_FR,
+  type MeetingSchedule,
+} from "@/lib/meetingSchedule";
 
 interface UserSettingsData {
   language: "fr" | "en" | "es";
