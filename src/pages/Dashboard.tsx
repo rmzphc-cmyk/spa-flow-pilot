@@ -1,6 +1,19 @@
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, AlertTriangle, Sparkles, CheckCircle2, Target, Users, Eye } from "lucide-react";
+import { ArrowRight, AlertTriangle, Sparkles, CheckCircle2, Target, Users, Eye, Calendar, Plus } from "lucide-react";
+import {
+  loadSchedule,
+  nextWeeklyMeeting,
+  nextMonthlyMeeting,
+  daysUntil,
+  badgeColorForDays,
+} from "@/lib/meetingSchedule";
+
+// Mock map of existing draft reports per cycle type.
+const draftReportsByType: Record<"weekly" | "monthly", string | null> = {
+  weekly: null,
+  monthly: "r1",
+};
 
 // --- Mock Data ---
 
