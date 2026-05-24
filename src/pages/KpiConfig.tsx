@@ -23,29 +23,47 @@ import {
 } from "lucide-react";
 import {
   KpiConfigItem,
+  KpiCategory,
   loadKpiConfig,
   saveKpiConfig,
   monthKey,
   shiftMonth,
   monthLabel,
   weeksInMonth,
+  weeksForMeetings,
+  sortKpis,
   lastMonthlyTarget,
   lastWeeklyTarget,
 } from "@/lib/kpiConfig";
+import { useMeetingSchedule, DAY_LABELS_FR } from "@/lib/meetingSchedule";
+
+type CategoryFilter = "all" | KpiCategory;
 
 export default function KpiConfig() {
   const [items, setItems] = useState<KpiConfigItem[]>(() => loadKpiConfig());
   const [selectedMonth, setSelectedMonth] = useState<string>(() => monthKey(new Date()));
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [sourceModalOpen, setSourceModalOpen] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
   const fileRef = useRef<HTMLInputElement>(null);
+  const schedule = useMeetingSchedule();
 
-  const weeks = useMemo(() => weeksInMonth(selectedMonth), [selectedMonth]);
+  // Weeks displayed = ISO weeks that will host a weekly meeting in the selected month
+  const weeks = useMemo(
+    () => weeksForMeetings(selectedMonth, schedule.weekly_day),
+    [selectedMonth, schedule.weekly_day],
+  );
+
+  const visibleItems = useMemo(() => {
+    const sorted = sortKpis(items);
+    return categoryFilter === "all" ? sorted : sorted.filter((k) => k.category === categoryFilter);
+  }, [items, categoryFilter]);
 
   // Persist
   useEffect(() => {
     saveKpiConfig(items);
   }, [items]);
+
 
   // ----- mutations -----
 
