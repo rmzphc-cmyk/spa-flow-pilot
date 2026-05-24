@@ -18,6 +18,7 @@ import {
   type MeetingSchedule,
 } from "@/lib/meetingSchedule";
 import { monthKey, shiftMonth, monthLabel } from "@/lib/kpiConfig";
+import { getUserRole, getManagerSpa, hasMultiSpaAccess } from "@/lib/userRole";
 
 // --- Types ---
 
@@ -134,7 +135,7 @@ const loadAssignments = (): Record<string, SpaAssignment[]> => {
   return initialSpaAssignments;
 };
 
-const spaList = [
+const ALL_SPAS = [
   { key: "spa-le-domaine", name: "Spa Le Domaine" },
   { key: "spa-riviera", name: "Spa Riviera" },
 ];
@@ -168,7 +169,17 @@ const emptyTemplate = (): RespTemplate => ({
 // --- Main ---
 
 export default function RespConfig() {
-  const [tab, setTab] = useState<"templates" | "affectation" | "calendrier">("templates");
+  // Role-based scoping: spa managers are locked to their own spa,
+  // direction/admin get the multi-spa overview.
+  const role = getUserRole();
+  const canSeeAllSpas = hasMultiSpaAccess();
+  const managerSpa = getManagerSpa();
+  const spaList = canSeeAllSpas ? ALL_SPAS : ALL_SPAS.filter((s) => s.key === managerSpa.key);
+  const canEditTemplates = canSeeAllSpas; // Templates globaux = direction/admin only
+
+  const [tab, setTab] = useState<"templates" | "affectation" | "calendrier">(
+    canEditTemplates ? "templates" : "affectation"
+  );
   const [templates, setTemplates] = useState<RespTemplate[]>(() => loadTemplates());
   const [spaAssignments, setSpaAssignments] = useState<Record<string, SpaAssignment[]>>(() => loadAssignments());
   const [qualLabels, setQualLabels] = useState<QualitativeLabels>({ done: "Réalisé", partial: "Partiel", notDone: "Non réalisé" });
@@ -286,17 +297,19 @@ export default function RespConfig() {
       <header className="mb-6">
         <h1 className="text-xl font-bold text-foreground">Responsabilités managériales — Configuration</h1>
         <div className="flex items-center gap-1 mt-3">
-          {(["templates", "affectation", "calendrier"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                tab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
-              }`}
-            >
-              {t === "templates" ? "Templates globaux" : t === "affectation" ? "Affectation par spa" : "Calendrier des réunions"}
-            </button>
-          ))}
+          {(["templates", "affectation", "calendrier"] as const)
+            .filter((t) => (t === "templates" ? canEditTemplates : true))
+            .map((t) => (
+              <button
+                key={t}
+                onClick={() => setTab(t)}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  tab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
+                }`}
+              >
+                {t === "templates" ? "Templates globaux" : t === "affectation" ? "Affectation par spa" : "Calendrier des réunions"}
+              </button>
+            ))}
         </div>
       </header>
 
