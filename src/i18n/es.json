@@ -118,9 +118,9 @@
     "commentRequired": "Comentario requerido",
     "comment": {
       "placeholder": {
-        "green": "¿Alguna tendencia a destacar?",
-        "amber": "¿Qué explica la diferencia?",
-        "red": "¿Causa principal y acción prevista?"
+        "green": "Causa / impacto: ¿qué impulsó este resultado?",
+        "amber": "Causa / impacto de la diferencia (ej: ausencia, promo, clima)?",
+        "red": "Causa raíz + acción prevista (ej: 'Tratamientos -10%: ausencia Camille + cancelaciones por clima')?"
       }
     },
     "sparklineLabel": "Últimos 4 períodos",
