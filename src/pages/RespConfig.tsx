@@ -185,19 +185,48 @@ export default function RespConfig() {
   // Affectation helpers
   const currentAssignments = spaAssignments[selectedSpa] ?? [];
 
-  const toggleSpaAssignment = (templateId: string) => {
-    const updated = currentAssignments.map((a) =>
-      a.templateId === templateId ? { ...a, enabled: !a.enabled } : a
-    );
+  // Look up the last month < beforeMonth that has an explicit override on a given field
+  const lastMonthlyResp = <K extends keyof MonthlyOverride>(
+    a: SpaAssignment,
+    beforeMonth: string,
+    field: K,
+  ): { month: string; value: NonNullable<MonthlyOverride[K]> } | null => {
+    const months = Object.keys(a.monthly || {})
+      .filter((m) => m < beforeMonth)
+      .sort();
+    for (let i = months.length - 1; i >= 0; i--) {
+      const v = a.monthly[months[i]]?.[field];
+      if (v !== undefined) return { month: months[i], value: v as NonNullable<MonthlyOverride[K]> };
+    }
+    return null;
+  };
+
+  const setMonthlyOverride = (templateId: string, patch: MonthlyOverride) => {
+    const updated = currentAssignments.map((a) => {
+      if (a.templateId !== templateId) return a;
+      const current = { ...(a.monthly[selectedMonth] || {}) };
+      const next = { ...current, ...patch };
+      const monthly = { ...a.monthly };
+      if (Object.keys(next).length === 0) delete monthly[selectedMonth];
+      else monthly[selectedMonth] = next;
+      return { ...a, monthly };
+    });
     setSpaAssignments({ ...spaAssignments, [selectedSpa]: updated });
   };
 
-  const updateOverride = (templateId: string, qty: number | null) => {
-    const updated = currentAssignments.map((a) =>
-      a.templateId === templateId ? { ...a, overrideQty: qty } : a
-    );
+  const clearMonthOverride = (templateId: string, field: keyof MonthlyOverride) => {
+    const updated = currentAssignments.map((a) => {
+      if (a.templateId !== templateId) return a;
+      const current = { ...(a.monthly[selectedMonth] || {}) };
+      delete current[field];
+      const monthly = { ...a.monthly };
+      if (Object.keys(current).length === 0) delete monthly[selectedMonth];
+      else monthly[selectedMonth] = current;
+      return { ...a, monthly };
+    });
     setSpaAssignments({ ...spaAssignments, [selectedSpa]: updated });
   };
+
 
   return (
     <div className="max-w-[960px] mx-auto px-6 py-6 pb-20">
