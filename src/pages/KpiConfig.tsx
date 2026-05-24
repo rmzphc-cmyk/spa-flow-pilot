@@ -505,7 +505,7 @@ function KpiRow({
       </tr>
       {isOpen && (
         <tr className="border-t border-border bg-muted/30">
-          <td colSpan={5} className="py-3 px-4">
+          <td colSpan={6} className="py-3 px-4">
             <div className="flex flex-wrap gap-3">
               {weeks.map((w, i) => (
                 <WeekInput
