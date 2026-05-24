@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, Zap, CalendarClock } from "lucide-react";
+import { Plus, Pencil, Zap, CalendarClock, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   loadSchedule,
   saveSchedule,
@@ -17,6 +17,7 @@ import {
   WEEK_LABELS_FR,
   type MeetingSchedule,
 } from "@/lib/meetingSchedule";
+import { monthKey, shiftMonth, monthLabel } from "@/lib/kpiConfig";
 
 // --- Types ---
 
