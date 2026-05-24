@@ -18,6 +18,7 @@ import {
   type MeetingSchedule,
 } from "@/lib/meetingSchedule";
 import { monthKey, shiftMonth, monthLabel } from "@/lib/kpiConfig";
+import { getUserRole, getManagerSpa, hasMultiSpaAccess } from "@/lib/userRole";
 
 // --- Types ---
 
