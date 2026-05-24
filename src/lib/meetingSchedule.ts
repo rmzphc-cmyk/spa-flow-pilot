@@ -35,6 +35,9 @@ export function loadSchedule(): MeetingSchedule {
 
 export function saveSchedule(s: MeetingSchedule) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("meeting-schedule-changed"));
+  }
 }
 
 // Convert "0=Mon..6=Sun" to JS Date.getDay() "0=Sun..6=Sat"
