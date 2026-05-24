@@ -304,7 +304,7 @@ function UpcomingMeetingsCard() {
   const schedule = loadSchedule();
   const now = new Date();
   const weeklyDate = nextWeeklyMeeting(schedule.weekly_day, now);
-  const monthlyDate = nextMonthlyMeeting(schedule.monthly_week, schedule.monthly_day, now);
+  const monthlyDate = nextMonthlyMeeting(schedule, now);
 
   const meetings = [
     { type: "weekly" as const, date: weeklyDate, label: "🟢 Weekly", chip: "bg-emerald-100 text-emerald-800" },
