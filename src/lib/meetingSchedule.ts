@@ -1,16 +1,22 @@
 // Meeting schedule helpers.
 // Convention used in storage: 0 = Monday, 6 = Sunday.
 
+export type MonthlyMode = "weekday" | "date";
+
 export interface MeetingSchedule {
   weekly_day: number; // 0=Mon..6=Sun
-  monthly_week: number; // 1..4 or 5 (=Last)
-  monthly_day: number; // 0=Mon..6=Sun
+  monthly_mode: MonthlyMode; // "weekday" = nth weekday, "date" = exact day of month
+  monthly_week: number; // 1..4 or 5 (=Last) — used when monthly_mode === "weekday"
+  monthly_day: number; // 0=Mon..6=Sun — used when monthly_mode === "weekday"
+  monthly_date: number; // 1..31 (32 = last day of month) — used when monthly_mode === "date"
 }
 
 export const DEFAULT_SCHEDULE: MeetingSchedule = {
   weekly_day: 3, // Thursday
+  monthly_mode: "weekday",
   monthly_week: 1, // 1st
   monthly_day: 0, // Monday
+  monthly_date: 1,
 };
 
 const STORAGE_KEY = "meeting_schedule";
@@ -62,15 +68,24 @@ function occurrenceInMonth(year: number, month: number, week: number, day: numbe
   return new Date(year, month, dayNum);
 }
 
-export function nextMonthlyMeeting(
-  monthlyWeek: number,
-  monthlyDay: number,
-  from: Date = new Date(),
-): Date {
+function dateInMonth(year: number, month: number, dom: number): Date {
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  // 32 (or any value > lastDay) = last day of month
+  const day = dom >= 32 ? lastDay : Math.min(dom, lastDay);
+  return new Date(year, month, day);
+}
+
+export function nextMonthlyMeeting(schedule: MeetingSchedule, from: Date = new Date()): Date {
   const base = new Date(from.getFullYear(), from.getMonth(), from.getDate());
-  let d = occurrenceInMonth(base.getFullYear(), base.getMonth(), monthlyWeek, monthlyDay);
+  const resolve = (year: number, month: number): Date | null => {
+    if (schedule.monthly_mode === "date") {
+      return dateInMonth(year, month, schedule.monthly_date);
+    }
+    return occurrenceInMonth(year, month, schedule.monthly_week, schedule.monthly_day);
+  };
+  let d = resolve(base.getFullYear(), base.getMonth());
   if (!d || d <= base) {
-    d = occurrenceInMonth(base.getFullYear(), base.getMonth() + 1, monthlyWeek, monthlyDay)!;
+    d = resolve(base.getFullYear(), base.getMonth() + 1)!;
   }
   return d;
 }
@@ -90,3 +105,17 @@ export function badgeColorForDays(days: number): { bg: string; text: string } {
 
 export const DAY_LABELS_FR = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
 export const WEEK_LABELS_FR = ["1er", "2ème", "3ème", "4ème", "Dernier"];
+
+export function describeSchedule(s: MeetingSchedule): { weekly: string; monthly: string } {
+  const weekly = `Tous les ${DAY_LABELS_FR[s.weekly_day].toLowerCase()}s`;
+  let monthly: string;
+  if (s.monthly_mode === "date") {
+    monthly =
+      s.monthly_date >= 32
+        ? "Le dernier jour du mois"
+        : `Le ${s.monthly_date}${s.monthly_date === 1 ? "er" : ""} de chaque mois`;
+  } else {
+    monthly = `${WEEK_LABELS_FR[s.monthly_week - 1]} ${DAY_LABELS_FR[s.monthly_day].toLowerCase()} du mois`;
+  }
+  return { weekly, monthly };
+}
