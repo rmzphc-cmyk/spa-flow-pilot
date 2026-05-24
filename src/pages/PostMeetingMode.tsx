@@ -45,8 +45,8 @@ interface CapturedIssue {
 // --- Mock data ---
 
 const reportInfo: Record<string, { label: string; period: string; type: ReportType; spa: string }> = {
-  r1: { label: "Monthly — Mars 2026", period: "1 mars → 31 mars 2026", type: "monthly", spa: "Spa Le Domaine" },
-  r2: { label: "Weekly — Semaine 12", period: "18 → 24 mars 2026", type: "weekly", spa: "Spa Le Domaine" },
+  r1: { label: "Monthly — Mars 2026", period: "1 mars → 31 mars 2026", type: "monthly", spa: "Par Gran Canaria" },
+  r2: { label: "Weekly — Semaine 12", period: "18 → 24 mars 2026", type: "weekly", spa: "Par Gran Canaria" },
 };
 
 const mockCapturedIssues: CapturedIssue[] = [
