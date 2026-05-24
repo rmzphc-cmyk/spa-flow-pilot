@@ -213,7 +213,61 @@ export default function UserSettings() {
         </section>
       )}
 
+      {/* SECTION 3b — Calendrier des réunions (Manager only) */}
+      {isManager && (
+        <section className="mb-8">
+          <h2 className="text-base font-semibold text-foreground mb-3">Calendrier des réunions</h2>
+          <div className="bg-card border border-border rounded-xl p-4 shadow-sm space-y-4">
+            <div>
+              <Label className="text-sm font-medium">Réunion Weekly</Label>
+              <p className="text-[10px] text-muted-foreground mb-1.5">Jour de la semaine récurrent</p>
+              <Select
+                value={String(schedule.weekly_day)}
+                onValueChange={(v) => setSchedule({ ...schedule, weekly_day: Number(v) })}
+              >
+                <SelectTrigger className="w-[220px] h-9 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {DAY_LABELS_FR.map((d, i) => (
+                    <SelectItem key={i} value={String(i)}>Tous les {d.toLowerCase()}s</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-sm font-medium">Réunion Monthly</Label>
+              <p className="text-[10px] text-muted-foreground mb-1.5">Occurrence du mois + jour</p>
+              <div className="flex gap-2">
+                <Select
+                  value={String(schedule.monthly_week)}
+                  onValueChange={(v) => setSchedule({ ...schedule, monthly_week: Number(v) })}
+                >
+                  <SelectTrigger className="w-[140px] h-9 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {WEEK_LABELS_FR.map((w, i) => (
+                      <SelectItem key={i} value={String(i + 1)}>{w}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <Select
+                  value={String(schedule.monthly_day)}
+                  onValueChange={(v) => setSchedule({ ...schedule, monthly_day: Number(v) })}
+                >
+                  <SelectTrigger className="w-[160px] h-9 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {DAY_LABELS_FR.map((d, i) => (
+                      <SelectItem key={i} value={String(i)}>{d}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <span className="text-sm text-muted-foreground self-center">du mois</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* SECTION 4 — Compte */}
+
       <section className="mb-8">
         <h2 className="text-base font-semibold text-foreground mb-3">{t("settings.account.title")}</h2>
         <div className="bg-card border border-border rounded-xl p-4 shadow-sm space-y-4">
