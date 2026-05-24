@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,7 +8,15 @@ import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, Zap } from "lucide-react";
+import { Plus, Pencil, Zap, CalendarClock } from "lucide-react";
+import {
+  loadSchedule,
+  saveSchedule,
+  describeSchedule,
+  DAY_LABELS_FR,
+  WEEK_LABELS_FR,
+  type MeetingSchedule,
+} from "@/lib/meetingSchedule";
 
 // --- Types ---
 
@@ -105,10 +113,15 @@ const emptyTemplate = (): RespTemplate => ({
 // --- Main ---
 
 export default function RespConfig() {
-  const [tab, setTab] = useState<"templates" | "affectation">("templates");
+  const [tab, setTab] = useState<"templates" | "affectation" | "calendrier">("templates");
   const [templates, setTemplates] = useState(initialTemplates);
   const [spaAssignments, setSpaAssignments] = useState(initialSpaAssignments);
   const [qualLabels, setQualLabels] = useState<QualitativeLabels>({ done: "Réalisé", partial: "Partiel", notDone: "Non réalisé" });
+
+  // Meeting schedule (recurrence for Weekly + Monthly meetings)
+  const [schedule, setSchedule] = useState<MeetingSchedule>(() => loadSchedule());
+  useEffect(() => { saveSchedule(schedule); }, [schedule]);
+  const scheduleDesc = describeSchedule(schedule);
 
   // Template form
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -184,7 +197,7 @@ export default function RespConfig() {
       <header className="mb-6">
         <h1 className="text-xl font-bold text-foreground">Responsabilités managériales — Configuration</h1>
         <div className="flex items-center gap-1 mt-3">
-          {(["templates", "affectation"] as const).map((t) => (
+          {(["templates", "affectation", "calendrier"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -192,7 +205,7 @@ export default function RespConfig() {
                 tab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
               }`}
             >
-              {t === "templates" ? "Templates globaux" : "Affectation par spa"}
+              {t === "templates" ? "Templates globaux" : t === "affectation" ? "Affectation par spa" : "Calendrier des réunions"}
             </button>
           ))}
         </div>
@@ -373,6 +386,120 @@ export default function RespConfig() {
             </table>
           </div>
         </>
+      )}
+
+      {/* TAB 3 — Calendrier des réunions */}
+      {tab === "calendrier" && (
+        <section>
+          <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-6">
+            <div className="flex items-start gap-2 text-sm text-muted-foreground">
+              <CalendarClock className="h-4 w-4 mt-0.5 text-primary" />
+              <p>
+                Définissez la récurrence des réunions Weekly et Monthly. Le dashboard utilise ces réglages
+                pour afficher la prochaine réunion et envoyer les rappels.
+              </p>
+            </div>
+
+            {/* Weekly */}
+            <div className="border-t border-border pt-5">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">🟢 Weekly</span>
+                <span className="text-sm text-muted-foreground">{scheduleDesc.weekly}</span>
+              </div>
+              <Label className="text-sm font-medium">Jour de la semaine récurrent</Label>
+              <p className="text-[10px] text-muted-foreground mb-1.5">Ex : tous les jeudis</p>
+              <Select
+                value={String(schedule.weekly_day)}
+                onValueChange={(v) => setSchedule({ ...schedule, weekly_day: Number(v) })}
+              >
+                <SelectTrigger className="w-[260px] h-9 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {DAY_LABELS_FR.map((d, i) => (
+                    <SelectItem key={i} value={String(i)}>Tous les {d.toLowerCase()}s</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Monthly */}
+            <div className="border-t border-border pt-5">
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">🔵 Monthly</span>
+                <span className="text-sm text-muted-foreground">{scheduleDesc.monthly}</span>
+              </div>
+
+              <Label className="text-sm font-medium">Type de récurrence</Label>
+              <div className="flex gap-2 mt-1.5 mb-4">
+                {([
+                  { v: "weekday", label: "X-ième jour du mois (ex : 1er lundi)" },
+                  { v: "date", label: "Date exacte (ex : le 15)" },
+                ] as const).map((o) => (
+                  <button
+                    key={o.v}
+                    onClick={() => setSchedule({ ...schedule, monthly_mode: o.v })}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                      schedule.monthly_mode === o.v
+                        ? "bg-primary/10 text-primary border-primary/30"
+                        : "bg-card text-muted-foreground border-border hover:bg-muted"
+                    }`}
+                  >
+                    {o.label}
+                  </button>
+                ))}
+              </div>
+
+              {schedule.monthly_mode === "weekday" ? (
+                <div className="flex gap-2 items-end">
+                  <div>
+                    <Label className="text-xs">Occurrence</Label>
+                    <Select
+                      value={String(schedule.monthly_week)}
+                      onValueChange={(v) => setSchedule({ ...schedule, monthly_week: Number(v) })}
+                    >
+                      <SelectTrigger className="w-[140px] h-9 text-sm mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {WEEK_LABELS_FR.map((w, i) => (
+                          <SelectItem key={i} value={String(i + 1)}>{w}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs">Jour</Label>
+                    <Select
+                      value={String(schedule.monthly_day)}
+                      onValueChange={(v) => setSchedule({ ...schedule, monthly_day: Number(v) })}
+                    >
+                      <SelectTrigger className="w-[160px] h-9 text-sm mt-1"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {DAY_LABELS_FR.map((d, i) => (
+                          <SelectItem key={i} value={String(i)}>{d}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <span className="text-sm text-muted-foreground pb-2">du mois</span>
+                </div>
+              ) : (
+                <div>
+                  <Label className="text-xs">Jour du mois (1 – 31, ou « Dernier »)</Label>
+                  <Select
+                    value={String(schedule.monthly_date)}
+                    onValueChange={(v) => setSchedule({ ...schedule, monthly_date: Number(v) })}
+                  >
+                    <SelectTrigger className="w-[180px] h-9 text-sm mt-1"><SelectValue /></SelectTrigger>
+                    <SelectContent className="max-h-72">
+                      {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
+                        <SelectItem key={d} value={String(d)}>Le {d}</SelectItem>
+                      ))}
+                      <SelectItem value="32">Dernier jour du mois</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </div>
+          </div>
+        </section>
       )}
 
       {/* Slideover Form */}
