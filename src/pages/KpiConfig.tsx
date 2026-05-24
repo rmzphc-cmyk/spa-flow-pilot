@@ -11,6 +11,13 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
@@ -472,12 +479,22 @@ function KpiRow({
           )}
         </td>
         <td className="py-2 px-4">
-          <Input
+          <Select
             value={kpi.unit}
-            onChange={(e) => onUpdateMeta("unit", e.target.value)}
-            onBlur={onSaved}
-            className="h-8 text-sm w-20"
-          />
+            onValueChange={(v) => {
+              onUpdateMeta("unit", v);
+              onSaved();
+            }}
+          >
+            <SelectTrigger className="h-8 text-sm w-24">
+              <SelectValue placeholder="—" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="€">€</SelectItem>
+              <SelectItem value="%">%</SelectItem>
+              <SelectItem value="nb">nb</SelectItem>
+            </SelectContent>
+          </Select>
         </td>
         <td className="py-2 px-4">
           <button
