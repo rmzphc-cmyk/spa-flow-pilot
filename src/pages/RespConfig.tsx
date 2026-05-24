@@ -69,20 +69,20 @@ const initialTemplates: RespTemplate[] = [
 
 const initialSpaAssignments: Record<string, SpaAssignment[]> = {
   "spa-le-domaine": [
-    { templateId: "t1", enabled: true, overrideQty: null },
-    { templateId: "t2", enabled: true, overrideQty: 2 },
-    { templateId: "t3", enabled: true, overrideQty: null },
-    { templateId: "t4", enabled: true, overrideQty: null },
-    { templateId: "t5", enabled: true, overrideQty: null },
-    { templateId: "t6", enabled: false, overrideQty: null },
+    { templateId: "t1", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "t2", enabled: true, overrideQty: 2, monthly: {} },
+    { templateId: "t3", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "t4", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "t5", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "t6", enabled: false, overrideQty: null, monthly: {} },
   ],
   "spa-riviera": [
-    { templateId: "t1", enabled: true, overrideQty: null },
-    { templateId: "t2", enabled: true, overrideQty: null },
-    { templateId: "t3", enabled: false, overrideQty: null },
-    { templateId: "t4", enabled: true, overrideQty: 2 },
-    { templateId: "t5", enabled: true, overrideQty: null },
-    { templateId: "t6", enabled: true, overrideQty: null },
+    { templateId: "t1", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "t2", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "t3", enabled: false, overrideQty: null, monthly: {} },
+    { templateId: "t4", enabled: true, overrideQty: 2, monthly: {} },
+    { templateId: "t5", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "t6", enabled: true, overrideQty: null, monthly: {} },
   ],
 };
 
