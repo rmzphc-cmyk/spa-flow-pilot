@@ -160,6 +160,7 @@ export default function KpiConfig() {
               id: `k${Date.now()}-${byName.size}`,
               name,
               unit: String(r["Unité"] || ""),
+              category: (String(r["Catégorie"] || "spa").toLowerCase() === "manager" ? "manager" : "spa"),
               monthly_targets: {},
             };
             byName.set(name, item);
