@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -8,7 +8,15 @@ import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, Zap } from "lucide-react";
+import { Plus, Pencil, Zap, CalendarClock } from "lucide-react";
+import {
+  loadSchedule,
+  saveSchedule,
+  describeSchedule,
+  DAY_LABELS_FR,
+  WEEK_LABELS_FR,
+  type MeetingSchedule,
+} from "@/lib/meetingSchedule";
 
 // --- Types ---
 
