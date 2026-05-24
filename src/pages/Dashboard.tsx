@@ -299,12 +299,66 @@ function RecentActivity() {
   );
 }
 
+function UpcomingMeetingsCard() {
+  const navigate = useNavigate();
+  const schedule = loadSchedule();
+  const now = new Date();
+  const weeklyDate = nextWeeklyMeeting(schedule.weekly_day, now);
+  const monthlyDate = nextMonthlyMeeting(schedule.monthly_week, schedule.monthly_day, now);
+
+  const meetings = [
+    { type: "weekly" as const, date: weeklyDate, label: "🟢 Weekly", chip: "bg-emerald-100 text-emerald-800" },
+    { type: "monthly" as const, date: monthlyDate, label: "🔵 Monthly", chip: "bg-blue-100 text-blue-800" },
+  ];
+
+  const fmt = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+      {meetings.map((m) => {
+        const days = daysUntil(m.date, now);
+        const badge = badgeColorForDays(days);
+        const draftId = draftReportsByType[m.type];
+        const daysLabel = days === 0 ? "Aujourd'hui" : days === 1 ? "Demain" : `Dans ${days} jours`;
+        return (
+          <div key={m.type} className="bg-card rounded-xl shadow-sm border border-border p-5">
+            <div className="flex items-center justify-between mb-3">
+              <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${m.chip}`}>
+                {m.label}
+              </span>
+              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${badge.bg} ${badge.text}`}>
+                {daysLabel}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 text-sm text-foreground mb-4">
+              <Calendar className="h-4 w-4 text-muted-foreground" />
+              <span className="capitalize">{fmt.format(m.date)}</span>
+            </div>
+            {draftId ? (
+              <Button onClick={() => navigate(`/rapport/${draftId}`)} className="w-full gap-2" size="sm">
+                <ArrowRight className="h-4 w-4" />
+                Continuer la préparation
+              </Button>
+            ) : (
+              <Button onClick={() => navigate("/rapports")} variant="outline" className="w-full gap-2" size="sm">
+                <Plus className="h-4 w-4" />
+                Créer le rapport
+              </Button>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 // --- Main Dashboard ---
 
 export default function Dashboard() {
   return (
     <>
       <h1 className="text-2xl font-bold text-foreground mb-6">Dashboard</h1>
+      <UpcomingMeetingsCard />
       <OverdueAlert todos={overdueTodos} />
       <CurrentReportCard report={currentReport} />
       <AiBriefCard />
@@ -313,3 +367,4 @@ export default function Dashboard() {
     </>
   );
 }
+
