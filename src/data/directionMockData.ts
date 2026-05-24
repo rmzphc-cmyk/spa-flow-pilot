@@ -70,7 +70,7 @@ export interface SpaDetail {
 export const spas: SpaOverview[] = [
   {
     id: "spa1",
-    name: "Spa Le Domaine",
+    name: "Par Gran Canaria",
     manager: "Marie Dupont",
     report: "Monthly — Mars 2026",
     status: "draft_preparation",
@@ -81,7 +81,7 @@ export const spas: SpaOverview[] = [
   },
   {
     id: "spa2",
-    name: "Spa Lumière",
+    name: "Par Lanzarote",
     manager: "Thomas Martin",
     report: "Monthly — Mars 2026",
     status: "in_meeting",
@@ -95,7 +95,7 @@ export const spas: SpaOverview[] = [
   },
   {
     id: "spa3",
-    name: "Spa Éden",
+    name: "Par Fuerte",
     manager: "Sophie Bernard",
     report: "Monthly — Mars 2026",
     status: "validated",
@@ -109,7 +109,7 @@ export const spas: SpaOverview[] = [
 export const spaDetails: Record<string, SpaDetail> = {
   spa1: {
     id: "spa1",
-    name: "Spa Le Domaine",
+    name: "Par Gran Canaria",
     manager: "Marie Dupont",
     managerRole: "Spa Manager",
     currentReport: {
@@ -157,7 +157,7 @@ export const spaDetails: Record<string, SpaDetail> = {
   },
   spa2: {
     id: "spa2",
-    name: "Spa Lumière",
+    name: "Par Lanzarote",
     manager: "Thomas Martin",
     managerRole: "Spa Manager",
     currentReport: {
@@ -208,7 +208,7 @@ export const spaDetails: Record<string, SpaDetail> = {
   },
   spa3: {
     id: "spa3",
-    name: "Spa Éden",
+    name: "Par Fuerte",
     manager: "Sophie Bernard",
     managerRole: "Spa Manager",
     currentReport: {
