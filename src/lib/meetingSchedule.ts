@@ -122,3 +122,19 @@ export function describeSchedule(s: MeetingSchedule): { weekly: string; monthly:
   }
   return { weekly, monthly };
 }
+
+import { useEffect, useState } from "react";
+
+export function useMeetingSchedule(): MeetingSchedule {
+  const [schedule, setSchedule] = useState<MeetingSchedule>(() => loadSchedule());
+  useEffect(() => {
+    const refresh = () => setSchedule(loadSchedule());
+    window.addEventListener("storage", refresh);
+    window.addEventListener("meeting-schedule-changed", refresh);
+    return () => {
+      window.removeEventListener("storage", refresh);
+      window.removeEventListener("meeting-schedule-changed", refresh);
+    };
+  }, []);
+  return schedule;
+}
