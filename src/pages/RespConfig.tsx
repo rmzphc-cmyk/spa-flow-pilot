@@ -197,7 +197,7 @@ export default function RespConfig() {
       <header className="mb-6">
         <h1 className="text-xl font-bold text-foreground">Responsabilités managériales — Configuration</h1>
         <div className="flex items-center gap-1 mt-3">
-          {(["templates", "affectation"] as const).map((t) => (
+          {(["templates", "affectation", "calendrier"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -205,7 +205,7 @@ export default function RespConfig() {
                 tab === t ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-muted"
               }`}
             >
-              {t === "templates" ? "Templates globaux" : "Affectation par spa"}
+              {t === "templates" ? "Templates globaux" : t === "affectation" ? "Affectation par spa" : "Calendrier des réunions"}
             </button>
           ))}
         </div>
