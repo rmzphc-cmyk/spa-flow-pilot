@@ -169,9 +169,13 @@ const emptyTemplate = (): RespTemplate => ({
 
 export default function RespConfig() {
   const [tab, setTab] = useState<"templates" | "affectation" | "calendrier">("templates");
-  const [templates, setTemplates] = useState(initialTemplates);
-  const [spaAssignments, setSpaAssignments] = useState(initialSpaAssignments);
+  const [templates, setTemplates] = useState<RespTemplate[]>(() => loadTemplates());
+  const [spaAssignments, setSpaAssignments] = useState<Record<string, SpaAssignment[]>>(() => loadAssignments());
   const [qualLabels, setQualLabels] = useState<QualitativeLabels>({ done: "Réalisé", partial: "Partiel", notDone: "Non réalisé" });
+
+  // Persist templates & assignments
+  useEffect(() => { localStorage.setItem(RESP_TEMPLATES_KEY, JSON.stringify(templates)); }, [templates]);
+  useEffect(() => { localStorage.setItem(RESP_ASSIGNMENTS_KEY, JSON.stringify(spaAssignments)); }, [spaAssignments]);
 
   // Meeting schedule (recurrence for Weekly + Monthly meetings)
   const [schedule, setSchedule] = useState<MeetingSchedule>(() => loadSchedule());
