@@ -118,9 +118,9 @@
     "commentRequired": "Comment required",
     "comment": {
       "placeholder": {
-        "green": "Any trend to note?",
-        "amber": "What explains the gap?",
-        "red": "Root cause and planned action?"
+        "green": "Cause / impact: what drove this result?",
+        "amber": "Cause / impact of the gap (e.g. absence, promo, weather)?",
+        "red": "Root cause + planned action (e.g. 'Treatments -10%: Camille off + weather cancellations')?"
       }
     },
     "sparklineLabel": "Last 4 periods",

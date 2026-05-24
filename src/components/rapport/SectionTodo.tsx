@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { AlertTriangle, Plus, Check, Clock, ArrowRight } from "lucide-react";
+import { AlertTriangle, Plus, Check, Clock, History, MessageSquare } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -24,12 +24,22 @@ interface Todo {
   responsible: string;
   deadline: string;
   priority: "critical" | "high" | "normal";
-  status: "pending" | "done";
+  status: "pending" | "done" | "postponed";
   overdueDays?: number;
-  source?: "ids" | "ia";
+  source?: "ids" | "ia" | "previous";
+  /** Cycle d'origine pour les actions héritées (ex: "Février 2026") */
+  originCycle?: string;
+  /** Commentaire de suivi (Retours positifs / Repoussé pour congé / ...) */
+  followUp?: string;
 }
 
 const mockTodos: Todo[] = [
+  // ── Héritées du cycle précédent (méthode EOS) ──
+  { id: "p1", title: "Former Maria sur la gestion cabine humidité", responsible: "Sophie M.", deadline: "20 mars", priority: "high", status: "pending", overdueDays: 5, source: "previous", originCycle: "Février 2026", followUp: "Retardé : Maria en formation produit la semaine dernière" },
+  { id: "p2", title: "Mettre en place protocole rebooking +30j", responsible: "Marie D.", deadline: "25 mars", priority: "normal", status: "pending", source: "previous", originCycle: "Février 2026" },
+  { id: "p3", title: "Audit fournisseur Phytomer (retards livraisons)", responsible: "Marie D.", deadline: "15 mars", priority: "high", status: "done", source: "previous", originCycle: "Février 2026", followUp: "Fait — nouveau délai contractuel de 5j obtenu" },
+
+  // ── Actions du cycle en cours ──
   { id: "t1", title: "Finaliser planning cabines semaine 13", responsible: "Sophie M.", deadline: "22 mars", priority: "critical", status: "pending", overdueDays: 3 },
   { id: "t2", title: "Commander stocks produits soins visage", responsible: "Marie D.", deadline: "23 mars", priority: "high", status: "pending", overdueDays: 2 },
   { id: "t3", title: "Entretien annuel — Sophie M.", responsible: "Marie D.", deadline: "24 mars", priority: "normal", status: "pending", overdueDays: 1 },
@@ -48,6 +58,7 @@ const priorityIcons: Record<string, string> = {
 const sourceStyles: Record<string, { label: string; classes: string }> = {
   ids: { label: "IDS", classes: "bg-violet-100 text-violet-800" },
   ia: { label: "IA", classes: "bg-accent text-accent-foreground" },
+  previous: { label: "Cycle N-1", classes: "bg-blue-100 text-blue-800" },
 };
 
 export function SectionTodo() {
@@ -59,16 +70,33 @@ export function SectionTodo() {
   const [newPriority, setNewPriority] = useState("normal");
   const [reportComment, setReportComment] = useState("");
   const [reportingId, setReportingId] = useState<string | null>(null);
+  const [editingFollowUp, setEditingFollowUp] = useState<string | null>(null);
+  const [followUpDraft, setFollowUpDraft] = useState("");
 
-  const overdue = todos.filter((t) => t.overdueDays && t.overdueDays > 0 && t.status !== "done");
-  const active = todos
+  // ── Héritées du cycle précédent ──
+  const inherited = todos.filter((t) => t.source === "previous");
+  const inheritedPending = inherited.filter((t) => t.status !== "done");
+  const inheritedDoneCount = inherited.filter((t) => t.status === "done").length;
+  const inheritedMissingFollowUp = inheritedPending.filter((t) => !t.followUp?.trim()).length;
+
+  // ── Cycle en cours ──
+  const current = todos.filter((t) => t.source !== "previous");
+  const overdue = current.filter((t) => t.overdueDays && t.overdueDays > 0 && t.status !== "done");
+  const active = current
     .filter((t) => !t.overdueDays && t.status !== "done")
     .sort((a, b) => {
       const prio = { critical: 0, high: 1, normal: 2 };
       return prio[a.priority] - prio[b.priority];
     });
 
-  const markDone = (id: string) => setTodos((p) => p.map((t) => (t.id === id ? { ...t, status: "done" as const, overdueDays: undefined } : t)));
+  const markDone = (id: string) =>
+    setTodos((p) => p.map((t) => (t.id === id ? { ...t, status: "done" as const, overdueDays: undefined } : t)));
+
+  const saveFollowUp = (id: string) => {
+    setTodos((p) => p.map((t) => (t.id === id ? { ...t, followUp: followUpDraft } : t)));
+    setEditingFollowUp(null);
+    setFollowUpDraft("");
+  };
 
   const handleCreate = () => {
     if (!newTitle.trim()) return;
@@ -129,7 +157,83 @@ export function SectionTodo() {
         </Dialog>
       </div>
 
-      {/* Overdue block */}
+      {/* ═══════ HÉRITÉES DU CYCLE PRÉCÉDENT (méthode EOS) ═══════ */}
+      {inherited.length > 0 && (
+        <div className="rounded-xl p-4 mb-4 border border-blue-200 bg-blue-50/50">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-sm font-bold text-blue-900 flex items-center gap-2">
+              <History className="h-4 w-4" />
+              Héritées du cycle précédent
+              <span className="font-normal text-blue-700">
+                — {inherited[0].originCycle} · {inheritedPending.length} en cours, {inheritedDoneCount} terminée{inheritedDoneCount > 1 ? "s" : ""}
+              </span>
+            </h3>
+            {inheritedMissingFollowUp > 0 && (
+              <span className="text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                {inheritedMissingFollowUp} commentaire{inheritedMissingFollowUp > 1 ? "s" : ""} de suivi manquant{inheritedMissingFollowUp > 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
+          <p className="text-xs text-blue-800/80 mb-3 italic">
+            Chaque action décidée doit avoir une trace. Commentez l'avancement pour la Direction.
+          </p>
+          <div className="space-y-2">
+            {inherited.map((t) => (
+              <div key={t.id} className="bg-card border border-blue-100 rounded-lg p-3">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <span className={`text-sm font-medium ${t.status === "done" ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                      {t.title}
+                    </span>
+                    <span className="text-xs text-muted-foreground">{t.responsible}</span>
+                    <span className="text-xs text-muted-foreground">· {t.deadline}</span>
+                    {t.status === "done" && (
+                      <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Fait</span>
+                    )}
+                    {t.overdueDays && t.status !== "done" && (
+                      <span className="text-xs font-medium text-destructive">RETARD +{t.overdueDays}j</span>
+                    )}
+                  </div>
+                  {t.status !== "done" && (
+                    <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => markDone(t.id)}>
+                      <Check className="h-3 w-3" /> Fait
+                    </Button>
+                  )}
+                </div>
+
+                {/* Commentaire de suivi (obligatoire pour la Direction) */}
+                {editingFollowUp === t.id ? (
+                  <div className="mt-2 flex gap-2">
+                    <Input
+                      autoFocus
+                      placeholder="Ex: Retours positifs / Repoussé pour congé / Fait avec ajustement…"
+                      value={followUpDraft}
+                      onChange={(e) => setFollowUpDraft(e.target.value)}
+                      className="text-sm h-8"
+                      onKeyDown={(e) => { if (e.key === "Enter") saveFollowUp(t.id); }}
+                    />
+                    <Button size="sm" className="h-8" onClick={() => saveFollowUp(t.id)}>OK</Button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => { setEditingFollowUp(t.id); setFollowUpDraft(t.followUp || ""); }}
+                    className={`mt-2 w-full text-left text-xs flex items-start gap-1.5 px-2 py-1.5 rounded transition-colors ${
+                      t.followUp
+                        ? "text-foreground bg-muted/50 hover:bg-muted"
+                        : "text-amber-700 bg-amber-50 hover:bg-amber-100 italic"
+                    }`}
+                  >
+                    <MessageSquare className="h-3 w-3 mt-0.5 shrink-0" />
+                    <span className="flex-1">{t.followUp || "Ajouter un commentaire de suivi…"}</span>
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Overdue block (cycle en cours) */}
       {overdue.length > 0 && (
         <div className="rounded-xl p-4 mb-4 border-l-4 border-l-destructive" style={{ backgroundColor: "#FFF5F5" }}>
           <h3 className="text-sm font-bold text-destructive flex items-center gap-2 mb-3">
@@ -180,7 +284,7 @@ export function SectionTodo() {
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <span className="text-sm font-medium text-foreground">{t.title}</span>
-                {t.source && (
+                {t.source && sourceStyles[t.source] && (
                   <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${sourceStyles[t.source].classes}`}>
                     {sourceStyles[t.source].label}
                   </span>
@@ -197,9 +301,9 @@ export function SectionTodo() {
       </div>
 
       {/* Done count */}
-      {todos.filter((t) => t.status === "done").length > 0 && (
+      {current.filter((t) => t.status === "done").length > 0 && (
         <p className="text-xs text-muted-foreground mt-3">
-          {todos.filter((t) => t.status === "done").length} action{todos.filter((t) => t.status === "done").length > 1 ? "s" : ""} terminée{todos.filter((t) => t.status === "done").length > 1 ? "s" : ""}
+          {current.filter((t) => t.status === "done").length} action{current.filter((t) => t.status === "done").length > 1 ? "s" : ""} terminée{current.filter((t) => t.status === "done").length > 1 ? "s" : ""} ce cycle
         </p>
       )}
     </section>

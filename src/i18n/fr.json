@@ -118,9 +118,9 @@
     "commentRequired": "Commentaire requis",
     "comment": {
       "placeholder": {
-        "green": "Une tendance à noter ?",
-        "amber": "Qu'est-ce qui explique l'écart ?",
-        "red": "Cause principale et action envisagée ?"
+        "green": "Cause / conséquence : qu'est-ce qui a porté ce résultat ?",
+        "amber": "Cause / conséquence de l'écart (ex: absence, opération, météo…) ?",
+        "red": "Cause racine + action envisagée (ex: « CA soins -10% : absence Camille + annulations intempéries ») ?"
       }
     },
     "sparklineLabel": "Historique 4 périodes",

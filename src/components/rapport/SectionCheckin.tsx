@@ -21,6 +21,14 @@ function getSliderColor(value: number) {
   return "text-destructive";
 }
 
+function getWeatherEmoji(value: number) {
+  if (value >= 8) return "🌞";
+  if (value >= 6) return "⛅";
+  if (value >= 4) return "☁️";
+  if (value >= 2) return "🌧️";
+  return "❄️";
+}
+
 function SliderField({
   label,
   sublabel,
@@ -57,6 +65,9 @@ function SliderField({
           onValueChange={([v]) => onChange(v)}
           className="flex-1"
         />
+        <span className="text-2xl w-8 text-center" aria-hidden>
+          {value > 0 ? getWeatherEmoji(value) : "—"}
+        </span>
         <span className={`text-2xl font-bold w-10 text-center ${color}`}>
           {value || "—"}
         </span>
