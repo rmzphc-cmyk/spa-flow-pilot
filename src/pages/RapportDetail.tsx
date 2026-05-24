@@ -74,7 +74,7 @@ export default function RapportDetail() {
       />
 
       {activeSection === "kpi" && (
-        <SectionKpi reportType={report.type} onStatusChange={(s) => updateSectionStatus("kpi", s)} />
+        <SectionKpi reportType={report.type} period={report.period} onStatusChange={(s) => updateSectionStatus("kpi", s)} />
       )}
       {activeSection === "checkin" && !isWeekly && (
         <SectionCheckin onStatusChange={(s) => updateSectionStatus("checkin", s)} />
