@@ -77,6 +77,12 @@ export default function UserSettings() {
 
   const isManager = settings.account.role === "manager";
 
+  const [schedule, setSchedule] = useState<MeetingSchedule>(() => loadSchedule());
+  useEffect(() => {
+    saveSchedule(schedule);
+  }, [schedule]);
+
+
   const update = <K extends keyof UserSettingsData>(section: K, value: UserSettingsData[K]) => {
     setSettings({ ...settings, [section]: value });
   };
