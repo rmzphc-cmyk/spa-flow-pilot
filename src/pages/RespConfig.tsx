@@ -113,10 +113,15 @@ const emptyTemplate = (): RespTemplate => ({
 // --- Main ---
 
 export default function RespConfig() {
-  const [tab, setTab] = useState<"templates" | "affectation">("templates");
+  const [tab, setTab] = useState<"templates" | "affectation" | "calendrier">("templates");
   const [templates, setTemplates] = useState(initialTemplates);
   const [spaAssignments, setSpaAssignments] = useState(initialSpaAssignments);
   const [qualLabels, setQualLabels] = useState<QualitativeLabels>({ done: "Réalisé", partial: "Partiel", notDone: "Non réalisé" });
+
+  // Meeting schedule (recurrence for Weekly + Monthly meetings)
+  const [schedule, setSchedule] = useState<MeetingSchedule>(() => loadSchedule());
+  useEffect(() => { saveSchedule(schedule); }, [schedule]);
+  const scheduleDesc = describeSchedule(schedule);
 
   // Template form
   const [sheetOpen, setSheetOpen] = useState(false);
