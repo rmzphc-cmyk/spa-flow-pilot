@@ -23,29 +23,47 @@ import {
 } from "lucide-react";
 import {
   KpiConfigItem,
+  KpiCategory,
   loadKpiConfig,
   saveKpiConfig,
   monthKey,
   shiftMonth,
   monthLabel,
   weeksInMonth,
+  weeksForMeetings,
+  sortKpis,
   lastMonthlyTarget,
   lastWeeklyTarget,
 } from "@/lib/kpiConfig";
+import { useMeetingSchedule, DAY_LABELS_FR } from "@/lib/meetingSchedule";
+
+type CategoryFilter = "all" | KpiCategory;
 
 export default function KpiConfig() {
   const [items, setItems] = useState<KpiConfigItem[]>(() => loadKpiConfig());
   const [selectedMonth, setSelectedMonth] = useState<string>(() => monthKey(new Date()));
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [sourceModalOpen, setSourceModalOpen] = useState(false);
+  const [categoryFilter, setCategoryFilter] = useState<CategoryFilter>("all");
   const fileRef = useRef<HTMLInputElement>(null);
+  const schedule = useMeetingSchedule();
 
-  const weeks = useMemo(() => weeksInMonth(selectedMonth), [selectedMonth]);
+  // Weeks displayed = ISO weeks that will host a weekly meeting in the selected month
+  const weeks = useMemo(
+    () => weeksForMeetings(selectedMonth, schedule.weekly_day),
+    [selectedMonth, schedule.weekly_day],
+  );
+
+  const visibleItems = useMemo(() => {
+    const sorted = sortKpis(items);
+    return categoryFilter === "all" ? sorted : sorted.filter((k) => k.category === categoryFilter);
+  }, [items, categoryFilter]);
 
   // Persist
   useEffect(() => {
     saveKpiConfig(items);
   }, [items]);
+
 
   // ----- mutations -----
 
@@ -98,9 +116,9 @@ export default function KpiConfig() {
     toast.success("KPI supprimé");
   };
 
-  const handleAdd = () => {
+  const handleAdd = (category: "spa" | "manager" = "spa") => {
     const id = `k${Date.now()}`;
-    setItems((prev) => [...prev, { id, name: "Nouveau KPI", unit: "", monthly_targets: {} }]);
+    setItems((prev) => [...prev, { id, name: "Nouveau KPI", unit: "", category, monthly_targets: {} }]);
     setExpanded((p) => ({ ...p, [id]: false }));
   };
 
@@ -108,20 +126,25 @@ export default function KpiConfig() {
     setItems((prev) => prev.map((k) => (k.id === id ? { ...k, [field]: value } : k)));
   };
 
+  const updateCategory = (id: string, category: "spa" | "manager") => {
+    setItems((prev) => prev.map((k) => (k.id === id ? { ...k, category } : k)));
+  };
+
+
   // ----- export / import -----
 
   const handleExport = () => {
     const rows: any[] = [];
-    items.forEach((k) => {
+    sortKpis(items).forEach((k) => {
       const months = Object.keys(k.monthly_targets).sort();
       if (months.length === 0) {
-        rows.push({ KPI: k.name, Unité: k.unit, Mois: "", "Objectif Mensuel": "" });
+        rows.push({ KPI: k.name, Catégorie: k.category, Unité: k.unit, Mois: "", "Objectif Mensuel": "" });
         return;
       }
       months.forEach((m) => {
         const mt = k.monthly_targets[m];
-        const wk = weeksInMonth(m);
-        const row: any = { KPI: k.name, Unité: k.unit, Mois: m, "Objectif Mensuel": mt.target };
+        const wk = weeksForMeetings(m, schedule.weekly_day);
+        const row: any = { KPI: k.name, Catégorie: k.category, Unité: k.unit, Mois: m, "Objectif Mensuel": mt.target };
         wk.forEach((w, i) => {
           row[`S${i + 1}`] = mt.weekly_targets[w] ?? "";
         });
@@ -129,7 +152,7 @@ export default function KpiConfig() {
       });
     });
     const ws = XLSX.utils.json_to_sheet(rows, {
-      header: ["KPI", "Unité", "Mois", "Objectif Mensuel", "S1", "S2", "S3", "S4", "S5"],
+      header: ["KPI", "Catégorie", "Unité", "Mois", "Objectif Mensuel", "S1", "S2", "S3", "S4", "S5"],
     });
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "KPI");
@@ -155,13 +178,14 @@ export default function KpiConfig() {
               id: `k${Date.now()}-${byName.size}`,
               name,
               unit: String(r["Unité"] || ""),
+              category: (String(r["Catégorie"] || "spa").toLowerCase() === "manager" ? "manager" : "spa"),
               monthly_targets: {},
             };
             byName.set(name, item);
           }
           const m = String(r.Mois || "").trim();
           if (!m) return;
-          const wk = weeksInMonth(m);
+          const wk = weeksForMeetings(m, schedule.weekly_day);
           const weekly_targets: Record<string, number> = {};
           wk.forEach((w, i) => {
             const v = r[`S${i + 1}`];
@@ -249,12 +273,43 @@ export default function KpiConfig() {
         </Button>
       </div>
 
+      {/* Category filter + meeting day reminder */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="inline-flex rounded-lg border border-border bg-card p-0.5 text-xs">
+          {([
+            { v: "all" as const, label: "Tous" },
+            { v: "spa" as const, label: "Spa" },
+            { v: "manager" as const, label: "Manager" },
+          ]).map((opt) => (
+            <button
+              key={opt.v}
+              onClick={() => setCategoryFilter(opt.v)}
+              className={`px-3 py-1 rounded-md font-medium transition-colors ${
+                categoryFilter === opt.v
+                  ? opt.v === "spa"
+                    ? "bg-teal-100 text-teal-800"
+                    : opt.v === "manager"
+                    ? "bg-blue-100 text-blue-800"
+                    : "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Semaines calculées sur les réunions hebdo&nbsp;: <span className="font-medium text-foreground">{DAY_LABELS_FR[schedule.weekly_day].toLowerCase()}s</span>
+        </p>
+      </div>
+
       {/* Table */}
       <div className="border border-border rounded-xl overflow-hidden shadow-sm">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-muted">
               <th className="text-left py-2.5 px-4 font-semibold">KPI</th>
+              <th className="text-left py-2.5 px-4 font-semibold w-28">Catégorie</th>
               <th className="text-left py-2.5 px-4 font-semibold w-40">Objectif mensuel</th>
               <th className="text-left py-2.5 px-4 font-semibold w-24">Unité</th>
               <th className="text-left py-2.5 px-4 font-semibold w-48">Objectifs hebdo</th>
@@ -262,7 +317,7 @@ export default function KpiConfig() {
             </tr>
           </thead>
           <tbody>
-            {items.map((k) => {
+            {visibleItems.map((k) => {
               const monthly = k.monthly_targets[selectedMonth];
               const monthlyValue = monthly?.target;
               const monthlyHint =
@@ -281,14 +336,15 @@ export default function KpiConfig() {
                   onWeeklyChange={(w, v) => setWeeklyTarget(k.id, w, v)}
                   onDelete={() => handleDelete(k.id)}
                   onUpdateMeta={(f, v) => updateMeta(k.id, f, v)}
+                  onUpdateCategory={(c) => updateCategory(k.id, c)}
                   onSaved={handleBlurToast}
                 />
               );
             })}
-            {items.length === 0 && (
+            {visibleItems.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-8 text-center text-muted-foreground">
-                  Aucun KPI. Cliquez sur "Ajouter un KPI" pour commencer.
+                <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                  Aucun KPI dans cette catégorie.
                 </td>
               </tr>
             )}
@@ -296,11 +352,15 @@ export default function KpiConfig() {
         </table>
       </div>
 
-      <div className="mt-4">
-        <Button variant="outline" size="sm" className="gap-1.5" onClick={handleAdd}>
-          <Plus className="h-4 w-4" /> Ajouter un KPI
+      <div className="mt-4 flex gap-2">
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => handleAdd("spa")}>
+          <Plus className="h-4 w-4" /> Ajouter KPI Spa
+        </Button>
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => handleAdd("manager")}>
+          <Plus className="h-4 w-4" /> Ajouter KPI Manager
         </Button>
       </div>
+
 
       {/* Source modal */}
       <Dialog open={sourceModalOpen} onOpenChange={setSourceModalOpen}>
@@ -336,6 +396,7 @@ interface RowProps {
   onWeeklyChange: (week: string, v: number) => void;
   onDelete: () => void;
   onUpdateMeta: (field: "name" | "unit", value: string) => void;
+  onUpdateCategory: (category: KpiCategory) => void;
   onSaved: () => void;
 }
 
@@ -350,6 +411,7 @@ function KpiRow({
   onWeeklyChange,
   onDelete,
   onUpdateMeta,
+  onUpdateCategory,
   onSaved,
 }: RowProps) {
   const [monthlyDraft, setMonthlyDraft] = useState<string>(
@@ -370,6 +432,22 @@ function KpiRow({
             onBlur={onSaved}
             className="h-8 text-sm border-transparent hover:border-input focus-visible:border-input"
           />
+        </td>
+        <td className="py-2 px-4">
+          <button
+            onClick={() => {
+              onUpdateCategory(kpi.category === "spa" ? "manager" : "spa");
+              onSaved();
+            }}
+            className={`text-xs font-medium px-2 py-0.5 rounded-full transition-colors ${
+              kpi.category === "spa"
+                ? "bg-teal-100 text-teal-800 hover:bg-teal-200"
+                : "bg-blue-100 text-blue-800 hover:bg-blue-200"
+            }`}
+            title="Cliquer pour basculer"
+          >
+            {kpi.category === "spa" ? "Spa" : "Manager"}
+          </button>
         </td>
         <td className="py-2 px-4">
           <Input
@@ -427,7 +505,7 @@ function KpiRow({
       </tr>
       {isOpen && (
         <tr className="border-t border-border bg-muted/30">
-          <td colSpan={5} className="py-3 px-4">
+          <td colSpan={6} className="py-3 px-4">
             <div className="flex flex-wrap gap-3">
               {weeks.map((w, i) => (
                 <WeekInput

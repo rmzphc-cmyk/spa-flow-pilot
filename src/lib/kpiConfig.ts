@@ -1,4 +1,6 @@
 // KPI config storage layer with monthly + weekly targets per ISO week
+export type KpiCategory = "spa" | "manager";
+
 export interface KpiWeeklyMap {
   [isoWeek: string]: number; // e.g. "2026-W01"
 }
@@ -13,19 +15,28 @@ export interface KpiConfigItem {
   id: string;
   name: string;
   unit: string;
+  category: KpiCategory;
   monthly_targets: KpiMonthlyMap;
 }
 
 const STORAGE_KEY = "kpi_config";
 
 const DEFAULTS: KpiConfigItem[] = [
-  { id: "k1", name: "CA du mois", unit: "€", monthly_targets: {} },
-  { id: "k2", name: "Taux d'occupation cabines", unit: "%", monthly_targets: {} },
-  { id: "k3", name: "Panier moyen", unit: "€", monthly_targets: {} },
-  { id: "k4", name: "NPS clients", unit: "/10", monthly_targets: {} },
-  { id: "k5", name: "Ventes produits", unit: "€", monthly_targets: {} },
-  { id: "k6", name: "Absentéisme équipe", unit: "j", monthly_targets: {} },
+  { id: "k1", name: "CA du mois", unit: "€", category: "spa", monthly_targets: {} },
+  { id: "k2", name: "Taux d'occupation cabines", unit: "%", category: "spa", monthly_targets: {} },
+  { id: "k3", name: "Panier moyen", unit: "€", category: "spa", monthly_targets: {} },
+  { id: "k4", name: "NPS clients", unit: "/10", category: "spa", monthly_targets: {} },
+  { id: "k5", name: "Ventes produits", unit: "€", category: "spa", monthly_targets: {} },
+  { id: "k6", name: "Absentéisme équipe", unit: "j", category: "manager", monthly_targets: {} },
 ];
+
+export function sortKpis(items: KpiConfigItem[]): KpiConfigItem[] {
+  return [...items].sort((a, b) => {
+    if (a.category !== b.category) return a.category === "spa" ? -1 : 1;
+    return a.name.localeCompare(b.name);
+  });
+}
+
 
 export function loadKpiConfig(): KpiConfigItem[] {
   try {
@@ -81,6 +92,28 @@ export function weeksInMonth(monthKeyStr: string): string[] {
   }
   return order;
 }
+
+// Convention: 0=Mon..6=Sun (same as meetingSchedule). Returns the ISO weeks
+// containing each occurrence of `weeklyDay` within the given month — i.e. the
+// weeks that will host a weekly meeting.
+export function weeksForMeetings(monthKeyStr: string, weeklyDay: number): string[] {
+  const [y, m] = monthKeyStr.split("-").map(Number);
+  const last = new Date(y, m, 0).getDate();
+  const jsTarget = (weeklyDay + 1) % 7; // map to JS getDay (0=Sun..6=Sat)
+  const set = new Set<string>();
+  const order: string[] = [];
+  for (let day = 1; day <= last; day++) {
+    const d = new Date(y, m - 1, day);
+    if (d.getDay() !== jsTarget) continue;
+    const k = isoWeekKey(d);
+    if (!set.has(k)) {
+      set.add(k);
+      order.push(k);
+    }
+  }
+  return order;
+}
+
 
 export function shiftMonth(monthKeyStr: string, delta: number): string {
   const d = parseMonthKey(monthKeyStr);
