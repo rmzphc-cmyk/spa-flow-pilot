@@ -20,7 +20,7 @@ import {
 
 // --- Types ---
 
-type Frequency = "daily" | "weekly" | "monthly" | "quarterly";
+type Frequency = "daily" | "weekly" | "biweekly" | "monthly" | "quarterly";
 type SaisieMode = "numeric" | "qualitative";
 
 interface RespTemplate {
@@ -90,12 +90,13 @@ const spaList = [
 const freqBadge: Record<Frequency, { label: string; classes: string }> = {
   daily: { label: "Daily", classes: "bg-violet-100 text-violet-800" },
   weekly: { label: "Weekly", classes: "bg-emerald-100 text-emerald-800" },
+  biweekly: { label: "Bi-mensuel", classes: "bg-cyan-100 text-cyan-800" },
   monthly: { label: "Monthly", classes: "bg-blue-100 text-blue-800" },
   quarterly: { label: "Quarterly", classes: "bg-amber-100 text-amber-800" },
 };
 
 const defaultSaisie = (f: Frequency): SaisieMode =>
-  f === "daily" || f === "weekly" ? "numeric" : "qualitative";
+  f === "daily" || f === "weekly" || f === "biweekly" ? "numeric" : "qualitative";
 
 const emptyTemplate = (): RespTemplate => ({
   id: `t${Date.now()}`,
@@ -546,7 +547,7 @@ export default function RespConfig() {
               <div>
                 <Label className="text-sm font-medium">Fréquence</Label>
                 <div className="flex gap-2 mt-1.5 flex-wrap">
-                  {(["daily", "weekly", "monthly", "quarterly"] as const).map((f) => {
+                {(["daily", "weekly", "biweekly", "monthly", "quarterly"] as const).map((f) => {
                     const fb = freqBadge[f];
                     return (
                       <button
@@ -614,7 +615,7 @@ export default function RespConfig() {
               <div>
                 <Label className="text-sm font-medium">Mode de saisie</Label>
                 <p className="text-[10px] text-muted-foreground mb-1.5">
-                  Auto selon fréquence ({editing.frequency === "daily" || editing.frequency === "weekly" ? "numérique" : "qualitatif"}) — modifiable
+                  Auto selon fréquence ({editing.frequency === "daily" || editing.frequency === "weekly" || editing.frequency === "biweekly" ? "numérique" : "qualitatif"}) — modifiable
                 </p>
                 <div className="flex gap-2">
                   {(["numeric", "qualitative"] as const).map((m) => (

@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { SectionStatus } from "@/pages/RapportDetail";
 
-type Frequency = "daily" | "weekly" | "monthly" | "quarterly";
+type Frequency = "daily" | "weekly" | "biweekly" | "monthly" | "quarterly";
 type ToggleStatus = "done" | "partial" | "not_done" | null;
 
 interface Responsabilite {
@@ -41,7 +41,7 @@ export function SectionResponsabilites({ onStatusChange }: Props) {
   const [comments, setComments] = useState<Record<string, string>>({});
   const [naFlags, setNaFlags] = useState<Record<string, boolean>>({});
 
-  const isNumeric = (f: Frequency) => f === "daily" || f === "weekly";
+  const isNumeric = (f: Frequency) => f === "daily" || f === "weekly" || f === "biweekly";
 
   return (
     <section className="mb-8">
