@@ -434,6 +434,22 @@ function KpiRow({
           />
         </td>
         <td className="py-2 px-4">
+          <button
+            onClick={() => {
+              onUpdateCategory(kpi.category === "spa" ? "manager" : "spa");
+              onSaved();
+            }}
+            className={`text-xs font-medium px-2 py-0.5 rounded-full transition-colors ${
+              kpi.category === "spa"
+                ? "bg-teal-100 text-teal-800 hover:bg-teal-200"
+                : "bg-blue-100 text-blue-800 hover:bg-blue-200"
+            }`}
+            title="Cliquer pour basculer"
+          >
+            {kpi.category === "spa" ? "Spa" : "Manager"}
+          </button>
+        </td>
+        <td className="py-2 px-4">
           <Input
             type="number"
             value={monthlyDraft}
