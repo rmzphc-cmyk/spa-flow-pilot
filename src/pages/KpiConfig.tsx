@@ -98,15 +98,20 @@ export default function KpiConfig() {
     toast.success("KPI supprimé");
   };
 
-  const handleAdd = () => {
+  const handleAdd = (category: "spa" | "manager" = "spa") => {
     const id = `k${Date.now()}`;
-    setItems((prev) => [...prev, { id, name: "Nouveau KPI", unit: "", monthly_targets: {} }]);
+    setItems((prev) => [...prev, { id, name: "Nouveau KPI", unit: "", category, monthly_targets: {} }]);
     setExpanded((p) => ({ ...p, [id]: false }));
   };
 
   const updateMeta = (id: string, field: "name" | "unit", value: string) => {
     setItems((prev) => prev.map((k) => (k.id === id ? { ...k, [field]: value } : k)));
   };
+
+  const updateCategory = (id: string, category: "spa" | "manager") => {
+    setItems((prev) => prev.map((k) => (k.id === id ? { ...k, category } : k)));
+  };
+
 
   // ----- export / import -----
 
