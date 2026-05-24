@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,15 +15,37 @@ interface Responsabilite {
   conditional?: boolean;
 }
 
-const responsabilites: Responsabilite[] = [
-  { id: "r1", label: "Briefing équipe matin", frequency: "daily", expected: 22 },
-  { id: "r2", label: "Vérification propreté cabines", frequency: "daily", expected: 22 },
-  { id: "r3", label: "Suivi planning RDV", frequency: "weekly", expected: 4 },
-  { id: "r4", label: "Inventaire produits", frequency: "monthly", expected: 1 },
-  { id: "r5", label: "Réunion d'équipe mensuelle", frequency: "monthly", expected: 1 },
-  { id: "r6", label: "Rapport satisfaction client", frequency: "quarterly", expected: 1, conditional: true },
-  { id: "r7", label: "Formation continue équipe", frequency: "monthly", expected: 1, conditional: true },
-];
+const RESP_TEMPLATES_KEY = "resp_templates_v1";
+
+function loadActiveResponsabilites(reportType: "monthly" | "weekly" = "monthly"): Responsabilite[] {
+  try {
+    const raw = localStorage.getItem(RESP_TEMPLATES_KEY);
+    if (!raw) return [];
+    const templates = JSON.parse(raw) as Array<{
+      id: string;
+      name: string;
+      description: string;
+      frequency: Frequency;
+      expectedQty: number;
+      conditional: boolean;
+      active: boolean;
+    }>;
+    const isNumericFreq = (f: Frequency) => f === "daily" || f === "weekly" || f === "biweekly";
+    const isMonthlyFreq = (f: Frequency) => f === "monthly" || f === "quarterly";
+    return templates
+      .filter((t) => t.active)
+      .filter((t) => (reportType === "weekly" ? isNumericFreq(t.frequency) : isMonthlyFreq(t.frequency)))
+      .map((t) => ({
+        id: t.id,
+        label: t.name,
+        frequency: t.frequency,
+        expected: t.expectedQty,
+        conditional: t.conditional,
+      }));
+  } catch {
+    return [];
+  }
+}
 
 const toggleColors: Record<string, string> = {
   done: "bg-emerald-100 text-emerald-800 border-emerald-300",
@@ -32,14 +54,20 @@ const toggleColors: Record<string, string> = {
 };
 
 interface Props {
+  reportType?: "monthly" | "weekly";
   onStatusChange: (status: SectionStatus) => void;
 }
 
-export function SectionResponsabilites({ onStatusChange }: Props) {
+export function SectionResponsabilites({ reportType = "monthly", onStatusChange }: Props) {
+  const [responsabilites, setResponsabilites] = useState<Responsabilite[]>(() => loadActiveResponsabilites(reportType));
   const [numericValues, setNumericValues] = useState<Record<string, string>>({});
   const [toggleValues, setToggleValues] = useState<Record<string, ToggleStatus>>({});
   const [comments, setComments] = useState<Record<string, string>>({});
   const [naFlags, setNaFlags] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    setResponsabilites(loadActiveResponsabilites(reportType));
+  }, [reportType]);
 
   const isNumeric = (f: Frequency) => f === "daily" || f === "weekly" || f === "biweekly";
 
@@ -62,6 +90,11 @@ export function SectionResponsabilites({ onStatusChange }: Props) {
 
       {/* Table */}
       <div className="space-y-3">
+        {responsabilites.length === 0 && (
+          <div className="bg-card border border-border rounded-xl p-4 shadow-sm text-sm text-muted-foreground">
+            Aucune responsabilité configurée pour ce cycle. Vérifiez la configuration dans "Config Resp.".
+          </div>
+        )}
         {responsabilites.map((resp) => {
           const isNa = naFlags[resp.id] ?? false;
 
