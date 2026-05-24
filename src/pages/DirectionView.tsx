@@ -42,7 +42,7 @@ interface DirectionReport {
 
 const reports: Record<string, DirectionReport> = {
   r1: {
-    id: "r1", spa: "Spa Le Domaine", manager: "Marie Dupont",
+    id: "r1", spa: "Par Gran Canaria", manager: "Marie Dupont",
     period: "1 mars → 31 mars 2026", type: "monthly", meetingDate: "28 mars 2026", status: "validated",
     situationGlobale: "Le spa tourne bien malgré deux arrêts maladie imprévus. L'équipe reste engagée et les résultats commerciaux sont proches des objectifs.",
     meteoEquipe: 7, meteoEquipeN1: 8, energieManager: 6, energieManagerN1: 7,
@@ -66,7 +66,7 @@ const reports: Record<string, DirectionReport> = {
       { problem: "Conflits de planning vendredi", solution: "Rotation des praticiens", conversion: "objectif" },
     ],
     weeklySignals: [],
-    aiSummary: "Mars 2026 marque un mois correct pour le Spa Le Domaine. Le CA de 42k€ reste légèrement sous l'objectif de 45k€, principalement en raison des vacances scolaires. Les ventes produits dépassent l'objectif (+15%). Le point de vigilance principal concerne l'absentéisme (4 jours vs 2 ciblés) et le NPS en légère baisse. Trois problèmes structurels ont été identifiés et convertis en actions concrètes.",
+    aiSummary: "Mars 2026 marque un mois correct pour le Par Gran Canaria. Le CA de 42k€ reste légèrement sous l'objectif de 45k€, principalement en raison des vacances scolaires. Les ventes produits dépassent l'objectif (+15%). Le point de vigilance principal concerne l'absentéisme (4 jours vs 2 ciblés) et le NPS en légère baisse. Trois problèmes structurels ont été identifiés et convertis en actions concrètes.",
     aiActions: [
       "Installer le système de file d'attente numérique d'ici le 15 avril",
       "Réaliser l'audit produits dans toutes les cabines avant le 5 avril",
@@ -74,7 +74,7 @@ const reports: Record<string, DirectionReport> = {
     ],
   },
   r2: {
-    id: "r2", spa: "Spa Le Domaine", manager: "Marie Dupont",
+    id: "r2", spa: "Par Gran Canaria", manager: "Marie Dupont",
     period: "18 → 24 mars 2026", type: "weekly", meetingDate: null, status: "validated",
     situationGlobale: "Semaine stable, bonne dynamique commerciale.",
     meteoEquipe: 8, meteoEquipeN1: 7, energieManager: 7, energieManagerN1: 7,

@@ -65,7 +65,7 @@ export default function UserSettings() {
       displayName: "Marie Dupont",
       email: "marie.dupont@spadomaine.fr",
       role: "manager",
-      spa: "Spa Le Domaine",
+      spa: "Par Gran Canaria",
     },
     accessibility: {
       textSize: "normal",

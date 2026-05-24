@@ -27,8 +27,8 @@ import {
 // --- Mock data ---
 
 const reportData: Record<string, { label: string; period: string; spa: string }> = {
-  r1: { label: "Monthly — Mars 2026", period: "1 mars → 31 mars 2026", spa: "Spa Le Domaine" },
-  r3: { label: "Monthly — Février 2026", period: "1 fév → 28 fév 2026", spa: "Spa Le Domaine" },
+  r1: { label: "Monthly — Mars 2026", period: "1 mars → 31 mars 2026", spa: "Par Gran Canaria" },
+  r3: { label: "Monthly — Février 2026", period: "1 fév → 28 fév 2026", spa: "Par Gran Canaria" },
 };
 
 const kpis = [
