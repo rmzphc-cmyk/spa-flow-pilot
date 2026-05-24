@@ -396,6 +396,7 @@ interface RowProps {
   onWeeklyChange: (week: string, v: number) => void;
   onDelete: () => void;
   onUpdateMeta: (field: "name" | "unit", value: string) => void;
+  onUpdateCategory: (category: KpiCategory) => void;
   onSaved: () => void;
 }
 
