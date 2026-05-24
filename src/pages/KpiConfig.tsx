@@ -273,12 +273,43 @@ export default function KpiConfig() {
         </Button>
       </div>
 
+      {/* Category filter + meeting day reminder */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="inline-flex rounded-lg border border-border bg-card p-0.5 text-xs">
+          {([
+            { v: "all" as const, label: "Tous" },
+            { v: "spa" as const, label: "Spa" },
+            { v: "manager" as const, label: "Manager" },
+          ]).map((opt) => (
+            <button
+              key={opt.v}
+              onClick={() => setCategoryFilter(opt.v)}
+              className={`px-3 py-1 rounded-md font-medium transition-colors ${
+                categoryFilter === opt.v
+                  ? opt.v === "spa"
+                    ? "bg-teal-100 text-teal-800"
+                    : opt.v === "manager"
+                    ? "bg-blue-100 text-blue-800"
+                    : "bg-muted text-foreground"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Semaines calculées sur les réunions hebdo&nbsp;: <span className="font-medium text-foreground">{DAY_LABELS_FR[schedule.weekly_day].toLowerCase()}s</span>
+        </p>
+      </div>
+
       {/* Table */}
       <div className="border border-border rounded-xl overflow-hidden shadow-sm">
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-muted">
               <th className="text-left py-2.5 px-4 font-semibold">KPI</th>
+              <th className="text-left py-2.5 px-4 font-semibold w-28">Catégorie</th>
               <th className="text-left py-2.5 px-4 font-semibold w-40">Objectif mensuel</th>
               <th className="text-left py-2.5 px-4 font-semibold w-24">Unité</th>
               <th className="text-left py-2.5 px-4 font-semibold w-48">Objectifs hebdo</th>
@@ -286,7 +317,7 @@ export default function KpiConfig() {
             </tr>
           </thead>
           <tbody>
-            {items.map((k) => {
+            {visibleItems.map((k) => {
               const monthly = k.monthly_targets[selectedMonth];
               const monthlyValue = monthly?.target;
               const monthlyHint =
@@ -305,14 +336,15 @@ export default function KpiConfig() {
                   onWeeklyChange={(w, v) => setWeeklyTarget(k.id, w, v)}
                   onDelete={() => handleDelete(k.id)}
                   onUpdateMeta={(f, v) => updateMeta(k.id, f, v)}
+                  onUpdateCategory={(c) => updateCategory(k.id, c)}
                   onSaved={handleBlurToast}
                 />
               );
             })}
-            {items.length === 0 && (
+            {visibleItems.length === 0 && (
               <tr>
-                <td colSpan={5} className="py-8 text-center text-muted-foreground">
-                  Aucun KPI. Cliquez sur "Ajouter un KPI" pour commencer.
+                <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                  Aucun KPI dans cette catégorie.
                 </td>
               </tr>
             )}
@@ -320,11 +352,15 @@ export default function KpiConfig() {
         </table>
       </div>
 
-      <div className="mt-4">
-        <Button variant="outline" size="sm" className="gap-1.5" onClick={handleAdd}>
-          <Plus className="h-4 w-4" /> Ajouter un KPI
+      <div className="mt-4 flex gap-2">
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => handleAdd("spa")}>
+          <Plus className="h-4 w-4" /> Ajouter KPI Spa
+        </Button>
+        <Button variant="outline" size="sm" className="gap-1.5" onClick={() => handleAdd("manager")}>
+          <Plus className="h-4 w-4" /> Ajouter KPI Manager
         </Button>
       </div>
+
 
       {/* Source modal */}
       <Dialog open={sourceModalOpen} onOpenChange={setSourceModalOpen}>
