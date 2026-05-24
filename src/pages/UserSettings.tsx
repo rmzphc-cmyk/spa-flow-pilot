@@ -9,8 +9,6 @@ import { toast } from "@/hooks/use-toast";
 import {
   loadSchedule,
   saveSchedule,
-  DAY_LABELS_FR,
-  WEEK_LABELS_FR,
   type MeetingSchedule,
 } from "@/lib/meetingSchedule";
 
