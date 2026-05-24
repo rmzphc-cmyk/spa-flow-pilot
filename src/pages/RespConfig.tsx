@@ -158,7 +158,7 @@ export default function RespConfig() {
       const updated = { ...spaAssignments };
       for (const key of Object.keys(updated)) {
         if (!updated[key].find((a) => a.templateId === editing.id)) {
-          updated[key] = [...updated[key], { templateId: editing.id, enabled: false, overrideQty: null }];
+          updated[key] = [...updated[key], { templateId: editing.id, enabled: false, overrideQty: null, monthly: {} }];
         }
       }
       setSpaAssignments(updated);
