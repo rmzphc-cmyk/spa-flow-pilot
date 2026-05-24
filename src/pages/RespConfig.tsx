@@ -169,7 +169,17 @@ const emptyTemplate = (): RespTemplate => ({
 // --- Main ---
 
 export default function RespConfig() {
-  const [tab, setTab] = useState<"templates" | "affectation" | "calendrier">("templates");
+  // Role-based scoping: spa managers are locked to their own spa,
+  // direction/admin get the multi-spa overview.
+  const role = getUserRole();
+  const canSeeAllSpas = hasMultiSpaAccess();
+  const managerSpa = getManagerSpa();
+  const spaList = canSeeAllSpas ? ALL_SPAS : ALL_SPAS.filter((s) => s.key === managerSpa.key);
+  const canEditTemplates = canSeeAllSpas; // Templates globaux = direction/admin only
+
+  const [tab, setTab] = useState<"templates" | "affectation" | "calendrier">(
+    canEditTemplates ? "templates" : "affectation"
+  );
   const [templates, setTemplates] = useState<RespTemplate[]>(() => loadTemplates());
   const [spaAssignments, setSpaAssignments] = useState<Record<string, SpaAssignment[]>>(() => loadAssignments());
   const [qualLabels, setQualLabels] = useState<QualitativeLabels>({ done: "Réalisé", partial: "Partiel", notDone: "Non réalisé" });
