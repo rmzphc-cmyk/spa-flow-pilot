@@ -136,6 +136,7 @@ export default function RespConfig() {
 
   // Affectation
   const [selectedSpa, setSelectedSpa] = useState(spaList[0].key);
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => monthKey(new Date()));
 
   const handleAdd = () => {
     setEditing(emptyTemplate());
