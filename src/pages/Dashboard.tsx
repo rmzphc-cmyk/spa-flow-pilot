@@ -2,7 +2,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, AlertTriangle, Sparkles, CheckCircle2, Target, Users, Eye, Calendar, Plus } from "lucide-react";
 import {
-  loadSchedule,
+  useMeetingSchedule,
   nextWeeklyMeeting,
   nextMonthlyMeeting,
   daysUntil,
@@ -301,7 +301,7 @@ function RecentActivity() {
 
 function UpcomingMeetingsCard() {
   const navigate = useNavigate();
-  const schedule = loadSchedule();
+  const schedule = useMeetingSchedule();
   const now = new Date();
   const weeklyDate = nextWeeklyMeeting(schedule.weekly_day, now);
   const monthlyDate = nextMonthlyMeeting(schedule, now);

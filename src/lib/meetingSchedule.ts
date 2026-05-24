@@ -35,6 +35,9 @@ export function loadSchedule(): MeetingSchedule {
 
 export function saveSchedule(s: MeetingSchedule) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent("meeting-schedule-changed"));
+  }
 }
 
 // Convert "0=Mon..6=Sun" to JS Date.getDay() "0=Sun..6=Sat"
@@ -118,4 +121,20 @@ export function describeSchedule(s: MeetingSchedule): { weekly: string; monthly:
     monthly = `${WEEK_LABELS_FR[s.monthly_week - 1]} ${DAY_LABELS_FR[s.monthly_day].toLowerCase()} du mois`;
   }
   return { weekly, monthly };
+}
+
+import { useEffect, useState } from "react";
+
+export function useMeetingSchedule(): MeetingSchedule {
+  const [schedule, setSchedule] = useState<MeetingSchedule>(() => loadSchedule());
+  useEffect(() => {
+    const refresh = () => setSchedule(loadSchedule());
+    window.addEventListener("storage", refresh);
+    window.addEventListener("meeting-schedule-changed", refresh);
+    return () => {
+      window.removeEventListener("storage", refresh);
+      window.removeEventListener("meeting-schedule-changed", refresh);
+    };
+  }, []);
+  return schedule;
 }
