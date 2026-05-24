@@ -135,16 +135,16 @@ export default function KpiConfig() {
 
   const handleExport = () => {
     const rows: any[] = [];
-    items.forEach((k) => {
+    sortKpis(items).forEach((k) => {
       const months = Object.keys(k.monthly_targets).sort();
       if (months.length === 0) {
-        rows.push({ KPI: k.name, Unité: k.unit, Mois: "", "Objectif Mensuel": "" });
+        rows.push({ KPI: k.name, Catégorie: k.category, Unité: k.unit, Mois: "", "Objectif Mensuel": "" });
         return;
       }
       months.forEach((m) => {
         const mt = k.monthly_targets[m];
-        const wk = weeksInMonth(m);
-        const row: any = { KPI: k.name, Unité: k.unit, Mois: m, "Objectif Mensuel": mt.target };
+        const wk = weeksForMeetings(m, schedule.weekly_day);
+        const row: any = { KPI: k.name, Catégorie: k.category, Unité: k.unit, Mois: m, "Objectif Mensuel": mt.target };
         wk.forEach((w, i) => {
           row[`S${i + 1}`] = mt.weekly_targets[w] ?? "";
         });
@@ -152,7 +152,7 @@ export default function KpiConfig() {
       });
     });
     const ws = XLSX.utils.json_to_sheet(rows, {
-      header: ["KPI", "Unité", "Mois", "Objectif Mensuel", "S1", "S2", "S3", "S4", "S5"],
+      header: ["KPI", "Catégorie", "Unité", "Mois", "Objectif Mensuel", "S1", "S2", "S3", "S4", "S5"],
     });
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "KPI");
