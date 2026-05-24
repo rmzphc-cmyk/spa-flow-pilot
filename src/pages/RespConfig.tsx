@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Pencil, Zap, CalendarClock } from "lucide-react";
+import { Plus, Pencil, Zap, CalendarClock, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   loadSchedule,
   saveSchedule,
@@ -17,6 +17,7 @@ import {
   WEEK_LABELS_FR,
   type MeetingSchedule,
 } from "@/lib/meetingSchedule";
+import { monthKey, shiftMonth, monthLabel } from "@/lib/kpiConfig";
 
 // --- Types ---
 
@@ -36,10 +37,15 @@ interface RespTemplate {
   active: boolean;
 }
 
+interface MonthlyOverride {
+  enabled?: boolean;
+  overrideQty?: number | null;
+}
 interface SpaAssignment {
   templateId: string;
   enabled: boolean;
   overrideQty: number | null;
+  monthly: Record<string, MonthlyOverride>; // key = "YYYY-MM"
 }
 
 interface QualitativeLabels {
@@ -63,20 +69,20 @@ const initialTemplates: RespTemplate[] = [
 
 const initialSpaAssignments: Record<string, SpaAssignment[]> = {
   "spa-le-domaine": [
-    { templateId: "t1", enabled: true, overrideQty: null },
-    { templateId: "t2", enabled: true, overrideQty: 2 },
-    { templateId: "t3", enabled: true, overrideQty: null },
-    { templateId: "t4", enabled: true, overrideQty: null },
-    { templateId: "t5", enabled: true, overrideQty: null },
-    { templateId: "t6", enabled: false, overrideQty: null },
+    { templateId: "t1", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "t2", enabled: true, overrideQty: 2, monthly: {} },
+    { templateId: "t3", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "t4", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "t5", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "t6", enabled: false, overrideQty: null, monthly: {} },
   ],
   "spa-riviera": [
-    { templateId: "t1", enabled: true, overrideQty: null },
-    { templateId: "t2", enabled: true, overrideQty: null },
-    { templateId: "t3", enabled: false, overrideQty: null },
-    { templateId: "t4", enabled: true, overrideQty: 2 },
-    { templateId: "t5", enabled: true, overrideQty: null },
-    { templateId: "t6", enabled: true, overrideQty: null },
+    { templateId: "t1", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "t2", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "t3", enabled: false, overrideQty: null, monthly: {} },
+    { templateId: "t4", enabled: true, overrideQty: 2, monthly: {} },
+    { templateId: "t5", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "t6", enabled: true, overrideQty: null, monthly: {} },
   ],
 };
 
@@ -130,6 +136,7 @@ export default function RespConfig() {
 
   // Affectation
   const [selectedSpa, setSelectedSpa] = useState(spaList[0].key);
+  const [selectedMonth, setSelectedMonth] = useState<string>(() => monthKey(new Date()));
 
   const handleAdd = () => {
     setEditing(emptyTemplate());
@@ -152,7 +159,7 @@ export default function RespConfig() {
       const updated = { ...spaAssignments };
       for (const key of Object.keys(updated)) {
         if (!updated[key].find((a) => a.templateId === editing.id)) {
-          updated[key] = [...updated[key], { templateId: editing.id, enabled: false, overrideQty: null }];
+          updated[key] = [...updated[key], { templateId: editing.id, enabled: false, overrideQty: null, monthly: {} }];
         }
       }
       setSpaAssignments(updated);
@@ -178,19 +185,48 @@ export default function RespConfig() {
   // Affectation helpers
   const currentAssignments = spaAssignments[selectedSpa] ?? [];
 
-  const toggleSpaAssignment = (templateId: string) => {
-    const updated = currentAssignments.map((a) =>
-      a.templateId === templateId ? { ...a, enabled: !a.enabled } : a
-    );
+  // Look up the last month < beforeMonth that has an explicit override on a given field
+  const lastMonthlyResp = <K extends keyof MonthlyOverride>(
+    a: SpaAssignment,
+    beforeMonth: string,
+    field: K,
+  ): { month: string; value: NonNullable<MonthlyOverride[K]> } | null => {
+    const months = Object.keys(a.monthly || {})
+      .filter((m) => m < beforeMonth)
+      .sort();
+    for (let i = months.length - 1; i >= 0; i--) {
+      const v = a.monthly[months[i]]?.[field];
+      if (v !== undefined) return { month: months[i], value: v as NonNullable<MonthlyOverride[K]> };
+    }
+    return null;
+  };
+
+  const setMonthlyOverride = (templateId: string, patch: MonthlyOverride) => {
+    const updated = currentAssignments.map((a) => {
+      if (a.templateId !== templateId) return a;
+      const current = { ...(a.monthly[selectedMonth] || {}) };
+      const next = { ...current, ...patch };
+      const monthly = { ...a.monthly };
+      if (Object.keys(next).length === 0) delete monthly[selectedMonth];
+      else monthly[selectedMonth] = next;
+      return { ...a, monthly };
+    });
     setSpaAssignments({ ...spaAssignments, [selectedSpa]: updated });
   };
 
-  const updateOverride = (templateId: string, qty: number | null) => {
-    const updated = currentAssignments.map((a) =>
-      a.templateId === templateId ? { ...a, overrideQty: qty } : a
-    );
+  const clearMonthOverride = (templateId: string, field: keyof MonthlyOverride) => {
+    const updated = currentAssignments.map((a) => {
+      if (a.templateId !== templateId) return a;
+      const current = { ...(a.monthly[selectedMonth] || {}) };
+      delete current[field];
+      const monthly = { ...a.monthly };
+      if (Object.keys(current).length === 0) delete monthly[selectedMonth];
+      else monthly[selectedMonth] = current;
+      return { ...a, monthly };
+    });
     setSpaAssignments({ ...spaAssignments, [selectedSpa]: updated });
   };
+
 
   return (
     <div className="max-w-[960px] mx-auto px-6 py-6 pb-20">
@@ -316,17 +352,47 @@ export default function RespConfig() {
       {/* TAB 2 — Affectation par spa */}
       {tab === "affectation" && (
         <>
-          <div className="flex items-center gap-3 mb-6">
-            <Label className="text-sm font-medium text-foreground">Spa :</Label>
-            <Select value={selectedSpa} onValueChange={setSelectedSpa}>
-              <SelectTrigger className="w-[200px] h-9 text-sm"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {spaList.map((s) => (
-                  <SelectItem key={s.key} value={s.key}>{s.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex items-center justify-between gap-3 mb-6 flex-wrap">
+            <div className="flex items-center gap-3">
+              <Label className="text-sm font-medium text-foreground">Spa :</Label>
+              <Select value={selectedSpa} onValueChange={setSelectedSpa}>
+                <SelectTrigger className="w-[200px] h-9 text-sm"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {spaList.map((s) => (
+                    <SelectItem key={s.key} value={s.key}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Month selector */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setSelectedMonth((m) => shiftMonth(m, -1))}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+              <div className="text-sm font-semibold capitalize min-w-[160px] text-center">
+                {monthLabel(selectedMonth)}
+              </div>
+              <Button
+                variant="outline"
+                size="icon"
+                className="h-8 w-8"
+                onClick={() => setSelectedMonth((m) => shiftMonth(m, 1))}
+              >
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
+
+          <p className="text-xs text-muted-foreground mb-3">
+            Définissez l'activation et la quantité attendue par mois. Si rien n'est saisi,
+            la dernière valeur enregistrée est utilisée par défaut.
+          </p>
 
           <div className="border border-border rounded-xl overflow-hidden shadow-sm">
             <table className="w-full text-sm">
@@ -336,20 +402,44 @@ export default function RespConfig() {
                   <th className="text-left py-2.5 px-4 font-semibold text-foreground">Template</th>
                   <th className="text-left py-2.5 px-4 font-semibold text-foreground">Fréquence</th>
                   <th className="text-right py-2.5 px-4 font-semibold text-foreground">Attendu global</th>
-                  <th className="text-right py-2.5 px-4 font-semibold text-foreground">Attendu spa</th>
+                  <th className="text-right py-2.5 px-4 font-semibold text-foreground">Attendu spa ({monthLabel(selectedMonth)})</th>
                 </tr>
               </thead>
               <tbody>
                 {templates.filter((t) => t.active).map((t) => {
                   const assignment = currentAssignments.find((a) => a.templateId === t.id);
-                  const enabled = assignment?.enabled ?? false;
-                  const override = assignment?.overrideQty;
                   const fb = freqBadge[t.frequency];
+                  if (!assignment) return null;
+
+                  const monthOverride = assignment.monthly[selectedMonth] || {};
+
+                  // Resolve enabled with fallback: month override → last month override → base
+                  const lastEnabled = lastMonthlyResp(assignment, selectedMonth, "enabled");
+                  const enabledResolved =
+                    monthOverride.enabled ??
+                    lastEnabled?.value ??
+                    assignment.enabled;
+                  const enabledIsInherited = monthOverride.enabled === undefined;
+
+                  // Resolve qty with fallback
+                  const lastQty = lastMonthlyResp(assignment, selectedMonth, "overrideQty");
+                  const qtyResolved =
+                    monthOverride.overrideQty ??
+                    lastQty?.value ??
+                    assignment.overrideQty ??
+                    t.expectedQty;
+                  const qtyIsInherited = monthOverride.overrideQty === undefined;
 
                   return (
-                    <tr key={t.id} className={`border-t border-border ${!enabled ? "opacity-50" : ""}`}>
+                    <tr key={t.id} className={`border-t border-border ${!enabledResolved ? "opacity-50" : ""}`}>
                       <td className="py-2.5 px-4 text-center">
-                        <Checkbox checked={enabled} onCheckedChange={() => toggleSpaAssignment(t.id)} />
+                        <Checkbox
+                          checked={enabledResolved}
+                          onCheckedChange={(v) => setMonthlyOverride(t.id, { enabled: !!v })}
+                        />
+                        {enabledIsInherited && (
+                          <p className="text-[9px] italic text-muted-foreground mt-0.5">hérité</p>
+                        )}
                       </td>
                       <td className="py-2.5 px-4">
                         <p className="font-medium text-foreground">{t.name}</p>
@@ -364,18 +454,26 @@ export default function RespConfig() {
                       </td>
                       <td className="py-2.5 px-4 text-right text-muted-foreground">{t.expectedQty}</td>
                       <td className="py-2.5 px-4 text-right">
-                        {enabled ? (
-                          <Input
-                            type="number"
-                            min={0}
-                            value={override ?? ""}
-                            onChange={(e) => {
-                              const val = e.target.value === "" ? null : Number(e.target.value);
-                              updateOverride(t.id, val);
-                            }}
-                            placeholder={`${t.expectedQty}`}
-                            className="h-7 w-20 text-sm text-right ml-auto"
-                          />
+                        {enabledResolved ? (
+                          <>
+                            <Input
+                              type="number"
+                              min={0}
+                              value={monthOverride.overrideQty ?? ""}
+                              onChange={(e) => {
+                                const val = e.target.value === "" ? null : Number(e.target.value);
+                                if (val === null) clearMonthOverride(t.id, "overrideQty");
+                                else setMonthlyOverride(t.id, { overrideQty: val });
+                              }}
+                              placeholder={`${qtyResolved}`}
+                              className="h-7 w-20 text-sm text-right ml-auto"
+                            />
+                            {qtyIsInherited && (lastQty || assignment.overrideQty != null) && (
+                              <p className="text-[10px] italic text-muted-foreground mt-0.5">
+                                Dernière valeur : {qtyResolved}
+                              </p>
+                            )}
+                          </>
                         ) : (
                           <span className="text-muted-foreground/40">—</span>
                         )}
@@ -388,6 +486,7 @@ export default function RespConfig() {
           </div>
         </>
       )}
+
 
       {/* TAB 3 — Calendrier des réunions */}
       {tab === "calendrier" && (
