@@ -93,6 +93,28 @@ export function weeksInMonth(monthKeyStr: string): string[] {
   return order;
 }
 
+// Convention: 0=Mon..6=Sun (same as meetingSchedule). Returns the ISO weeks
+// containing each occurrence of `weeklyDay` within the given month — i.e. the
+// weeks that will host a weekly meeting.
+export function weeksForMeetings(monthKeyStr: string, weeklyDay: number): string[] {
+  const [y, m] = monthKeyStr.split("-").map(Number);
+  const last = new Date(y, m, 0).getDate();
+  const jsTarget = (weeklyDay + 1) % 7; // map to JS getDay (0=Sun..6=Sat)
+  const set = new Set<string>();
+  const order: string[] = [];
+  for (let day = 1; day <= last; day++) {
+    const d = new Date(y, m - 1, day);
+    if (d.getDay() !== jsTarget) continue;
+    const k = isoWeekKey(d);
+    if (!set.has(k)) {
+      set.add(k);
+      order.push(k);
+    }
+  }
+  return order;
+}
+
+
 export function shiftMonth(monthKeyStr: string, delta: number): string {
   const d = parseMonthKey(monthKeyStr);
   d.setMonth(d.getMonth() + delta);
