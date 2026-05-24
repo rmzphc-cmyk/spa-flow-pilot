@@ -66,13 +66,19 @@ export function SectionKpi({ reportType, period = "", onStatusChange }: Props) {
     const cfg = loadKpiConfig();
     const monthK = periodToMonthKey(period);
     const weekK = periodToIsoWeek(period);
-    return baseKpis.map((k) => {
+    const resolved = baseKpis.map((k) => {
       const cfgItem = cfg.find((c) => c.id === k.id || c.name === k.label);
-      if (!cfgItem) return k;
-      const t = isWeekly
+      const category = cfgItem?.category ?? k.category;
+      if (!cfgItem) return { ...k, category };
+      const tgt = isWeekly
         ? getWeeklyTarget(cfgItem, weekK)
         : getMonthlyTarget(cfgItem, monthK);
-      return t != null ? { ...k, target: t } : k;
+      return { ...k, category, target: tgt != null ? tgt : k.target };
+    });
+    // Spa KPIs first, then Manager — matches Config order used in reports
+    return resolved.sort((a, b) => {
+      if (a.category !== b.category) return a.category === "spa" ? -1 : 1;
+      return 0;
     });
   }, [period, isWeekly]);
 
