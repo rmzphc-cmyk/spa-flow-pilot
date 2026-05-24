@@ -35,7 +35,7 @@ const currentReport: CurrentReport = {
   type: "monthly",
   label: "Monthly — Mars 2026",
   period: "1 mars → 31 mars 2026",
-  spa: "Spa Le Domaine",
+  spa: "Par Gran Canaria",
   status: "draft_preparation",
   completedSections: 2,
   totalSections: 7,

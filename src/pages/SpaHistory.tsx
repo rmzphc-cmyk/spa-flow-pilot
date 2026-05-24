@@ -24,8 +24,8 @@ interface HistoryReport {
 }
 
 const spaData: Record<string, { name: string; reports: HistoryReport[] }> = {
-  "spa-le-domaine": {
-    name: "Spa Le Domaine",
+  "par-gran-canaria": {
+    name: "Par Gran Canaria",
     reports: [
       {
         id: "r-jan", period: "Janvier 2026", type: "monthly", status: "validated",

@@ -80,7 +80,7 @@ const initialTemplates: RespTemplate[] = [
 ];
 
 const initialSpaAssignments: Record<string, SpaAssignment[]> = {
-  "spa-le-domaine": [
+  "par-gran-canaria": [
     { templateId: "w1", enabled: true, overrideQty: null, monthly: {} },
     { templateId: "w2", enabled: true, overrideQty: null, monthly: {} },
     { templateId: "w3", enabled: true, overrideQty: null, monthly: {} },
@@ -97,7 +97,24 @@ const initialSpaAssignments: Record<string, SpaAssignment[]> = {
     { templateId: "m7", enabled: true, overrideQty: null, monthly: {} },
     { templateId: "m8", enabled: true, overrideQty: null, monthly: {} },
   ],
-  "spa-riviera": [
+  "par-lanzarote": [
+    { templateId: "w1", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "w2", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "w3", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "w4", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "w5", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "w6", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "w7", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "m1", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "m2", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "m3", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "m4", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "m5", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "m6", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "m7", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "m8", enabled: true, overrideQty: null, monthly: {} },
+  ],
+  "par-fuerte": [
     { templateId: "w1", enabled: true, overrideQty: null, monthly: {} },
     { templateId: "w2", enabled: true, overrideQty: null, monthly: {} },
     { templateId: "w3", enabled: true, overrideQty: null, monthly: {} },
@@ -136,8 +153,9 @@ const loadAssignments = (): Record<string, SpaAssignment[]> => {
 };
 
 const ALL_SPAS = [
-  { key: "spa-le-domaine", name: "Spa Le Domaine" },
-  { key: "spa-riviera", name: "Spa Riviera" },
+  { key: "par-gran-canaria", name: "Par Gran Canaria" },
+  { key: "par-lanzarote", name: "Par Lanzarote" },
+  { key: "par-fuerte", name: "Par Fuerte" },
 ];
 
 // --- Helpers ---

@@ -28,7 +28,7 @@ export function ReportHeader({ label, period, type, completedSections, totalSect
     <div className="mb-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
-        <span>Spa Le Domaine</span>
+        <span>Par Gran Canaria</span>
         <ChevronRight className="h-3 w-3" />
         <span>Rapports</span>
         <ChevronRight className="h-3 w-3" />

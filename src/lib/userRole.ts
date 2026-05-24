@@ -8,7 +8,7 @@ export type UserRole = "manager" | "direction" | "admin";
 const ROLE_KEY = "user_role_v1";
 const SPA_KEY = "user_spa_v1";
 
-export const MANAGER_DEFAULT_SPA = { key: "spa-le-domaine", name: "Spa Le Domaine" };
+export const MANAGER_DEFAULT_SPA = { key: "par-gran-canaria", name: "Par Gran Canaria" };
 
 export function getUserRole(): UserRole {
   try {

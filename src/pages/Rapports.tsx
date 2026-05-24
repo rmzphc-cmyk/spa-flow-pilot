@@ -119,7 +119,7 @@ export default function Rapports() {
     <>
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Rapports — Spa Le Domaine</h1>
+        <h1 className="text-2xl font-bold text-foreground">Rapports — Par Gran Canaria</h1>
         {!hasActiveReport && (
           <Button className="gap-1.5">
             <Plus className="h-4 w-4" /> Nouveau rapport

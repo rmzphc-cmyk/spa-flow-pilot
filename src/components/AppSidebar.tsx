@@ -104,7 +104,7 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
           </>
         ) : (
           <>
-            <h2 className="text-sm font-bold text-foreground">Spa Le Domaine</h2>
+            <h2 className="text-sm font-bold text-foreground">Par Gran Canaria</h2>
             <p className="text-xs text-muted-foreground mt-0.5">{t("period.march2026")}</p>
           </>
         )}
