@@ -411,6 +411,7 @@ function KpiRow({
   onWeeklyChange,
   onDelete,
   onUpdateMeta,
+  onUpdateCategory,
   onSaved,
 }: RowProps) {
   const [monthlyDraft, setMonthlyDraft] = useState<string>(
