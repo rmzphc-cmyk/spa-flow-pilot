@@ -37,10 +37,15 @@ interface RespTemplate {
   active: boolean;
 }
 
+interface MonthlyOverride {
+  enabled?: boolean;
+  overrideQty?: number | null;
+}
 interface SpaAssignment {
   templateId: string;
   enabled: boolean;
   overrideQty: number | null;
+  monthly: Record<string, MonthlyOverride>; // key = "YYYY-MM"
 }
 
 interface QualitativeLabels {
