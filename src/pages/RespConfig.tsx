@@ -59,31 +59,79 @@ interface QualitativeLabels {
 const categories = ["RH", "Commercial", "Opérationnel", "Qualité", "Formation", "Administratif"];
 
 const initialTemplates: RespTemplate[] = [
-  { id: "t1", name: "Réunion d'équipe hebdomadaire", description: "Animer la réunion d'équipe chaque semaine", frequency: "weekly", expectedQty: 1, category: "RH", conditional: false, conditionText: "", saisieMode: "numeric", active: true },
-  { id: "t2", name: "Entretien individuel mensuel", description: "Réaliser un entretien individuel avec chaque membre de l'équipe", frequency: "monthly", expectedQty: 4, category: "RH", conditional: false, conditionText: "", saisieMode: "numeric", active: true },
-  { id: "t3", name: "Contrôle qualité cabines", description: "Vérifier la conformité des cabines de soin", frequency: "daily", expectedQty: 2, category: "Qualité", conditional: false, conditionText: "", saisieMode: "numeric", active: true },
-  { id: "t4", name: "Suivi des ventes produits", description: "Analyser les ventes produits et ajuster la mise en avant", frequency: "weekly", expectedQty: 1, category: "Commercial", conditional: false, conditionText: "", saisieMode: "numeric", active: true },
-  { id: "t5", name: "Rapport d'activité trimestriel", description: "Rédiger le rapport d'activité du trimestre", frequency: "quarterly", expectedQty: 1, category: "Administratif", conditional: false, conditionText: "", saisieMode: "qualitative", active: true },
-  { id: "t6", name: "Intégration nouveau collaborateur", description: "Suivre le parcours d'intégration", frequency: "monthly", expectedQty: 1, category: "RH", conditional: true, conditionText: "Se déclenche si un collaborateur est en période d'essai", saisieMode: "qualitative", active: true },
+  // --- Hebdomadaires ---
+  { id: "w1", name: "Superviser l'activité quotidienne du spa", description: "Vérifier que les soins, l'accueil et les plannings tournent correctement", frequency: "weekly", expectedQty: 1, category: "Opérationnel", conditional: false, conditionText: "", saisieMode: "numeric", active: true },
+  { id: "w2", name: "Gérer les équipes", description: "Répartition des shifts, suivi de présence, briefings et remontée des besoins", frequency: "weekly", expectedQty: 1, category: "RH", conditional: false, conditionText: "", saisieMode: "numeric", active: true },
+  { id: "w3", name: "Contrôler la qualité de service et satisfaction client", description: "Contrôler la qualité de service, la satisfaction client et traiter les réclamations éventuelles", frequency: "weekly", expectedQty: 1, category: "Qualité", conditional: false, conditionText: "", saisieMode: "numeric", active: true },
+  { id: "w4", name: "Vérifier les stocks et commander si nécessaire", description: "Vérifier les stocks de produits, consommables et matériel, puis passer les commandes urgentes", frequency: "weekly", expectedQty: 1, category: "Opérationnel", conditional: false, conditionText: "", saisieMode: "numeric", active: true },
+  { id: "w5", name: "Contrôler l'hygiène, la sécurité et l'état des cabines", description: "Contrôler l'hygiène, la sécurité et le bon état des cabines, espaces humides et zones d'accueil", frequency: "weekly", expectedQty: 1, category: "Qualité", conditional: false, conditionText: "", saisieMode: "numeric", active: true },
+  { id: "w6", name: "Suivre les réservations et le taux de remplissage", description: "Suivre les réservations, le taux de remplissage et les annulations pour ajuster l'organisation", frequency: "weekly", expectedQty: 1, category: "Commercial", conditional: false, conditionText: "", saisieMode: "numeric", active: true },
+  { id: "w7", name: "Point rapide sur les ventes, les caisses et les objectifs", description: "Faire un point rapide sur les ventes, les caisses et les objectifs de la semaine", frequency: "weekly", expectedQty: 1, category: "Commercial", conditional: false, conditionText: "", saisieMode: "numeric", active: true },
+  // --- Mensuelles ---
+  { id: "m1", name: "Analyser les performances du spa", description: "Analyser les performances : chiffre d'affaires, panier moyen, taux d'occupation, productivité et rentabilité", frequency: "monthly", expectedQty: 1, category: "Commercial", conditional: false, conditionText: "", saisieMode: "qualitative", active: true },
+  { id: "m2", name: "Préparer un reporting de gestion", description: "Préparer un reporting de gestion pour la direction", frequency: "monthly", expectedQty: 1, category: "Administratif", conditional: false, conditionText: "", saisieMode: "qualitative", active: true },
+  { id: "m3", name: "Revoir les stocks et ajuster les seuils", description: "Revoir les stocks plus en détail, ajuster les seuils de commande et suivre les écarts", frequency: "monthly", expectedQty: 1, category: "Opérationnel", conditional: false, conditionText: "", saisieMode: "qualitative", active: true },
+  { id: "m4", name: "Évaluer les performances de l'équipe", description: "Évaluer les performances de l'équipe, identifier les besoins en formation ou en accompagnement", frequency: "monthly", expectedQty: 1, category: "RH", conditional: false, conditionText: "", saisieMode: "qualitative", active: true },
+  { id: "m5", name: "Mettre à jour les plannings et objectifs commerciaux", description: "Mettre à jour les plannings, objectifs commerciaux et priorités du mois suivant", frequency: "monthly", expectedQty: 1, category: "Opérationnel", conditional: false, conditionText: "", saisieMode: "qualitative", active: true },
+  { id: "m6", name: "Contrôler le respect des standards et protocoles", description: "Contrôler le respect des standards, des protocoles de soins et des règles d'hygiène", frequency: "monthly", expectedQty: 1, category: "Qualité", conditional: false, conditionText: "", saisieMode: "qualitative", active: true },
+  { id: "m7", name: "Développer des actions commerciales ou fidélisation", description: "Développer des actions commerciales ou fidélisation : offres, packages, promotions, événements", frequency: "monthly", expectedQty: 1, category: "Commercial", conditional: false, conditionText: "", saisieMode: "qualitative", active: true },
+  { id: "m8", name: "Vérifier la maintenance préventive du matériel", description: "Vérifier la maintenance préventive du matériel et planifier les interventions nécessaires", frequency: "monthly", expectedQty: 1, category: "Opérationnel", conditional: false, conditionText: "", saisieMode: "qualitative", active: true },
 ];
 
 const initialSpaAssignments: Record<string, SpaAssignment[]> = {
   "spa-le-domaine": [
-    { templateId: "t1", enabled: true, overrideQty: null, monthly: {} },
-    { templateId: "t2", enabled: true, overrideQty: 2, monthly: {} },
-    { templateId: "t3", enabled: true, overrideQty: null, monthly: {} },
-    { templateId: "t4", enabled: true, overrideQty: null, monthly: {} },
-    { templateId: "t5", enabled: true, overrideQty: null, monthly: {} },
-    { templateId: "t6", enabled: false, overrideQty: null, monthly: {} },
+    { templateId: "w1", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "w2", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "w3", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "w4", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "w5", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "w6", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "w7", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "m1", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "m2", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "m3", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "m4", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "m5", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "m6", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "m7", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "m8", enabled: true, overrideQty: null, monthly: {} },
   ],
   "spa-riviera": [
-    { templateId: "t1", enabled: true, overrideQty: null, monthly: {} },
-    { templateId: "t2", enabled: true, overrideQty: null, monthly: {} },
-    { templateId: "t3", enabled: false, overrideQty: null, monthly: {} },
-    { templateId: "t4", enabled: true, overrideQty: 2, monthly: {} },
-    { templateId: "t5", enabled: true, overrideQty: null, monthly: {} },
-    { templateId: "t6", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "w1", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "w2", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "w3", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "w4", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "w5", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "w6", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "w7", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "m1", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "m2", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "m3", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "m4", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "m5", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "m6", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "m7", enabled: true, overrideQty: null, monthly: {} },
+    { templateId: "m8", enabled: true, overrideQty: null, monthly: {} },
   ],
+};
+
+const RESP_TEMPLATES_KEY = "resp_templates_v1";
+const RESP_ASSIGNMENTS_KEY = "resp_assignments_v1";
+
+const loadTemplates = (): RespTemplate[] => {
+  try {
+    const raw = localStorage.getItem(RESP_TEMPLATES_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return initialTemplates;
+};
+
+const loadAssignments = (): Record<string, SpaAssignment[]> => {
+  try {
+    const raw = localStorage.getItem(RESP_ASSIGNMENTS_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch {}
+  return initialSpaAssignments;
 };
 
 const spaList = [
@@ -121,9 +169,13 @@ const emptyTemplate = (): RespTemplate => ({
 
 export default function RespConfig() {
   const [tab, setTab] = useState<"templates" | "affectation" | "calendrier">("templates");
-  const [templates, setTemplates] = useState(initialTemplates);
-  const [spaAssignments, setSpaAssignments] = useState(initialSpaAssignments);
+  const [templates, setTemplates] = useState<RespTemplate[]>(() => loadTemplates());
+  const [spaAssignments, setSpaAssignments] = useState<Record<string, SpaAssignment[]>>(() => loadAssignments());
   const [qualLabels, setQualLabels] = useState<QualitativeLabels>({ done: "Réalisé", partial: "Partiel", notDone: "Non réalisé" });
+
+  // Persist templates & assignments
+  useEffect(() => { localStorage.setItem(RESP_TEMPLATES_KEY, JSON.stringify(templates)); }, [templates]);
+  useEffect(() => { localStorage.setItem(RESP_ASSIGNMENTS_KEY, JSON.stringify(spaAssignments)); }, [spaAssignments]);
 
   // Meeting schedule (recurrence for Weekly + Monthly meetings)
   const [schedule, setSchedule] = useState<MeetingSchedule>(() => loadSchedule());

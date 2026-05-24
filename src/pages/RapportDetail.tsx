@@ -83,7 +83,7 @@ export default function RapportDetail() {
         <SectionCheckinWeekly onStatusChange={(s) => updateSectionStatus("checkin", s)} />
       )}
       {activeSection === "responsabilites" && !isWeekly && (
-        <SectionResponsabilites onStatusChange={(s) => updateSectionStatus("responsabilites", s)} />
+        <SectionResponsabilites reportType={report.type} onStatusChange={(s) => updateSectionStatus("responsabilites", s)} />
       )}
       {activeSection === "todo" && !isWeekly && <SectionTodo />}
       {activeSection === "objectifs" && !isWeekly && <SectionObjectifs reportType={report.type} />}
