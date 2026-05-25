@@ -18,9 +18,11 @@ export interface KpiActual {
 export interface TodoItem {
   id: string;
   label: string;
-  status: "todo" | "in_progress" | "done";
+  status: "todo" | "in_progress" | "done" | "postponed";
   owner?: string;
   origin?: string; // e.g. "IDS W14" if it came from a previous blocker
+  note?: string; // Commentaire de suivi (Retours positifs / Repoussé pour congé...)
+  dueDate?: string;
 }
 
 export interface ObjectiveItem {
