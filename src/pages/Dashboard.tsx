@@ -303,17 +303,22 @@ function RecentActivity() {
   );
 }
 
-function UpcomingMeetingsCard() {
+function UpcomingMeetingsCard({ reports }: { reports: ReportRecord[] }) {
   const navigate = useNavigate();
   const schedule = useMeetingSchedule();
   const now = new Date();
   const weeklyDate = nextWeeklyMeeting(schedule.weekly_day, now);
   const monthlyDate = nextMonthlyMeeting(schedule, now);
 
-  // Readiness mock — derive from existing draft state.
+  // Find latest draft per cycle type
+  const findDraft = (type: "weekly" | "monthly") =>
+    reports.find((r) => r.type === type && isPreparationState(r.state)) ?? null;
+  const weeklyDraft = findDraft("weekly");
+  const monthlyDraft = findDraft("monthly");
+
   const readiness: Record<"weekly" | "monthly", { completion: number; reportId: string | null }> = {
-    weekly: { completion: 0, reportId: draftReportsByType.weekly },
-    monthly: { completion: 29, reportId: draftReportsByType.monthly },
+    weekly: { completion: weeklyDraft ? computeCompletion(weeklyDraft).percent : 0, reportId: weeklyDraft?.id ?? null },
+    monthly: { completion: monthlyDraft ? computeCompletion(monthlyDraft).percent : 0, reportId: monthlyDraft?.id ?? null },
   };
 
   const meetings = [
@@ -378,12 +383,24 @@ function UpcomingMeetingsCard() {
 // --- Main Dashboard ---
 
 export default function Dashboard() {
+  const [reports, setReports] = useState<ReportRecord[]>(() => getReports());
+
+  useEffect(() => {
+    const reload = () => setReports(getReports());
+    window.addEventListener("reports-data-changed", reload);
+    return () => window.removeEventListener("reports-data-changed", reload);
+  }, []);
+
+  const currentReport = reports
+    .filter((r) => isPreparationState(r.state))
+    .sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""))[0];
+
   return (
     <>
       <h1 className="text-2xl font-bold text-foreground mb-6">Dashboard</h1>
-      <UpcomingMeetingsCard />
+      <UpcomingMeetingsCard reports={reports} />
       <OverdueAlert todos={overdueTodos} />
-      <CurrentReportCard report={currentReport} />
+      {currentReport ? <CurrentReportCard report={currentReport} /> : <NoCurrentReportCard />}
       <AiBriefCard />
       <QuickMetrics />
       <RecentActivity />
