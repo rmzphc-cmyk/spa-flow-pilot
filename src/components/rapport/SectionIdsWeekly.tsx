@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, X, Info } from "lucide-react";
 import type { SectionStatus } from "@/pages/RapportDetail";
+import { usePersistedSection } from "@/lib/usePersistedSection";
 
 interface CapturedIssue {
   text: string;
@@ -10,11 +11,12 @@ interface CapturedIssue {
 }
 
 interface Props {
+  reportId: string;
   onStatusChange: (status: SectionStatus) => void;
 }
 
-export function SectionIdsWeekly({ onStatusChange }: Props) {
-  const [issues, setIssues] = useState<CapturedIssue[]>([]);
+export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
+  const [issues, setIssues] = usePersistedSection<CapturedIssue[]>(reportId, "ids", []);
   const [showInput, setShowInput] = useState(false);
   const [newIssue, setNewIssue] = useState("");
 

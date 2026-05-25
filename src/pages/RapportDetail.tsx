@@ -86,24 +86,24 @@ function PreparationMode({ report }: { report: ReportRecord }) {
       />
 
       {activeSection === "kpi" && (
-        <SectionKpi reportType={report.type} period={report.period} onStatusChange={(s) => updateSectionStatus("kpi", s)} />
+        <SectionKpi reportId={report.id} reportType={report.type} period={report.period} onStatusChange={(s) => updateSectionStatus("kpi", s)} />
       )}
       {activeSection === "checkin" && !isWeekly && (
-        <SectionCheckin onStatusChange={(s) => updateSectionStatus("checkin", s)} />
+        <SectionCheckin reportId={report.id} onStatusChange={(s) => updateSectionStatus("checkin", s)} />
       )}
       {activeSection === "checkin" && isWeekly && (
-        <SectionCheckinWeekly onStatusChange={(s) => updateSectionStatus("checkin", s)} />
+        <SectionCheckinWeekly reportId={report.id} onStatusChange={(s) => updateSectionStatus("checkin", s)} />
       )}
       {activeSection === "responsabilites" && !isWeekly && (
-        <SectionResponsabilites reportType={report.type} onStatusChange={(s) => updateSectionStatus("responsabilites", s)} />
+        <SectionResponsabilites reportId={report.id} reportType={report.type} onStatusChange={(s) => updateSectionStatus("responsabilites", s)} />
       )}
-      {activeSection === "todo" && !isWeekly && <SectionTodo />}
-      {activeSection === "objectifs" && !isWeekly && <SectionObjectifs reportType={report.type} />}
-      {activeSection === "ids" && !isWeekly && <SectionIds reportType={report.type} />}
+      {activeSection === "todo" && !isWeekly && <SectionTodo reportId={report.id} />}
+      {activeSection === "objectifs" && !isWeekly && <SectionObjectifs reportId={report.id} reportType={report.type} />}
+      {activeSection === "ids" && !isWeekly && <SectionIds reportId={report.id} reportType={report.type} />}
       {activeSection === "ids" && isWeekly && (
-        <SectionIdsWeekly onStatusChange={(s) => updateSectionStatus("ids", s)} />
+        <SectionIdsWeekly reportId={report.id} onStatusChange={(s) => updateSectionStatus("ids", s)} />
       )}
-      {activeSection === "cloture" && !isWeekly && <SectionCloture reportType={report.type} />}
+      {activeSection === "cloture" && !isWeekly && <SectionCloture reportId={report.id} reportType={report.type} />}
 
       {/* STICKY BOTTOM BAR — Preparation mode */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-[0_-2px_8px_rgba(0,0,0,0.06)] px-6 py-3 flex items-center justify-between z-50">
