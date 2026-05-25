@@ -1,8 +1,14 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Lightbulb, Plus, Lock } from "lucide-react";
+import { Lightbulb, Plus, Lock, CheckSquare, Target, Check } from "lucide-react";
 import { usePersistedSection } from "@/lib/usePersistedSection";
+import {
+  convertIdsToTodo,
+  convertIdsToObjectif,
+  getConversions,
+  type IdsConversionMap,
+} from "@/lib/idsConversions";
 
 interface Props {
   reportId: string;
@@ -14,14 +20,66 @@ const previousIssues = [
   "Retards fréquents livraisons fournisseur huiles",
 ];
 
+function issueKey(text: string, i: number) {
+  return `m_${i}_${text.slice(0, 24)}`;
+}
+
 export function SectionIds({ reportId, reportType }: Props) {
   const [issues, setIssues] = usePersistedSection<string[]>(reportId, "ids", []);
   const [newIssue, setNewIssue] = useState("");
+  const [convs, setConvs] = useState<IdsConversionMap>(() => getConversions(reportId));
+
+  useEffect(() => {
+    const refresh = () => setConvs(getConversions(reportId));
+    window.addEventListener("report-section-saved", refresh);
+    return () => window.removeEventListener("report-section-saved", refresh);
+  }, [reportId]);
 
   const addIssue = () => {
     if (!newIssue.trim()) return;
     setIssues((p) => [...p, newIssue.trim()]);
     setNewIssue("");
+  };
+
+  const handleConvert = (kind: "todo" | "objectif", text: string, key: string) => {
+    if (kind === "todo") convertIdsToTodo(reportId, text, key);
+    else convertIdsToObjectif(reportId, text, key);
+    setConvs(getConversions(reportId));
+  };
+
+  const renderIssueRow = (text: string, i: number) => {
+    const key = issueKey(text, i);
+    const conv = convs[key] ?? {};
+    return (
+      <div key={i} className="bg-card border border-border rounded-xl p-3 shadow-sm">
+        <div className="flex items-center gap-3">
+          <Lightbulb className="h-4 w-4 text-amber-500 shrink-0" />
+          <span className="text-sm text-foreground flex-1">{text}</span>
+        </div>
+        <div className="flex gap-2 mt-2.5 flex-wrap">
+          {conv.todo ? (
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full">
+              <Check className="h-3 w-3" /> To-do créé
+            </span>
+          ) : (
+            <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5"
+              onClick={() => handleConvert("todo", text, key)}>
+              <CheckSquare className="h-3.5 w-3.5" /> → To-do
+            </Button>
+          )}
+          {conv.objectif ? (
+            <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full">
+              <Check className="h-3 w-3" /> Objectif créé
+            </span>
+          ) : (
+            <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5"
+              onClick={() => handleConvert("objectif", text, key)}>
+              <Target className="h-3.5 w-3.5" /> → Objectif
+            </Button>
+          )}
+        </div>
+      </div>
+    );
   };
 
   if (reportType === "monthly") {
@@ -30,11 +88,15 @@ export function SectionIds({ reportId, reportType }: Props) {
         <h2 className="text-lg font-semibold text-foreground">IDS — Identifier, Discuter, Solutionner</h2>
         <p className="text-sm text-muted-foreground mb-4">Traitement des problèmes en réunion</p>
 
-        <div className="bg-muted/50 border border-border rounded-xl p-8 text-center">
-          <Lock className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
-          <p className="text-foreground font-medium">L'IDS se remplit pendant et après la réunion</p>
-          <p className="text-sm text-muted-foreground mt-1">Revenez ici lors de la réunion.</p>
-        </div>
+        {issues.length === 0 ? (
+          <div className="bg-muted/50 border border-border rounded-xl p-8 text-center">
+            <Lock className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
+            <p className="text-foreground font-medium">L'IDS se remplit pendant et après la réunion</p>
+            <p className="text-sm text-muted-foreground mt-1">Revenez ici lors de la réunion.</p>
+          </div>
+        ) : (
+          <div className="space-y-2">{issues.map((it, i) => renderIssueRow(it, i))}</div>
+        )}
 
         {previousIssues.length > 0 && (
           <div className="mt-4">
@@ -52,22 +114,15 @@ export function SectionIds({ reportId, reportType }: Props) {
     );
   }
 
-  // Weekly mode — capture only
+  // Weekly fallback
   return (
     <section className="mb-8">
       <h2 className="text-lg font-semibold text-foreground">IDS — Problèmes à remonter</h2>
       <p className="text-sm text-muted-foreground mb-4">
-        Problèmes identifiés — ils seront traités en réunion Monthly
+        Problèmes identifiés — convertissez-les en to-do ou objectif
       </p>
 
-      <div className="space-y-2 mb-4">
-        {issues.map((issue, i) => (
-          <div key={i} className="bg-card border border-border rounded-xl p-3 shadow-sm flex items-center gap-3">
-            <Lightbulb className="h-4 w-4 text-amber-500 shrink-0" />
-            <span className="text-sm text-foreground">{issue}</span>
-          </div>
-        ))}
-      </div>
+      <div className="space-y-2 mb-4">{issues.map((it, i) => renderIssueRow(it, i))}</div>
 
       <div className="flex gap-2">
         <Input

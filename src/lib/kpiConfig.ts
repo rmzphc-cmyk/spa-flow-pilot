@@ -21,14 +21,21 @@ export interface KpiConfigItem {
 
 const STORAGE_KEY = "kpi_config";
 
+const CURRENT_MONTH = "2026-05";
+
+function monthTarget(value: number): KpiMonthlyMap {
+  return { [CURRENT_MONTH]: { target: value, weekly_targets: {} } };
+}
+
 const DEFAULTS: KpiConfigItem[] = [
-  { id: "k1", name: "CA du mois", unit: "€", category: "spa", monthly_targets: {} },
-  { id: "k2", name: "Taux d'occupation cabines", unit: "%", category: "spa", monthly_targets: {} },
-  { id: "k3", name: "Panier moyen", unit: "€", category: "spa", monthly_targets: {} },
-  { id: "k4", name: "NPS clients", unit: "/10", category: "spa", monthly_targets: {} },
-  { id: "k5", name: "Ventes produits", unit: "€", category: "spa", monthly_targets: {} },
-  { id: "k6", name: "Absentéisme équipe", unit: "j", category: "manager", monthly_targets: {} },
+  { id: "k1", name: "CA Global", unit: "€", category: "spa", monthly_targets: monthTarget(18000) },
+  { id: "k2", name: "CA Retail", unit: "€", category: "spa", monthly_targets: monthTarget(3500) },
+  { id: "k3", name: "Panier Moyen", unit: "€", category: "spa", monthly_targets: monthTarget(95) },
+  { id: "k4", name: "Taux No-Show", unit: "%", category: "spa", monthly_targets: monthTarget(8) },
+  { id: "k5", name: "NPS", unit: "/10", category: "spa", monthly_targets: monthTarget(8.5) },
+  { id: "k6", name: "Taux Rebooking", unit: "%", category: "spa", monthly_targets: monthTarget(35) },
 ];
+
 
 export function sortKpis(items: KpiConfigItem[]): KpiConfigItem[] {
   return [...items].sort((a, b) => {
