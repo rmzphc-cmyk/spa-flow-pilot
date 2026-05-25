@@ -1,26 +1,17 @@
-import { Outlet, useLocation, useParams } from "react-router-dom";
+import { Outlet, useLocation } from "react-router-dom";
 import { AppSidebar } from "./AppSidebar";
 import { AppHeader } from "./AppHeader";
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import type { SectionId, SectionStatus, ReportType } from "@/pages/RapportDetail";
-
-const reportData: Record<string, { type: ReportType }> = {
-  r1: { type: "monthly" },
-  r2: { type: "weekly" },
-  r3: { type: "monthly" },
-  r4: { type: "weekly" },
-  r5: { type: "monthly" },
-  r6: { type: "weekly" },
-};
-
-const weeklySections: SectionId[] = ["kpi", "checkin", "ids"];
-const monthlySections: SectionId[] = ["kpi", "checkin", "responsabilites", "todo", "objectifs", "ids", "cloture"];
+import { getReport, isMeetingState } from "@/lib/reportsStore";
 
 export function AppLayout() {
   const location = useLocation();
-  const reportMatch = location.pathname.match(/^\/rapport\/(\w+)/);
+  const reportMatch = location.pathname.match(/^\/rapport\/([\w-]+)/);
   const reportId = reportMatch?.[1] ?? "";
-  const reportType: ReportType = reportData[reportId]?.type ?? "monthly";
+  const reportRecord = getReport(reportId);
+  const reportType: ReportType = reportRecord?.type ?? "monthly";
+  const fullscreenMeeting = !!reportRecord && isMeetingState(reportRecord.state);
 
   const [activeSection, setActiveSection] = useState<SectionId>("kpi");
   const [sectionStatuses, setSectionStatuses] = useState<Record<SectionId, SectionStatus>>({
@@ -32,6 +23,11 @@ export function AppLayout() {
     ids: "incomplete",
     cloture: "incomplete",
   });
+
+  // MEETING MODE — full focus, no sidebar/header
+  if (fullscreenMeeting) {
+    return <Outlet context={{ activeSection, setActiveSection, sectionStatuses, setSectionStatuses, reportType }} />;
+  }
 
   return (
     <div className="flex flex-col min-h-screen w-full">

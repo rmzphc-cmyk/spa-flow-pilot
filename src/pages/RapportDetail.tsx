@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useMemo, useCallback } from "react";
 import { useParams, useOutletContext } from "react-router-dom";
 import { ReportHeader } from "@/components/rapport/ReportHeader";
 import { SectionKpi } from "@/components/rapport/SectionKpi";
@@ -11,9 +11,11 @@ import { SectionIds } from "@/components/rapport/SectionIds";
 import { SectionIdsWeekly } from "@/components/rapport/SectionIdsWeekly";
 import { SectionCloture } from "@/components/rapport/SectionCloture";
 import { AutosaveIndicator } from "@/components/rapport/AutosaveIndicator";
+import { MeetingView } from "@/components/rapport/MeetingView";
+import { getReport, isMeetingState } from "@/lib/reportsStore";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { Save, Send } from "lucide-react";
+import { Save, CheckCircle2 } from "lucide-react";
 
 export type ReportType = "monthly" | "weekly";
 export type SectionId = "kpi" | "checkin" | "responsabilites" | "todo" | "objectifs" | "ids" | "cloture";
@@ -27,40 +29,50 @@ interface OutletContext {
   reportType: ReportType;
 }
 
-const reportData: Record<string, { label: string; period: string; type: ReportType }> = {
-  r1: { label: "Monthly — Mars 2026", period: "1 mars → 31 mars 2026", type: "monthly" },
-  r2: { label: "Weekly — Semaine 12", period: "18 → 24 mars 2026", type: "weekly" },
-  r3: { label: "Monthly — Février 2026", period: "1 fév → 28 fév 2026", type: "monthly" },
-  r4: { label: "Weekly — Semaine 11", period: "11 → 17 mars 2026", type: "weekly" },
-  r5: { label: "Monthly — Janvier 2026", period: "1 jan → 31 jan 2026", type: "monthly" },
-  r6: { label: "Weekly — Semaine 13", period: "25 → 31 mars 2026", type: "weekly" },
-};
-
 const weeklySections: SectionId[] = ["kpi", "checkin", "ids"];
 const monthlySections: SectionId[] = ["kpi", "checkin", "responsabilites", "todo", "objectifs", "ids", "cloture"];
 
 export default function RapportDetail() {
   const { id } = useParams<{ id: string }>();
-  const report = reportData[id ?? ""] ?? { label: `Rapport ${id}`, period: "", type: "monthly" as ReportType };
-  const { activeSection, sectionStatuses, setSectionStatuses } = useOutletContext<OutletContext>();
+  const record = getReport(id);
+  const report = record ?? {
+    id: id ?? "",
+    type: "monthly" as ReportType,
+    label: `Rapport ${id}`,
+    period: "",
+    state: "draft_preparation" as const,
+    meetingDate: null,
+    updatedAt: "",
+    completion: 0,
+  };
 
+  // MEETING MODE — read-only, full focus
+  if (isMeetingState(report.state)) {
+    return <MeetingView report={report} />;
+  }
+
+  // PREPARATION MODE — keep existing editable layout
+  return <PreparationMode report={report} />;
+}
+
+function PreparationMode({ report }: { report: ReturnType<typeof getReport> & {} }) {
+  const { activeSection, sectionStatuses, setSectionStatuses } = useOutletContext<OutletContext>();
   const isWeekly = report.type === "weekly";
   const sections = isWeekly ? weeklySections : monthlySections;
 
-  const updateSectionStatus = useCallback((section: SectionId, status: SectionStatus) => {
-    setSectionStatuses((prev) => ({ ...prev, [section]: status }));
-  }, [setSectionStatuses]);
+  const updateSectionStatus = useCallback(
+    (section: SectionId, status: SectionStatus) => {
+      setSectionStatuses((prev) => ({ ...prev, [section]: status }));
+    },
+    [setSectionStatuses],
+  );
 
-  const canSubmit = useMemo(() => {
-    if (isWeekly) {
-      return sectionStatuses.kpi === "complete" && sectionStatuses.checkin === "complete";
-    }
-    return sectionStatuses.kpi === "complete" && sectionStatuses.checkin === "complete";
-  }, [sectionStatuses, isWeekly]);
+  const completedCount = useMemo(
+    () => sections.filter((s) => sectionStatuses[s] === "complete").length,
+    [sectionStatuses, sections],
+  );
 
-  const completedCount = useMemo(() => {
-    return sections.filter((s) => sectionStatuses[s] === "complete").length;
-  }, [sectionStatuses, sections]);
+  const canSubmit = sectionStatuses.kpi === "complete" && sectionStatuses.checkin === "complete";
 
   return (
     <div className="pb-24">
@@ -93,7 +105,7 @@ export default function RapportDetail() {
       )}
       {activeSection === "cloture" && !isWeekly && <SectionCloture reportType={report.type} />}
 
-      {/* STICKY BOTTOM BAR */}
+      {/* STICKY BOTTOM BAR — Preparation mode */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-[0_-2px_8px_rgba(0,0,0,0.06)] px-6 py-3 flex items-center justify-between z-50">
         <div className="flex items-center gap-4">
           <Button variant="ghost" className="gap-1.5">
@@ -106,8 +118,8 @@ export default function RapportDetail() {
           <TooltipTrigger asChild>
             <span>
               <Button size="sm" disabled={!canSubmit} className="gap-1.5">
-                <Send className="h-4 w-4" />
-                {isWeekly ? "Valider et envoyer à la Direction" : "Soumettre pour revue"}
+                <CheckCircle2 className="h-4 w-4" />
+                Finaliser le rapport
               </Button>
             </span>
           </TooltipTrigger>
