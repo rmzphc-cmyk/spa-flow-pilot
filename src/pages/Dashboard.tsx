@@ -1,44 +1,35 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, AlertTriangle, Sparkles, CheckCircle2, Target, Users, Eye, Calendar, Plus } from "lucide-react";
+import { ArrowRight, AlertTriangle, Sparkles, CheckCircle2, Target, Calendar, Plus, FileText, Eye } from "lucide-react";
 import {
   useMeetingSchedule,
   nextWeeklyMeeting,
   nextMonthlyMeeting,
   daysUntil,
 } from "@/lib/meetingSchedule";
+import {
+  getReports,
+  isPreparationState,
+  type ReportRecord,
+  type ReportState,
+} from "@/lib/reportsStore";
 
-// Mock map of existing draft reports per cycle type.
-const draftReportsByType: Record<"weekly" | "monthly", string | null> = {
-  weekly: null,
-  monthly: "r1",
-};
+type ReportStatus = ReportState;
 
-// --- Mock Data ---
+const WEEKLY_SECTION_KEYS = ["kpi", "checkin", "ids"] as const;
+const MONTHLY_SECTION_KEYS = ["kpi", "checkin", "responsabilites", "todo", "objectifs", "ids", "cloture"] as const;
 
-type ReportStatus = "draft_preparation" | "ready_for_review" | "in_meeting" | "post_meeting_generated" | "validated";
-
-interface CurrentReport {
-  id: string;
-  type: "weekly" | "monthly";
-  label: string;
-  period: string;
-  spa: string;
-  status: ReportStatus;
-  completedSections: number;
-  totalSections: number;
+function getSectionKeysFor(type: "weekly" | "monthly"): readonly string[] {
+  return type === "weekly" ? WEEKLY_SECTION_KEYS : MONTHLY_SECTION_KEYS;
 }
 
-const currentReport: CurrentReport = {
-  id: "r1",
-  type: "monthly",
-  label: "Monthly — Mars 2026",
-  period: "1 mars → 31 mars 2026",
-  spa: "Par Gran Canaria",
-  status: "draft_preparation",
-  completedSections: 2,
-  totalSections: 7,
-};
+function computeCompletion(report: ReportRecord): { completed: number; total: number; percent: number } {
+  const keys = getSectionKeysFor(report.type);
+  const details = (report.details ?? {}) as unknown as Record<string, unknown>;
+  const completed = keys.filter((k) => details[k] != null).length;
+  return { completed, total: keys.length, percent: Math.round((completed / keys.length) * 100) };
+}
 
 const overdueTodos = [
   { id: "t1", title: "Finaliser planning cabines semaine 13", daysOverdue: 3 },
@@ -110,15 +101,16 @@ function OverdueAlert({ todos }: { todos: typeof overdueTodos }) {
   );
 }
 
-function CurrentReportCard({ report }: { report: CurrentReport }) {
+function CurrentReportCard({ report }: { report: ReportRecord }) {
   const navigate = useNavigate();
-  const status = statusConfig[report.status];
-  const cta = getCtaConfig(report.status, report.type);
-  const progressPercent = (report.completedSections / report.totalSections) * 100;
+  const status = statusConfig[report.state];
+  const cta = getCtaConfig(report.state, report.type);
+  const { completed, total } = computeCompletion(report);
 
-  const sectionColors = Array.from({ length: report.totalSections }, (_, i) =>
-    i < report.completedSections ? "bg-primary" : "bg-border"
+  const sectionColors = Array.from({ length: total }, (_, i) =>
+    i < completed ? "bg-primary" : "bg-border"
   );
+
 
   return (
     <div className="bg-card rounded-xl shadow-sm border border-border p-6 mb-4">
@@ -133,7 +125,6 @@ function CurrentReportCard({ report }: { report: CurrentReport }) {
             {report.type === "weekly" ? "🟢 Weekly" : "🔵 Monthly"}
           </span>
           <span className="text-sm text-muted-foreground">{report.period}</span>
-          <span className="text-sm text-muted-foreground">• {report.spa}</span>
         </div>
         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${status.bg} ${status.text}`}>
           {status.label}
@@ -144,7 +135,7 @@ function CurrentReportCard({ report }: { report: CurrentReport }) {
       <div className="mb-1">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium text-foreground">Progression</span>
-          <span className="text-xs text-muted-foreground">{report.completedSections}/{report.totalSections} sections</span>
+          <span className="text-xs text-muted-foreground">{completed}/{total} sections</span>
         </div>
         <div className="flex gap-1 h-2">
           {sectionColors.map((color, i) => (
@@ -172,6 +163,20 @@ function CurrentReportCard({ report }: { report: CurrentReport }) {
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+function NoCurrentReportCard() {
+  const navigate = useNavigate();
+  return (
+    <div className="bg-card rounded-xl shadow-sm border border-dashed border-border p-8 mb-4 text-center">
+      <FileText className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+      <p className="text-foreground font-medium">Aucun rapport en cours</p>
+      <p className="text-sm text-muted-foreground mt-1 mb-4">Créez un rapport pour démarrer un nouveau cycle.</p>
+      <Button onClick={() => navigate("/rapports")} className="gap-1.5">
+        <Plus className="h-4 w-4" /> Créer un rapport
+      </Button>
     </div>
   );
 }
@@ -298,17 +303,22 @@ function RecentActivity() {
   );
 }
 
-function UpcomingMeetingsCard() {
+function UpcomingMeetingsCard({ reports }: { reports: ReportRecord[] }) {
   const navigate = useNavigate();
   const schedule = useMeetingSchedule();
   const now = new Date();
   const weeklyDate = nextWeeklyMeeting(schedule.weekly_day, now);
   const monthlyDate = nextMonthlyMeeting(schedule, now);
 
-  // Readiness mock — derive from existing draft state.
+  // Find latest draft per cycle type
+  const findDraft = (type: "weekly" | "monthly") =>
+    reports.find((r) => r.type === type && isPreparationState(r.state)) ?? null;
+  const weeklyDraft = findDraft("weekly");
+  const monthlyDraft = findDraft("monthly");
+
   const readiness: Record<"weekly" | "monthly", { completion: number; reportId: string | null }> = {
-    weekly: { completion: 0, reportId: draftReportsByType.weekly },
-    monthly: { completion: 29, reportId: draftReportsByType.monthly },
+    weekly: { completion: weeklyDraft ? computeCompletion(weeklyDraft).percent : 0, reportId: weeklyDraft?.id ?? null },
+    monthly: { completion: monthlyDraft ? computeCompletion(monthlyDraft).percent : 0, reportId: monthlyDraft?.id ?? null },
   };
 
   const meetings = [
@@ -373,12 +383,24 @@ function UpcomingMeetingsCard() {
 // --- Main Dashboard ---
 
 export default function Dashboard() {
+  const [reports, setReports] = useState<ReportRecord[]>(() => getReports());
+
+  useEffect(() => {
+    const reload = () => setReports(getReports());
+    window.addEventListener("reports-data-changed", reload);
+    return () => window.removeEventListener("reports-data-changed", reload);
+  }, []);
+
+  const currentReport = reports
+    .filter((r) => isPreparationState(r.state))
+    .sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""))[0];
+
   return (
     <>
       <h1 className="text-2xl font-bold text-foreground mb-6">Dashboard</h1>
-      <UpcomingMeetingsCard />
+      <UpcomingMeetingsCard reports={reports} />
       <OverdueAlert todos={overdueTodos} />
-      <CurrentReportCard report={currentReport} />
+      {currentReport ? <CurrentReportCard report={currentReport} /> : <NoCurrentReportCard />}
       <AiBriefCard />
       <QuickMetrics />
       <RecentActivity />

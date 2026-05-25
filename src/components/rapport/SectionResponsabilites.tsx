@@ -91,6 +91,38 @@ export function SectionResponsabilites({ reportId, reportType = "monthly", onSta
 
   const isNumeric = (f: Frequency) => f === "daily" || f === "weekly" || f === "biweekly";
 
+  // Completion score (realisé / attendu) across active responsabilites
+  useEffect(() => {
+    const items = responsabilites.filter((r) => !(naFlags[r.id] ?? false));
+    if (items.length === 0) {
+      onStatusChange("incomplete");
+      return;
+    }
+    let totalScore = 0;
+    let counted = 0;
+    for (const r of items) {
+      if (isNumeric(r.frequency)) {
+        const raw = numericValues[r.id];
+        if (raw == null || raw === "" || isNaN(Number(raw))) continue;
+        const ratio = r.expected > 0 ? Math.min(1, Number(raw) / r.expected) : 1;
+        totalScore += ratio;
+        counted += 1;
+      } else {
+        const tv = toggleValues[r.id];
+        if (!tv) continue;
+        const ratio = tv === "done" ? 1 : tv === "partial" ? 0.5 : 0;
+        totalScore += ratio;
+        counted += 1;
+      }
+    }
+    if (counted === 0) {
+      onStatusChange("incomplete");
+      return;
+    }
+    const score = totalScore / counted;
+    onStatusChange(score >= 0.8 ? "complete" : "incomplete");
+  }, [responsabilites, numericValues, toggleValues, naFlags, onStatusChange]);
+
   return (
     <section className="mb-8">
       <div className="flex items-center justify-between mb-1">
