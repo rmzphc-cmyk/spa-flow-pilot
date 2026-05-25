@@ -833,9 +833,54 @@ export default function RespConfig() {
                 </div>
               </div>
 
+              {/* Spas concernés */}
+              <div>
+                <Label className="text-sm font-medium">Spas concernés</Label>
+                <p className="text-[10px] text-muted-foreground mb-2">
+                  Sélectionnez les spas auxquels ce template s'applique. Les ajustements mensuels restent gérés dans l'onglet « Affectation par spa ».
+                </p>
+                <div className="space-y-2">
+                  {ALL_SPAS.map((s) => {
+                    const checked = editingSpas.includes(s.key);
+                    return (
+                      <label
+                        key={s.key}
+                        className="flex items-center gap-2 p-2 rounded-lg border border-border hover:bg-muted cursor-pointer"
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(v) => {
+                            if (v) setEditingSpas([...editingSpas, s.key]);
+                            else setEditingSpas(editingSpas.filter((k) => k !== s.key));
+                          }}
+                        />
+                        <span className="text-sm text-foreground">{s.name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingSpas(ALL_SPAS.map((s) => s.key))}
+                    className="text-[11px] text-primary hover:underline"
+                  >
+                    Tout sélectionner
+                  </button>
+                  <span className="text-[11px] text-muted-foreground">·</span>
+                  <button
+                    type="button"
+                    onClick={() => setEditingSpas([])}
+                    className="text-[11px] text-muted-foreground hover:underline"
+                  >
+                    Tout désélectionner
+                  </button>
+                </div>
+              </div>
+
               {/* Active */}
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Actif</Label>
+                <Label className="text-sm font-medium">Actif (global)</Label>
                 <Switch checked={editing.active} onCheckedChange={(v) => updateField("active", v)} />
               </div>
 
