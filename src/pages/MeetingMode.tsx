@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -20,52 +20,16 @@ import {
   Clock,
   Play,
   Pause,
-  AlertTriangle,
-  Check,
 } from "lucide-react";
-
-// --- Mock data ---
-
-const reportData: Record<string, { label: string; period: string; spa: string }> = {
-  r1: { label: "Monthly — Mars 2026", period: "1 mars → 31 mars 2026", spa: "Par Gran Canaria" },
-  r3: { label: "Monthly — Février 2026", period: "1 fév → 28 fév 2026", spa: "Par Gran Canaria" },
-};
-
-const kpis = [
-  { id: "k1", label: "CA du mois", unit: "€", value: 42000, target: 45000, status: "amber" as const, comment: "Légère baisse due aux vacances scolaires" },
-  { id: "k2", label: "Taux d'occupation cabines", unit: "%", value: 78, target: 80, status: "amber" as const, comment: "" },
-  { id: "k3", label: "Panier moyen", unit: "€", value: 125, target: 120, status: "green" as const, comment: "" },
-  { id: "k4", label: "NPS clients", unit: "/10", value: 8.2, target: 8.5, status: "amber" as const, comment: "Quelques retours négatifs sur l'accueil" },
-  { id: "k5", label: "Ventes produits", unit: "€", value: 9200, target: 8000, status: "green" as const, comment: "" },
-  { id: "k6", label: "Absentéisme équipe", unit: "j", value: 4, target: 2, status: "red" as const, comment: "2 arrêts maladie non prévus" },
-  { id: "k7", label: "Nouveaux abonnements", unit: "", value: 18, target: 15, status: "green" as const, comment: "" },
-  { id: "k8", label: "Satisfaction collaborateurs", unit: "/10", value: 7.5, target: 8, status: "amber" as const, comment: "" },
-];
-
-const responsabilites = [
-  { label: "Briefing équipe matin", realized: 20, expected: 22 },
-  { label: "Vérification propreté cabines", realized: 22, expected: 22 },
-  { label: "Suivi planning RDV", realized: 3, expected: 4 },
-  { label: "Inventaire produits", status: "done" },
-  { label: "Réunion d'équipe mensuelle", status: "done" },
-];
-
-const todos = [
-  { title: "Finaliser planning cabines semaine 13", responsible: "Sophie M.", overdue: 3 },
-  { title: "Commander stocks produits soins visage", responsible: "Marie D.", overdue: 2 },
-  { title: "Mettre à jour tarifs site web", responsible: "Marie D.", deadline: "28 mars" },
-  { title: "Former Julie sur protocole soin signature", responsible: "Sophie M.", deadline: "30 mars" },
-];
-
-const objectifs = [
-  { title: "Augmenter le NPS clients", current: 8.2, target: 8.5, unit: "/10", status: "at_risk" },
-  { title: "Réduire l'absentéisme", current: 4, target: 2, unit: "j", status: "behind" },
-];
-
-const previousIssues = [
-  { text: "Fuite d'eau cabine 3 — en attente réparation", from: "Février 2026" },
-  { text: "Retards fréquents livraisons fournisseur huiles", from: "Février 2026" },
-];
+import { toast } from "sonner";
+import {
+  getReport,
+  getReportSection,
+  updateReportSection,
+  updateReportStatus,
+} from "@/lib/reportsStore";
+import { baseKpis } from "@/components/rapport/SectionKpi";
+import type { KpiCardValue } from "@/components/KpiCard";
 
 // --- Status colors ---
 
@@ -80,6 +44,14 @@ const objStatusStyles: Record<string, { label: string; classes: string }> = {
   at_risk: { label: "À risque", classes: "bg-amber-100 text-amber-800" },
   behind: { label: "En retard", classes: "bg-red-100 text-red-800" },
 };
+
+function kpiStatus(value: number, target: number): "green" | "amber" | "red" {
+  if (!target) return "amber";
+  const ratio = value / target;
+  if (ratio >= 0.95) return "green";
+  if (ratio >= 0.85) return "amber";
+  return "red";
+}
 
 // --- Timer hook ---
 
@@ -99,31 +71,98 @@ function useTimer() {
 
 // --- Main component ---
 
+interface TodoLike { id: string; title: string; responsible?: string; deadline?: string; status?: string; overdueDays?: number }
+interface ObjEntry { id: string; title: string; status?: string }
+
 export default function MeetingMode() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const report = reportData[id ?? ""] ?? { label: `Rapport ${id}`, period: "", spa: "Spa" };
+  const reportRecord = getReport(id);
+  const report = {
+    label: reportRecord?.label ?? `Rapport ${id}`,
+    period: reportRecord?.period ?? "",
+    spa: "Par Gran Canaria",
+  };
   const timer = useTimer();
 
-  const [issues, setIssues] = useState<string[]>([]);
+  // ----- Load persisted data -----
+  const kpiVals = (getReportSection(id ?? "", "kpi") as Record<string, KpiCardValue> | null) ?? {};
+  const kpis = useMemo(
+    () =>
+      baseKpis.map((k) => {
+        const cv = kpiVals[k.id];
+        const num = cv && !cv.isNa && cv.value ? Number(cv.value) : NaN;
+        return {
+          id: k.id,
+          label: k.label,
+          unit: k.unit,
+          value: isNaN(num) ? null : num,
+          target: k.target,
+          status: !isNaN(num) ? kpiStatus(num, k.target) : ("amber" as const),
+          comment: cv?.comment ?? "",
+          isNa: cv?.isNa ?? false,
+        };
+      }),
+    [JSON.stringify(kpiVals)],
+  );
+
+  const respData =
+    (getReportSection(id ?? "", "responsabilites") as
+      | { numericValues?: Record<string, string>; toggleValues?: Record<string, string> }
+      | null) ?? {};
+  const respEntries = useMemo(() => {
+    const num = respData.numericValues ?? {};
+    const tog = respData.toggleValues ?? {};
+    const out: Array<{ label: string; value: string }> = [];
+    for (const [k, v] of Object.entries(num)) out.push({ label: k, value: String(v ?? "") });
+    for (const [k, v] of Object.entries(tog)) out.push({ label: k, value: v ?? "—" });
+    return out;
+  }, [JSON.stringify(respData)]);
+
+  const todos = ((getReportSection(id ?? "", "todo") as TodoLike[] | null) ?? []);
+
+  const objSection =
+    (getReportSection(id ?? "", "objectifs") as
+      | { currentValues?: Record<string, string>; statuses?: Record<string, string>; converted?: ObjEntry[] }
+      | null) ?? {};
+  const objectifs = useMemo(() => {
+    const list: Array<{ title: string; status: string; current?: number; target?: number; unit?: string }> = [];
+    for (const c of objSection.converted ?? []) {
+      list.push({ title: c.title, status: c.status ?? "on_track" });
+    }
+    return list;
+  }, [JSON.stringify(objSection)]);
+
+  const persistedIds = (getReportSection(id ?? "", "ids") as Array<string | { text: string }> | null) ?? [];
+  const initialIssues = persistedIds.map((x) => (typeof x === "string" ? x : x.text));
+
+  const [issues, setIssues] = useState<string[]>(initialIssues);
   const [newIssue, setNewIssue] = useState("");
   const [closeOpen, setCloseOpen] = useState(false);
 
   const addIssue = () => {
     if (!newIssue.trim()) return;
-    setIssues((p) => [...p, newIssue.trim()]);
+    const next = [...issues, newIssue.trim()];
+    setIssues(next);
     setNewIssue("");
+    if (id) updateReportSection(id, "ids", next);
   };
 
-  const removeIssue = (i: number) => setIssues((p) => p.filter((_, idx) => idx !== i));
+  const removeIssue = (i: number) => {
+    const next = issues.filter((_, idx) => idx !== i);
+    setIssues(next);
+    if (id) updateReportSection(id, "ids", next);
+  };
 
-  const overdueCount = todos.filter((t) => t.overdue).length;
+  const overdueCount = todos.filter((t) => t.overdueDays && t.overdueDays > 0).length;
 
   const handleClose = () => {
     setCloseOpen(false);
-    // In production: API call to change status to post_meeting
+    if (id) updateReportStatus(id, "post_meeting_generated");
+    toast.success("Réunion clôturée — synthèse en cours");
     navigate(`/rapport/${id}`);
   };
+
 
   return (
     <div className="flex flex-col min-h-screen">
