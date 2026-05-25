@@ -91,6 +91,26 @@ export default function UserSettings() {
     saveSchedule(schedule);
   }, [schedule]);
 
+  const [seedConfirmOpen, setSeedConfirmOpen] = useState(false);
+
+  const runSeed = () => {
+    seedDemoData();
+    toast({
+      title: "Données démo chargées",
+      description: "Les rapports d'avril et mai ont été générés.",
+    });
+    setSeedConfirmOpen(false);
+    setTimeout(() => window.location.reload(), 400);
+  };
+
+  const handleSeedClick = () => {
+    if (hasExistingReportsData()) {
+      setSeedConfirmOpen(true);
+    } else {
+      runSeed();
+    }
+  };
+
 
   const update = <K extends keyof UserSettingsData>(section: K, value: UserSettingsData[K]) => {
     setSettings({ ...settings, [section]: value });
