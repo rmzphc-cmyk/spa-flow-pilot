@@ -306,6 +306,12 @@ function UpcomingMeetingsCard() {
   const weeklyDate = nextWeeklyMeeting(schedule.weekly_day, now);
   const monthlyDate = nextMonthlyMeeting(schedule, now);
 
+  // Readiness mock — derive from existing draft state.
+  const readiness: Record<"weekly" | "monthly", { completion: number; reportId: string | null }> = {
+    weekly: { completion: 0, reportId: draftReportsByType.weekly },
+    monthly: { completion: 29, reportId: draftReportsByType.monthly },
+  };
+
   const meetings = [
     { type: "weekly" as const, date: weeklyDate, label: "🟢 Weekly", chip: "bg-emerald-100 text-emerald-800" },
     { type: "monthly" as const, date: monthlyDate, label: "🔵 Monthly", chip: "bg-blue-100 text-blue-800" },
@@ -317,35 +323,48 @@ function UpcomingMeetingsCard() {
     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
       {meetings.map((m) => {
         const days = daysUntil(m.date, now);
-        const badge = badgeColorForDays(days);
-        const draftId = draftReportsByType[m.type];
+        const ready = readiness[m.type];
+        const isReady = ready.completion >= 80;
+        const readinessBadge = isReady
+          ? { label: "Prêt", cls: "bg-emerald-100 text-emerald-800" }
+          : { label: "À préparer", cls: days <= 2 ? "bg-destructive/15 text-destructive" : "bg-amber-100 text-amber-800" };
         const daysLabel = days === 0 ? "Aujourd'hui" : days === 1 ? "Demain" : `Dans ${days} jours`;
+
+        const handleClick = () => {
+          if (ready.reportId) navigate(`/rapport/${ready.reportId}`);
+          else navigate("/rapports");
+        };
+
         return (
-          <div key={m.type} className="bg-card rounded-xl shadow-sm border border-border p-5">
-            <div className="flex items-center justify-between mb-3">
+          <button
+            key={m.type}
+            onClick={handleClick}
+            className="bg-card rounded-xl shadow-sm border border-border p-5 text-left hover:shadow-md hover:border-primary/40 transition-all"
+          >
+            <div className="flex items-center justify-between mb-3 gap-2">
               <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${m.chip}`}>
                 {m.label}
               </span>
-              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${badge.bg} ${badge.text}`}>
-                {daysLabel}
+              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${readinessBadge.cls}`}>
+                {readinessBadge.label}
               </span>
             </div>
-            <div className="flex items-center gap-2 text-sm text-foreground mb-4">
+            <div className="flex items-center gap-2 text-sm text-foreground mb-1">
               <Calendar className="h-4 w-4 text-muted-foreground" />
               <span className="capitalize">{fmt.format(m.date)}</span>
             </div>
-            {draftId ? (
-              <Button onClick={() => navigate(`/rapport/${draftId}`)} className="w-full gap-2" size="sm">
+            <p className="text-xs text-muted-foreground mb-4">{daysLabel}</p>
+            {ready.reportId ? (
+              <span className="inline-flex items-center gap-1 text-sm text-primary font-medium">
+                {isReady ? "Ouvrir la réunion" : "Continuer la préparation"}
                 <ArrowRight className="h-4 w-4" />
-                Continuer la préparation
-              </Button>
+              </span>
             ) : (
-              <Button onClick={() => navigate("/rapports")} variant="outline" className="w-full gap-2" size="sm">
-                <Plus className="h-4 w-4" />
-                Créer le rapport
-              </Button>
+              <span className="inline-flex items-center gap-1 text-sm text-primary font-medium">
+                <Plus className="h-4 w-4" /> Créer le rapport
+              </span>
             )}
-          </div>
+          </button>
         );
       })}
     </div>
