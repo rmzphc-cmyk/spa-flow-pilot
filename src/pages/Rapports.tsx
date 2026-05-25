@@ -1,14 +1,32 @@
-import { useState, useMemo } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileText, ArrowRight, Eye, Plus, Calendar, Edit3 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
-  reportsData,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  getReports,
+  setReports,
   stateConfig,
   isPreparationState,
   isMeetingState,
   type ReportRecord,
+  type ReportType,
 } from "@/lib/reportsStore";
 
 function ReportCard({ report, mode }: { report: ReportRecord; mode: "prep" | "consult" }) {
@@ -82,25 +100,99 @@ function ReportCard({ report, mode }: { report: ReportRecord; mode: "prep" | "co
 }
 
 export default function Rapports() {
+  const navigate = useNavigate();
   const [tab, setTab] = useState<"prep" | "consult">("prep");
+  const [reports, setReportsState] = useState<ReportRecord[]>(() => getReports());
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [newType, setNewType] = useState<ReportType>("monthly");
+  const [newMeetingDate, setNewMeetingDate] = useState<string>(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + 7);
+    return d.toISOString().slice(0, 10);
+  });
+
+  useEffect(() => {
+    const reload = () => setReportsState(getReports());
+    window.addEventListener("reports-data-changed", reload);
+    return () => window.removeEventListener("reports-data-changed", reload);
+  }, []);
 
   const prepReports = useMemo(
-    () => reportsData.filter((r) => isPreparationState(r.state)),
-    [],
+    () => reports.filter((r) => isPreparationState(r.state)),
+    [reports],
   );
   const consultReports = useMemo(
-    () => reportsData.filter((r) => isMeetingState(r.state)),
-    [],
+    () => reports.filter((r) => isMeetingState(r.state)),
+    [reports],
   );
+
+  const handleCreate = () => {
+    const d = new Date(newMeetingDate);
+    const fmtDate = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" }).format(d);
+    const monthLabel = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(d);
+    const weekNum = getIsoWeek(d);
+    const label = newType === "monthly"
+      ? `Monthly — ${capitalize(monthLabel)}`
+      : `Weekly — Semaine ${weekNum}`;
+    const period = newType === "monthly"
+      ? monthPeriod(d)
+      : weekPeriod(d);
+    const id = `r${Date.now()}`;
+    const newReport: ReportRecord = {
+      id,
+      type: newType,
+      label,
+      period,
+      state: "draft_preparation",
+      updatedAt: new Date().toISOString(),
+      meetingDate: fmtDate,
+      completion: 0,
+    };
+    setReports([newReport, ...getReports()]);
+    setDialogOpen(false);
+    navigate(`/rapport/${id}`);
+  };
 
   return (
     <>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold text-foreground">Rapports — Par Gran Canaria</h1>
-        <Button className="gap-1.5">
+        <Button className="gap-1.5" onClick={() => setDialogOpen(true)}>
           <Plus className="h-4 w-4" /> Nouveau rapport
         </Button>
       </div>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Nouveau rapport</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div>
+              <Label className="text-sm mb-1.5 block">Type de rapport</Label>
+              <Select value={newType} onValueChange={(v) => setNewType(v as ReportType)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="weekly">🟢 Weekly</SelectItem>
+                  <SelectItem value="monthly">🔵 Monthly</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-sm mb-1.5 block">Date de réunion</Label>
+              <Input
+                type="date"
+                value={newMeetingDate}
+                onChange={(e) => setNewMeetingDate(e.target.value)}
+              />
+            </div>
+          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="ghost" onClick={() => setDialogOpen(false)}>Annuler</Button>
+            <Button onClick={handleCreate}>Créer et ouvrir</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Tabs value={tab} onValueChange={(v) => setTab(v as "prep" | "consult")} className="w-full">
         <TabsList className="mb-5">
