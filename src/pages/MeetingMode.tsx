@@ -257,8 +257,9 @@ export default function MeetingMode() {
                       <span className="text-sm font-medium text-foreground">{kpi.label}</span>
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-bold text-foreground">
-                          {kpi.value.toLocaleString("fr-FR")}{kpi.unit}
+                          {kpi.value != null ? `${kpi.value.toLocaleString("fr-FR")}${kpi.unit}` : "—"}
                         </span>
+
                         <div className={`w-2.5 h-2.5 rounded-full ${statusDot[kpi.status]}`} />
                       </div>
                     </div>
@@ -271,39 +272,46 @@ export default function MeetingMode() {
             </TabsContent>
 
             <TabsContent value="resp">
-              <div className="bg-card border border-border rounded-lg p-4 shadow-sm mb-3">
-                <span className="text-lg font-bold text-foreground">73%</span>
-                <span className="text-xs text-muted-foreground ml-2">complétion globale</span>
-              </div>
-              <div className="space-y-1.5">
-                {responsabilites.map((r, i) => (
-                  <div key={i} className="flex items-center justify-between text-sm py-1.5 border-b border-border last:border-0">
-                    <span className="text-foreground">{r.label}</span>
-                    <span className="text-muted-foreground text-xs">
-                      {"realized" in r ? `${r.realized}/${r.expected}` : "✓"}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              {respEntries.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic">Aucune donnée saisie.</p>
+              ) : (
+                <div className="space-y-1.5">
+                  {respEntries.map((r, i) => (
+                    <div key={i} className="flex items-center justify-between text-sm py-1.5 border-b border-border last:border-0">
+                      <span className="text-foreground">{r.label}</span>
+                      <span className="text-muted-foreground text-xs">{r.value}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </TabsContent>
 
+
             <TabsContent value="todo">
-              <div className="space-y-2">
-                {todos.map((t, i) => (
-                  <div key={i} className={`rounded-lg p-3 text-sm flex items-center justify-between ${t.overdue ? "bg-red-50 border border-red-200" : "bg-card border border-border"}`}>
-                    <div>
-                      <span className="text-foreground">{t.title}</span>
-                      <span className="text-xs text-muted-foreground ml-2">{t.responsible}</span>
-                    </div>
-                    {t.overdue ? (
-                      <span className="text-xs font-medium text-destructive">+{t.overdue}j</span>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">{t.deadline}</span>
-                    )}
-                  </div>
-                ))}
-              </div>
+              {todos.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic">Aucune to-do.</p>
+              ) : (
+                <div className="space-y-2">
+                  {todos.map((t, i) => {
+                    const overdue = t.overdueDays && t.overdueDays > 0;
+                    return (
+                      <div key={i} className={`rounded-lg p-3 text-sm flex items-center justify-between ${overdue ? "bg-red-50 border border-red-200" : "bg-card border border-border"}`}>
+                        <div>
+                          <span className="text-foreground">{t.title}</span>
+                          {t.responsible && <span className="text-xs text-muted-foreground ml-2">{t.responsible}</span>}
+                        </div>
+                        {overdue ? (
+                          <span className="text-xs font-medium text-destructive">+{t.overdueDays}j</span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">{t.deadline ?? ""}</span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </TabsContent>
+
 
             <TabsContent value="obj">
               <div className="space-y-3">
