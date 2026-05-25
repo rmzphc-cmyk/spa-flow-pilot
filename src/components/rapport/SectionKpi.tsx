@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { KpiCardSaisie, KpiCardSaisieWeekly, getKpiStatus } from "@/components/KpiCard";
 import type { KpiData, KpiCardValue } from "@/components/KpiCard";
 import type { SectionStatus } from "@/pages/RapportDetail";
+import { usePersistedSection } from "@/lib/usePersistedSection";
 import {
   loadKpiConfig,
   getMonthlyTarget,
@@ -52,12 +53,13 @@ function periodToIsoWeek(period: string): string {
 }
 
 interface Props {
+  reportId: string;
   reportType: "monthly" | "weekly";
   period?: string;
   onStatusChange: (status: SectionStatus) => void;
 }
 
-export function SectionKpi({ reportType, period = "", onStatusChange }: Props) {
+export function SectionKpi({ reportId, reportType, period = "", onStatusChange }: Props) {
   const { t } = useTranslation();
   const isWeekly = reportType === "weekly";
 
@@ -82,13 +84,19 @@ export function SectionKpi({ reportType, period = "", onStatusChange }: Props) {
     });
   }, [period, isWeekly]);
 
-  const [cardValues, setCardValues] = useState<Record<string, KpiCardValue>>(() => {
+  const defaultValues = useMemo<Record<string, KpiCardValue>>(() => {
     const init: Record<string, KpiCardValue> = {};
     for (const kpi of baseKpis) {
       init[kpi.id] = { value: "", comment: "", isNa: false, naReason: "" };
     }
     return init;
-  });
+  }, []);
+
+  const [cardValues, setCardValues] = usePersistedSection<Record<string, KpiCardValue>>(
+    reportId,
+    "kpi",
+    defaultValues,
+  );
 
   const isComplete = useMemo(() => {
     for (const kpi of kpis) {

@@ -101,15 +101,34 @@ function SliderField({
 }
 
 interface Props {
+  reportId: string;
   onStatusChange: (status: SectionStatus) => void;
 }
 
-export function SectionCheckin({ onStatusChange }: Props) {
-  const [equipeScore, setEquipeScore] = useState(0);
-  const [managerScore, setManagerScore] = useState(0);
-  const [equipeComment, setEquipeComment] = useState("");
-  const [managerComment, setManagerComment] = useState("");
-  const [situation, setSituation] = useState("");
+interface CheckinState {
+  equipeScore: number;
+  managerScore: number;
+  equipeComment: string;
+  managerComment: string;
+  situation: string;
+}
+
+import { usePersistedSection } from "@/lib/usePersistedSection";
+
+export function SectionCheckin({ reportId, onStatusChange }: Props) {
+  const [state, setState] = usePersistedSection<CheckinState>(reportId, "checkin", {
+    equipeScore: 0,
+    managerScore: 0,
+    equipeComment: "",
+    managerComment: "",
+    situation: "",
+  });
+  const { equipeScore, managerScore, equipeComment, managerComment, situation } = state;
+  const setEquipeScore = (v: number) => setState((p) => ({ ...p, equipeScore: v }));
+  const setManagerScore = (v: number) => setState((p) => ({ ...p, managerScore: v }));
+  const setEquipeComment = (v: string) => setState((p) => ({ ...p, equipeComment: v }));
+  const setManagerComment = (v: string) => setState((p) => ({ ...p, managerComment: v }));
+  const setSituation = (v: string) => setState((p) => ({ ...p, situation: v }));
 
   const isComplete = useMemo(() => {
     if (equipeScore === 0 || managerScore === 0) return false;

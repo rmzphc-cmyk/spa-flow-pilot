@@ -3,6 +3,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import type { SectionStatus } from "@/pages/RapportDetail";
+import { usePersistedSection } from "@/lib/usePersistedSection";
 
 type Frequency = "daily" | "weekly" | "biweekly" | "monthly" | "quarterly";
 type ToggleStatus = "done" | "partial" | "not_done" | null;
@@ -54,16 +55,35 @@ const toggleColors: Record<string, string> = {
 };
 
 interface Props {
+  reportId: string;
   reportType?: "monthly" | "weekly";
   onStatusChange: (status: SectionStatus) => void;
 }
 
-export function SectionResponsabilites({ reportType = "monthly", onStatusChange }: Props) {
+interface RespState {
+  numericValues: Record<string, string>;
+  toggleValues: Record<string, ToggleStatus>;
+  comments: Record<string, string>;
+  naFlags: Record<string, boolean>;
+}
+
+export function SectionResponsabilites({ reportId, reportType = "monthly", onStatusChange }: Props) {
   const [responsabilites, setResponsabilites] = useState<Responsabilite[]>(() => loadActiveResponsabilites(reportType));
-  const [numericValues, setNumericValues] = useState<Record<string, string>>({});
-  const [toggleValues, setToggleValues] = useState<Record<string, ToggleStatus>>({});
-  const [comments, setComments] = useState<Record<string, string>>({});
-  const [naFlags, setNaFlags] = useState<Record<string, boolean>>({});
+  const [state, setState] = usePersistedSection<RespState>(reportId, "responsabilites", {
+    numericValues: {},
+    toggleValues: {},
+    comments: {},
+    naFlags: {},
+  });
+  const { numericValues, toggleValues, comments, naFlags } = state;
+  const setNumericValues = (u: (p: Record<string, string>) => Record<string, string>) =>
+    setState((p) => ({ ...p, numericValues: u(p.numericValues) }));
+  const setToggleValues = (u: (p: Record<string, ToggleStatus>) => Record<string, ToggleStatus>) =>
+    setState((p) => ({ ...p, toggleValues: u(p.toggleValues) }));
+  const setComments = (u: (p: Record<string, string>) => Record<string, string>) =>
+    setState((p) => ({ ...p, comments: u(p.comments) }));
+  const setNaFlags = (u: (p: Record<string, boolean>) => Record<string, boolean>) =>
+    setState((p) => ({ ...p, naFlags: u(p.naFlags) }));
 
   useEffect(() => {
     setResponsabilites(loadActiveResponsabilites(reportType));

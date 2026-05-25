@@ -1,10 +1,11 @@
-import { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Send, Calendar, ListChecks, ArrowRight } from "lucide-react";
+import { usePersistedSection } from "@/lib/usePersistedSection";
 
 interface Props {
+  reportId: string;
   reportType: "monthly" | "weekly";
 }
 
@@ -20,10 +21,18 @@ const engagements = [
   { qui: "Sophie M.", quoi: "Finaliser planning cabines semaines 14-17", quand: "3 avril" },
 ];
 
-export function SectionCloture({ reportType }: Props) {
-  const [summary, setSummary] = useState(reportType === "weekly" ? weeklyAiSummary : monthlyAiSummary);
-  const [nextMeeting, setNextMeeting] = useState("2026-04-15");
-  const [nextMeetingTime, setNextMeetingTime] = useState("10:00");
+interface ClotureState { summary: string; nextMeeting: string; nextMeetingTime: string }
+
+export function SectionCloture({ reportId, reportType }: Props) {
+  const [state, setState] = usePersistedSection<ClotureState>(reportId, "cloture", {
+    summary: reportType === "weekly" ? weeklyAiSummary : monthlyAiSummary,
+    nextMeeting: "2026-04-15",
+    nextMeetingTime: "10:00",
+  });
+  const { summary, nextMeeting, nextMeetingTime } = state;
+  const setSummary = (v: string) => setState((p) => ({ ...p, summary: v }));
+  const setNextMeeting = (v: string) => setState((p) => ({ ...p, nextMeeting: v }));
+  const setNextMeetingTime = (v: string) => setState((p) => ({ ...p, nextMeetingTime: v }));
 
   if (reportType === "monthly") {
     return (

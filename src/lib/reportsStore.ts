@@ -132,6 +132,35 @@ export function getReport(id: string | undefined): ReportRecord | undefined {
   return reportsData.find((r) => r.id === id);
 }
 
+export type SectionKey = "checkin" | "kpi" | "responsabilites" | "todo" | "objectifs" | "ids" | "cloture";
+
+export const REPORT_SECTION_SAVED_EVENT = "report-section-saved";
+
+export function getReportSection(reportId: string, sectionKey: SectionKey | string): unknown | null {
+  if (!reportId) return null;
+  const r = reportsData.find((x) => x.id === reportId);
+  if (!r || !r.details) return null;
+  const v = (r.details as unknown as Record<string, unknown>)[sectionKey];
+  return v === undefined ? null : v;
+}
+
+export function updateReportSection(reportId: string, sectionKey: SectionKey | string, data: unknown): void {
+  if (!reportId) return;
+  const idx = reportsData.findIndex((x) => x.id === reportId);
+  if (idx === -1) return;
+  const current = reportsData[idx];
+  const details = { ...(current.details ?? {}) } as Record<string, unknown>;
+  details[sectionKey] = data;
+  const next: ReportRecord = { ...current, details: details as unknown as ReportDetails, updatedAt: new Date().toISOString() };
+  const list = [...reportsData];
+  list[idx] = next;
+  reportsData.splice(0, reportsData.length, ...list);
+  try {
+    localStorage.setItem(REPORTS_KEY, JSON.stringify(list));
+    window.dispatchEvent(new CustomEvent(REPORT_SECTION_SAVED_EVENT, { detail: { reportId, sectionKey } }));
+  } catch {}
+}
+
 export function isPreparationState(s: ReportState): boolean {
   return s === "draft_preparation" || s === "ready_for_review";
 }

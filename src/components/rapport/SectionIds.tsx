@@ -2,8 +2,10 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Lightbulb, Plus, Lock } from "lucide-react";
+import { usePersistedSection } from "@/lib/usePersistedSection";
 
 interface Props {
+  reportId: string;
   reportType: "monthly" | "weekly";
 }
 
@@ -12,8 +14,8 @@ const previousIssues = [
   "Retards fréquents livraisons fournisseur huiles",
 ];
 
-export function SectionIds({ reportType }: Props) {
-  const [issues, setIssues] = useState<string[]>([]);
+export function SectionIds({ reportId, reportType }: Props) {
+  const [issues, setIssues] = usePersistedSection<string[]>(reportId, "ids", []);
   const [newIssue, setNewIssue] = useState("");
 
   const addIssue = () => {
