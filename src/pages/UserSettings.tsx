@@ -5,12 +5,23 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import {
   loadSchedule,
   saveSchedule,
   type MeetingSchedule,
 } from "@/lib/meetingSchedule";
+import { seedDemoData, hasExistingReportsData } from "@/utils/seedDemoData";
 
 interface UserSettingsData {
   language: "fr" | "en" | "es";
@@ -79,6 +90,26 @@ export default function UserSettings() {
   useEffect(() => {
     saveSchedule(schedule);
   }, [schedule]);
+
+  const [seedConfirmOpen, setSeedConfirmOpen] = useState(false);
+
+  const runSeed = () => {
+    seedDemoData();
+    toast({
+      title: "Données démo chargées",
+      description: "Les rapports d'avril et mai ont été générés.",
+    });
+    setSeedConfirmOpen(false);
+    setTimeout(() => window.location.reload(), 400);
+  };
+
+  const handleSeedClick = () => {
+    if (hasExistingReportsData()) {
+      setSeedConfirmOpen(true);
+    } else {
+      runSeed();
+    }
+  };
 
 
   const update = <K extends keyof UserSettingsData>(section: K, value: UserSettingsData[K]) => {
@@ -287,6 +318,38 @@ export default function UserSettings() {
           </div>
         </div>
       </section>
+
+      {/* SECTION 6 — Démo */}
+      <section className="mb-8">
+        <h2 className="text-base font-semibold text-foreground mb-3">Démo</h2>
+        <div className="bg-card border border-border rounded-xl p-4 shadow-sm flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-foreground">Charger des données de démonstration</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Génère les rapports d'avril (validés) et de mai (en cours) avec KPI, to-dos, objectifs et IDS cohérents.
+            </p>
+          </div>
+          <Button onClick={handleSeedClick} variant="outline" className="shrink-0">
+            🌱 Charger données démo
+          </Button>
+        </div>
+      </section>
+
+      <AlertDialog open={seedConfirmOpen} onOpenChange={setSeedConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Écraser les données existantes ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Des rapports sont déjà enregistrés. En continuant, ils seront remplacés par le jeu de données de démonstration.
+              Les configurations KPI et responsabilités ne seront pas modifiées.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={runSeed}>Écraser et charger</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
