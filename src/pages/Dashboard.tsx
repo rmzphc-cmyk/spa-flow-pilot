@@ -6,7 +6,6 @@ import {
   nextWeeklyMeeting,
   nextMonthlyMeeting,
   daysUntil,
-  badgeColorForDays,
 } from "@/lib/meetingSchedule";
 
 // Mock map of existing draft reports per cycle type.
