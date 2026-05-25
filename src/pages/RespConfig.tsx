@@ -220,12 +220,20 @@ export default function RespConfig() {
   const [selectedMonth, setSelectedMonth] = useState<string>(() => monthKey(new Date()));
 
   const handleAdd = () => {
-    setEditing(emptyTemplate());
+    const t = emptyTemplate();
+    setEditing(t);
+    // Par défaut : nouveau template assigné à tous les spas
+    setEditingSpas(ALL_SPAS.map((s) => s.key));
     setSheetOpen(true);
   };
 
   const handleEdit = (t: RespTemplate) => {
     setEditing({ ...t });
+    // Récupérer les spas où ce template est actuellement actif
+    const enabledSpas = ALL_SPAS
+      .filter((s) => spaAssignments[s.key]?.find((a) => a.templateId === t.id)?.enabled)
+      .map((s) => s.key);
+    setEditingSpas(enabledSpas);
     setSheetOpen(true);
   };
 
