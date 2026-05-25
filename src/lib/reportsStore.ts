@@ -128,6 +128,14 @@ export function hasStoredReports(): boolean {
 
 export const REPORTS_STORAGE_KEY = REPORTS_KEY;
 
+export function getReports(): ReportRecord[] {
+  return [...reportsData];
+}
+
+export function addReport(report: ReportRecord): void {
+  setReports([report, ...reportsData]);
+}
+
 export function getReport(id: string | undefined): ReportRecord | undefined {
   return reportsData.find((r) => r.id === id);
 }
