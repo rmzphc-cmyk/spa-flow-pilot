@@ -229,6 +229,9 @@ export default function RespConfig() {
     setSheetOpen(true);
   };
 
+  // Spas concernés par le template en cours d'édition
+  const [editingSpas, setEditingSpas] = useState<string[]>([]);
+
   const handleSave = () => {
     if (!editing) return;
     const exists = templates.find((t) => t.id === editing.id);
@@ -236,15 +239,21 @@ export default function RespConfig() {
       setTemplates(templates.map((t) => (t.id === editing.id ? editing : t)));
     } else {
       setTemplates([...templates, editing]);
-      // Add to all spas as disabled by default
-      const updated = { ...spaAssignments };
-      for (const key of Object.keys(updated)) {
-        if (!updated[key].find((a) => a.templateId === editing.id)) {
-          updated[key] = [...updated[key], { templateId: editing.id, enabled: false, overrideQty: null, monthly: {} }];
-        }
-      }
-      setSpaAssignments(updated);
     }
+    // Sync spa assignments to reflect "Spas concernés"
+    const updated = { ...spaAssignments };
+    for (const spa of ALL_SPAS) {
+      const list = updated[spa.key] ? [...updated[spa.key]] : [];
+      const idx = list.findIndex((a) => a.templateId === editing.id);
+      const shouldBeEnabled = editingSpas.includes(spa.key);
+      if (idx === -1) {
+        list.push({ templateId: editing.id, enabled: shouldBeEnabled, overrideQty: null, monthly: {} });
+      } else {
+        list[idx] = { ...list[idx], enabled: shouldBeEnabled };
+      }
+      updated[spa.key] = list;
+    }
+    setSpaAssignments(updated);
     setSheetOpen(false);
     setEditing(null);
   };
