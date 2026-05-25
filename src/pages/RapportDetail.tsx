@@ -12,7 +12,7 @@ import { SectionIdsWeekly } from "@/components/rapport/SectionIdsWeekly";
 import { SectionCloture } from "@/components/rapport/SectionCloture";
 import { AutosaveIndicator } from "@/components/rapport/AutosaveIndicator";
 import { MeetingView } from "@/components/rapport/MeetingView";
-import { getReport, isMeetingState } from "@/lib/reportsStore";
+import { getReport, isMeetingState, type ReportRecord } from "@/lib/reportsStore";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Save, CheckCircle2 } from "lucide-react";
@@ -55,7 +55,7 @@ export default function RapportDetail() {
   return <PreparationMode report={report} />;
 }
 
-function PreparationMode({ report }: { report: ReturnType<typeof getReport> & {} }) {
+function PreparationMode({ report }: { report: ReportRecord }) {
   const { activeSection, sectionStatuses, setSectionStatuses } = useOutletContext<OutletContext>();
   const isWeekly = report.type === "weekly";
   const sections = isWeekly ? weeklySections : monthlySections;
