@@ -263,7 +263,31 @@ export default function RespConfig() {
     setEditing(updated);
   };
 
-  // Affectation helpers
+  // Affectation helpers — auto-seed missing spa or missing template rows so that
+  // newly added templates / renamed spas always show up in the table.
+  useEffect(() => {
+    setSpaAssignments((prev) => {
+      let changed = false;
+      const next: Record<string, SpaAssignment[]> = { ...prev };
+      for (const spa of ALL_SPAS) {
+        const existing = next[spa.key] ?? [];
+        const byId = new Map(existing.map((a) => [a.templateId, a]));
+        let spaChanged = next[spa.key] === undefined;
+        const merged = templates.map((t) => {
+          const found = byId.get(t.id);
+          if (found) return found;
+          spaChanged = true;
+          return { templateId: t.id, enabled: true, overrideQty: null, monthly: {} };
+        });
+        if (spaChanged) {
+          next[spa.key] = merged;
+          changed = true;
+        }
+      }
+      return changed ? next : prev;
+    });
+  }, [templates]);
+
   const currentAssignments = spaAssignments[selectedSpa] ?? [];
 
   // Look up the last month < beforeMonth that has an explicit override on a given field
