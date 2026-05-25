@@ -110,7 +110,7 @@ function CurrentReportCard({ report }: { report: ReportRecord }) {
   const sectionColors = Array.from({ length: total }, (_, i) =>
     i < completed ? "bg-primary" : "bg-border"
   );
-    i < report.completedSections ? "bg-primary" : "bg-border"
+
 
   return (
     <div className="bg-card rounded-xl shadow-sm border border-border p-6 mb-4">
@@ -163,6 +163,20 @@ function CurrentReportCard({ report }: { report: ReportRecord }) {
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+function NoCurrentReportCard() {
+  const navigate = useNavigate();
+  return (
+    <div className="bg-card rounded-xl shadow-sm border border-dashed border-border p-8 mb-4 text-center">
+      <FileText className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
+      <p className="text-foreground font-medium">Aucun rapport en cours</p>
+      <p className="text-sm text-muted-foreground mt-1 mb-4">Créez un rapport pour démarrer un nouveau cycle.</p>
+      <Button onClick={() => navigate("/rapports")} className="gap-1.5">
+        <Plus className="h-4 w-4" /> Créer un rapport
+      </Button>
     </div>
   );
 }
