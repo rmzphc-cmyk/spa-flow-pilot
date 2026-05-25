@@ -11,7 +11,7 @@ import {
   isoWeekKey,
 } from "@/lib/kpiConfig";
 
-const baseKpis: KpiData[] = [
+export const baseKpis: KpiData[] = [
   { id: "k1", label: "CA du mois", unit: "€", target: 45000, n1: 38200, category: "spa", history: [36000, 38200, 41000, 38200] },
   { id: "k2", label: "Taux d'occupation cabines", unit: "%", target: 80, n1: 72, category: "spa", history: [68, 70, 72, 72] },
   { id: "k3", label: "Panier moyen", unit: "€", target: 120, n1: 115, category: "spa", history: [110, 112, 118, 115] },
@@ -21,6 +21,8 @@ const baseKpis: KpiData[] = [
   { id: "k7", label: "Nouveaux abonnements", unit: "", target: 15, n1: 11, category: "spa", history: [9, 10, 12, 11] },
   { id: "k8", label: "Satisfaction collaborateurs", unit: "/10", target: 8, n1: 7.2, category: "manager", history: [6.8, 7.0, 7.1, 7.2] },
 ];
+
+
 
 // French month parsing for period strings like "1 mars → 31 mars 2026" or "18 → 24 mars 2026"
 const FR_MONTHS: Record<string, number> = {

@@ -173,6 +173,20 @@ export function isPreparationState(s: ReportState): boolean {
   return s === "draft_preparation" || s === "ready_for_review";
 }
 
+export function updateReportStatus(reportId: string, state: ReportState): void {
+  const idx = reportsData.findIndex((r) => r.id === reportId);
+  if (idx === -1) return;
+  const updated: ReportRecord = {
+    ...reportsData[idx],
+    state,
+    updatedAt: new Date().toISOString(),
+    completion: state === "validated" ? 100 : reportsData[idx].completion,
+  };
+  const list = [...reportsData];
+  list[idx] = updated;
+  setReports(list);
+}
+
 export function isMeetingState(s: ReportState): boolean {
   return s === "in_meeting" || s === "post_meeting_generated" || s === "validated";
 }
