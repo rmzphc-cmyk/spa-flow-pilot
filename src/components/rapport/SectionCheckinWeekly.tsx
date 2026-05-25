@@ -1,7 +1,8 @@
-import { useState, useEffect, useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Slider } from "@/components/ui/slider";
 import type { SectionStatus } from "@/pages/RapportDetail";
+import { usePersistedSection } from "@/lib/usePersistedSection";
 
 const meteoAnchors = [
   { pos: 3, label: "Difficile" },
@@ -16,12 +17,19 @@ function getSliderColor(value: number) {
 }
 
 interface Props {
+  reportId: string;
   onStatusChange: (status: SectionStatus) => void;
 }
 
-export function SectionCheckinWeekly({ onStatusChange }: Props) {
-  const [meteoScore, setMeteoScore] = useState(0);
-  const [note, setNote] = useState("");
+export function SectionCheckinWeekly({ reportId, onStatusChange }: Props) {
+  const [state, setState] = usePersistedSection<{ meteoScore: number; note: string }>(
+    reportId,
+    "checkin",
+    { meteoScore: 0, note: "" },
+  );
+  const { meteoScore, note } = state;
+  const setMeteoScore = (v: number) => setState((p) => ({ ...p, meteoScore: v }));
+  const setNote = (v: string) => setState((p) => ({ ...p, note: v }));
 
   const isComplete = useMemo(() => {
     return meteoScore > 0;

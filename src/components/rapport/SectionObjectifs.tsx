@@ -1,7 +1,7 @@
-import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Target, Info } from "lucide-react";
+import { usePersistedSection } from "@/lib/usePersistedSection";
 
 interface Objectif {
   id: string;
@@ -24,13 +24,29 @@ const statusOptions = [
 ] as const;
 
 interface Props {
+  reportId: string;
   reportType: "monthly" | "weekly";
 }
 
-export function SectionObjectifs({ reportType }: Props) {
-  const [currentValues, setCurrentValues] = useState<Record<string, string>>({});
-  const [statuses, setStatuses] = useState<Record<string, string>>({});
-  const [comments, setComments] = useState<Record<string, string>>({});
+interface ObjectifsState {
+  currentValues: Record<string, string>;
+  statuses: Record<string, string>;
+  comments: Record<string, string>;
+}
+
+export function SectionObjectifs({ reportId, reportType }: Props) {
+  const [state, setState] = usePersistedSection<ObjectifsState>(reportId, "objectifs", {
+    currentValues: {},
+    statuses: {},
+    comments: {},
+  });
+  const { currentValues, statuses, comments } = state;
+  const setCurrentValues = (updater: (p: Record<string, string>) => Record<string, string>) =>
+    setState((p) => ({ ...p, currentValues: updater(p.currentValues) }));
+  const setStatuses = (updater: (p: Record<string, string>) => Record<string, string>) =>
+    setState((p) => ({ ...p, statuses: updater(p.statuses) }));
+  const setComments = (updater: (p: Record<string, string>) => Record<string, string>) =>
+    setState((p) => ({ ...p, comments: updater(p.comments) }));
 
   return (
     <section className="mb-8">

@@ -61,8 +61,12 @@ const sourceStyles: Record<string, { label: string; classes: string }> = {
   previous: { label: "Cycle N-1", classes: "bg-blue-100 text-blue-800" },
 };
 
-export function SectionTodo() {
-  const [todos, setTodos] = useState(mockTodos);
+import { usePersistedSection } from "@/lib/usePersistedSection";
+
+interface Props { reportId: string }
+
+export function SectionTodo({ reportId }: Props) {
+  const [todos, setTodos] = usePersistedSection<Todo[]>(reportId, "todo", mockTodos);
   const [newOpen, setNewOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newResponsible, setNewResponsible] = useState("");
