@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, AlertTriangle, Sparkles, CheckCircle2, Target, Calendar, Plus, FileText } from "lucide-react";
+import { ArrowRight, AlertTriangle, Sparkles, CheckCircle2, Target, Calendar, Plus, FileText, Eye } from "lucide-react";
 import {
   useMeetingSchedule,
   nextWeeklyMeeting,
@@ -101,13 +101,15 @@ function OverdueAlert({ todos }: { todos: typeof overdueTodos }) {
   );
 }
 
-function CurrentReportCard({ report }: { report: CurrentReport }) {
+function CurrentReportCard({ report }: { report: ReportRecord }) {
   const navigate = useNavigate();
-  const status = statusConfig[report.status];
-  const cta = getCtaConfig(report.status, report.type);
-  const progressPercent = (report.completedSections / report.totalSections) * 100;
+  const status = statusConfig[report.state];
+  const cta = getCtaConfig(report.state, report.type);
+  const { completed, total } = computeCompletion(report);
 
-  const sectionColors = Array.from({ length: report.totalSections }, (_, i) =>
+  const sectionColors = Array.from({ length: total }, (_, i) =>
+    i < completed ? "bg-primary" : "bg-border"
+  );
     i < report.completedSections ? "bg-primary" : "bg-border"
   );
 
