@@ -1,9 +1,16 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Plus, X, Info } from "lucide-react";
+import { Plus, X, Info, CheckSquare, Target, Check } from "lucide-react";
 import type { SectionStatus } from "@/pages/RapportDetail";
 import { usePersistedSection } from "@/lib/usePersistedSection";
+import {
+  convertIdsToTodo,
+  convertIdsToObjectif,
+  getConversions,
+  type IdsConversionMap,
+} from "@/lib/idsConversions";
+
 
 interface CapturedIssue {
   text: string;
