@@ -56,33 +56,57 @@ const languages = [
 
 const days = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
 
+const USER_SETTINGS_KEY = "user_settings";
+
+const defaultSettings: UserSettingsData = {
+  language: "fr",
+  notifications: {
+    preBrief: true,
+    aiSynthesis: true,
+    reportValidated: true,
+    email: "marie.dupont@spadomaine.fr",
+  },
+  cycle: {
+    type: "weekly",
+    frequency: 7,
+    submissionDay: "vendredi",
+  },
+  account: {
+    displayName: "Marie Dupont",
+    email: "marie.dupont@spadomaine.fr",
+    role: "manager",
+    spa: "Par Gran Canaria",
+  },
+  accessibility: {
+    textSize: "normal",
+    contrast: "standard",
+  },
+};
+
+function loadUserSettings(fallbackLang: "fr" | "en" | "es"): UserSettingsData {
+  try {
+    const raw = localStorage.getItem(USER_SETTINGS_KEY);
+    if (!raw) return { ...defaultSettings, language: fallbackLang };
+    const parsed = JSON.parse(raw);
+    return { ...defaultSettings, ...parsed };
+  } catch {
+    return { ...defaultSettings, language: fallbackLang };
+  }
+}
+
 export default function UserSettings() {
   const { t, i18n } = useTranslation();
 
-  const [settings, setSettings] = useState<UserSettingsData>({
-    language: (i18n.language as "fr" | "en" | "es") || "fr",
-    notifications: {
-      preBrief: true,
-      aiSynthesis: true,
-      reportValidated: true,
-      email: "marie.dupont@spadomaine.fr",
-    },
-    cycle: {
-      type: "weekly",
-      frequency: 7,
-      submissionDay: "vendredi",
-    },
-    account: {
-      displayName: "Marie Dupont",
-      email: "marie.dupont@spadomaine.fr",
-      role: "manager",
-      spa: "Par Gran Canaria",
-    },
-    accessibility: {
-      textSize: "normal",
-      contrast: "standard",
-    },
-  });
+  const [settings, setSettings] = useState<UserSettingsData>(() =>
+    loadUserSettings((i18n.language as "fr" | "en" | "es") || "fr"),
+  );
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify(settings));
+    } catch {}
+  }, [settings]);
+
 
   const isManager = settings.account.role === "manager";
 
