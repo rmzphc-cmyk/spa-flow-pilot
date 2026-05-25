@@ -5,12 +5,23 @@ import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { toast } from "@/hooks/use-toast";
 import {
   loadSchedule,
   saveSchedule,
   type MeetingSchedule,
 } from "@/lib/meetingSchedule";
+import { seedDemoData, hasExistingReportsData } from "@/utils/seedDemoData";
 
 interface UserSettingsData {
   language: "fr" | "en" | "es";
