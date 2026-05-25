@@ -15,7 +15,10 @@ export function getUserRole(): UserRole {
     const r = localStorage.getItem(ROLE_KEY);
     if (r === "direction" || r === "admin" || r === "manager") return r;
   } catch {}
-  return "manager";
+  // Default to "direction" so the multi-spa overview and global templates
+  // are visible by default. Switch to "manager" via setUserRole() to test
+  // the spa-scoped view.
+  return "direction";
 }
 
 export function setUserRole(role: UserRole) {
