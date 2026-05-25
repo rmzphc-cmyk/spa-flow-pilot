@@ -220,14 +220,25 @@ export default function RespConfig() {
   const [selectedMonth, setSelectedMonth] = useState<string>(() => monthKey(new Date()));
 
   const handleAdd = () => {
-    setEditing(emptyTemplate());
+    const t = emptyTemplate();
+    setEditing(t);
+    // Par défaut : nouveau template assigné à tous les spas
+    setEditingSpas(ALL_SPAS.map((s) => s.key));
     setSheetOpen(true);
   };
 
   const handleEdit = (t: RespTemplate) => {
     setEditing({ ...t });
+    // Récupérer les spas où ce template est actuellement actif
+    const enabledSpas = ALL_SPAS
+      .filter((s) => spaAssignments[s.key]?.find((a) => a.templateId === t.id)?.enabled)
+      .map((s) => s.key);
+    setEditingSpas(enabledSpas);
     setSheetOpen(true);
   };
+
+  // Spas concernés par le template en cours d'édition
+  const [editingSpas, setEditingSpas] = useState<string[]>([]);
 
   const handleSave = () => {
     if (!editing) return;
@@ -236,15 +247,21 @@ export default function RespConfig() {
       setTemplates(templates.map((t) => (t.id === editing.id ? editing : t)));
     } else {
       setTemplates([...templates, editing]);
-      // Add to all spas as disabled by default
-      const updated = { ...spaAssignments };
-      for (const key of Object.keys(updated)) {
-        if (!updated[key].find((a) => a.templateId === editing.id)) {
-          updated[key] = [...updated[key], { templateId: editing.id, enabled: false, overrideQty: null, monthly: {} }];
-        }
-      }
-      setSpaAssignments(updated);
     }
+    // Sync spa assignments to reflect "Spas concernés"
+    const updated = { ...spaAssignments };
+    for (const spa of ALL_SPAS) {
+      const list = updated[spa.key] ? [...updated[spa.key]] : [];
+      const idx = list.findIndex((a) => a.templateId === editing.id);
+      const shouldBeEnabled = editingSpas.includes(spa.key);
+      if (idx === -1) {
+        list.push({ templateId: editing.id, enabled: shouldBeEnabled, overrideQty: null, monthly: {} });
+      } else {
+        list[idx] = { ...list[idx], enabled: shouldBeEnabled };
+      }
+      updated[spa.key] = list;
+    }
+    setSpaAssignments(updated);
     setSheetOpen(false);
     setEditing(null);
   };
@@ -816,9 +833,54 @@ export default function RespConfig() {
                 </div>
               </div>
 
+              {/* Spas concernés */}
+              <div>
+                <Label className="text-sm font-medium">Spas concernés</Label>
+                <p className="text-[10px] text-muted-foreground mb-2">
+                  Sélectionnez les spas auxquels ce template s'applique. Les ajustements mensuels restent gérés dans l'onglet « Affectation par spa ».
+                </p>
+                <div className="space-y-2">
+                  {ALL_SPAS.map((s) => {
+                    const checked = editingSpas.includes(s.key);
+                    return (
+                      <label
+                        key={s.key}
+                        className="flex items-center gap-2 p-2 rounded-lg border border-border hover:bg-muted cursor-pointer"
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(v) => {
+                            if (v) setEditingSpas([...editingSpas, s.key]);
+                            else setEditingSpas(editingSpas.filter((k) => k !== s.key));
+                          }}
+                        />
+                        <span className="text-sm text-foreground">{s.name}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+                <div className="flex gap-2 mt-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingSpas(ALL_SPAS.map((s) => s.key))}
+                    className="text-[11px] text-primary hover:underline"
+                  >
+                    Tout sélectionner
+                  </button>
+                  <span className="text-[11px] text-muted-foreground">·</span>
+                  <button
+                    type="button"
+                    onClick={() => setEditingSpas([])}
+                    className="text-[11px] text-muted-foreground hover:underline"
+                  >
+                    Tout désélectionner
+                  </button>
+                </div>
+              </div>
+
               {/* Active */}
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Actif</Label>
+                <Label className="text-sm font-medium">Actif (global)</Label>
                 <Switch checked={editing.active} onCheckedChange={(v) => updateField("active", v)} />
               </div>
 
