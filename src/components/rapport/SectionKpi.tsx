@@ -22,7 +22,7 @@ export const baseKpis: KpiData[] = [
   { id: "k8", label: "Satisfaction collaborateurs", unit: "/10", target: 8, n1: 7.2, category: "manager", history: [6.8, 7.0, 7.1, 7.2] },
 ];
 
-const baseKpisLocal = baseKpis;
+
 
 // French month parsing for period strings like "1 mars → 31 mars 2026" or "18 → 24 mars 2026"
 const FR_MONTHS: Record<string, number> = {
