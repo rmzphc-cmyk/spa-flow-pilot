@@ -111,7 +111,6 @@ function CurrentReportCard({ report }: { report: ReportRecord }) {
     i < completed ? "bg-primary" : "bg-border"
   );
     i < report.completedSections ? "bg-primary" : "bg-border"
-  );
 
   return (
     <div className="bg-card rounded-xl shadow-sm border border-border p-6 mb-4">
@@ -126,7 +125,6 @@ function CurrentReportCard({ report }: { report: ReportRecord }) {
             {report.type === "weekly" ? "🟢 Weekly" : "🔵 Monthly"}
           </span>
           <span className="text-sm text-muted-foreground">{report.period}</span>
-          <span className="text-sm text-muted-foreground">• {report.spa}</span>
         </div>
         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${status.bg} ${status.text}`}>
           {status.label}
@@ -137,7 +135,7 @@ function CurrentReportCard({ report }: { report: ReportRecord }) {
       <div className="mb-1">
         <div className="flex items-center justify-between mb-2">
           <span className="text-sm font-medium text-foreground">Progression</span>
-          <span className="text-xs text-muted-foreground">{report.completedSections}/{report.totalSections} sections</span>
+          <span className="text-xs text-muted-foreground">{completed}/{total} sections</span>
         </div>
         <div className="flex gap-1 h-2">
           {sectionColors.map((color, i) => (
