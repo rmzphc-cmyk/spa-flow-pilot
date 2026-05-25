@@ -1,22 +1,30 @@
 import { useState, useEffect } from "react";
-import { Check, AlertTriangle } from "lucide-react";
+import { Check } from "lucide-react";
+import { REPORT_SECTION_SAVED_EVENT } from "@/lib/reportsStore";
 
 export function AutosaveIndicator() {
-  const [seconds, setSeconds] = useState(0);
+  const [visible, setVisible] = useState(false);
 
   useEffect(() => {
-    const interval = setInterval(() => setSeconds((s) => s + 1), 1000);
-    return () => clearInterval(interval);
+    let hideTimer: ReturnType<typeof setTimeout> | null = null;
+    const onSaved = () => {
+      setVisible(true);
+      if (hideTimer) clearTimeout(hideTimer);
+      hideTimer = setTimeout(() => setVisible(false), 2000);
+    };
+    window.addEventListener(REPORT_SECTION_SAVED_EVENT, onSaved);
+    return () => {
+      window.removeEventListener(REPORT_SECTION_SAVED_EVENT, onSaved);
+      if (hideTimer) clearTimeout(hideTimer);
+    };
   }, []);
 
-  const display = seconds < 5
-    ? "Sauvegardé"
-    : `Sauvegardé il y a ${seconds}s`;
+  if (!visible) return null;
 
   return (
-    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-      <Check className="h-3 w-3 text-emerald-500" />
-      {display}
+    <span className="flex items-center gap-1.5 text-xs text-emerald-600 transition-opacity">
+      <Check className="h-3 w-3" />
+      Sauvegardé ✓
     </span>
   );
 }
