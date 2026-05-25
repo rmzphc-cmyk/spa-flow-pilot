@@ -314,28 +314,36 @@ export default function MeetingMode() {
 
 
             <TabsContent value="obj">
-              <div className="space-y-3">
-                {objectifs.map((o, i) => {
-                  const s = objStatusStyles[o.status] ?? objStatusStyles.on_track;
-                  const progress = Math.min(100, Math.round((o.current / o.target) * 100));
-                  return (
-                    <div key={i} className="bg-card border border-border rounded-lg p-4 shadow-sm">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-sm font-medium text-foreground">{o.title}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${s.classes}`}>{s.label}</span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-bold text-foreground">{o.current}{o.unit}</span>
-                        <div className="flex-1 h-1.5 bg-border rounded-full overflow-hidden">
-                          <div className="h-full bg-primary rounded-full" style={{ width: `${progress}%` }} />
+              {objectifs.length === 0 ? (
+                <p className="text-sm text-muted-foreground italic">Aucun objectif converti depuis l'IDS.</p>
+              ) : (
+                <div className="space-y-3">
+                  {objectifs.map((o, i) => {
+                    const s = objStatusStyles[o.status] ?? objStatusStyles.on_track;
+                    const hasNums = o.current != null && o.target != null && o.target > 0;
+                    const progress = hasNums ? Math.min(100, Math.round(((o.current as number) / (o.target as number)) * 100)) : 0;
+                    return (
+                      <div key={i} className="bg-card border border-border rounded-lg p-4 shadow-sm">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium text-foreground">{o.title}</span>
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${s.classes}`}>{s.label}</span>
                         </div>
-                        <span className="text-xs text-muted-foreground">/{o.target}{o.unit}</span>
+                        {hasNums && (
+                          <div className="flex items-center gap-3">
+                            <span className="text-sm font-bold text-foreground">{o.current}{o.unit ?? ""}</span>
+                            <div className="flex-1 h-1.5 bg-border rounded-full overflow-hidden">
+                              <div className="h-full bg-primary rounded-full" style={{ width: `${progress}%` }} />
+                            </div>
+                            <span className="text-xs text-muted-foreground">/{o.target}{o.unit ?? ""}</span>
+                          </div>
+                        )}
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </TabsContent>
+
           </Tabs>
         </div>
 
@@ -344,22 +352,8 @@ export default function MeetingMode() {
           <h2 className="text-base font-semibold text-foreground mb-1">Problèmes identifiés en réunion</h2>
           <p className="text-xs text-muted-foreground mb-4">IDS — Capture rapide uniquement</p>
 
-          {/* Previous issues */}
-          {previousIssues.length > 0 && (
-            <div className="rounded-xl p-4 mb-4 bg-amber-50 border border-amber-200">
-              <h3 className="text-xs font-medium text-amber-800 mb-2">Problèmes du cycle précédent encore ouverts</h3>
-              {previousIssues.map((issue, i) => (
-                <div key={i} className="flex items-center justify-between text-sm py-1.5">
-                  <span className="text-foreground">{issue.text}</span>
-                  <span className="text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full shrink-0 ml-2">
-                    Reporté de {issue.from}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-
           {/* Input */}
+
           <div className="flex gap-2 mb-4">
             <Input
               placeholder="Décrivez le problème en une phrase..."
