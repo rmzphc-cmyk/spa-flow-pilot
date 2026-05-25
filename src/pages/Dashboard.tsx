@@ -1,44 +1,35 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, AlertTriangle, Sparkles, CheckCircle2, Target, Users, Eye, Calendar, Plus } from "lucide-react";
+import { ArrowRight, AlertTriangle, Sparkles, CheckCircle2, Target, Calendar, Plus, FileText } from "lucide-react";
 import {
   useMeetingSchedule,
   nextWeeklyMeeting,
   nextMonthlyMeeting,
   daysUntil,
 } from "@/lib/meetingSchedule";
+import {
+  getReports,
+  isPreparationState,
+  type ReportRecord,
+  type ReportState,
+} from "@/lib/reportsStore";
 
-// Mock map of existing draft reports per cycle type.
-const draftReportsByType: Record<"weekly" | "monthly", string | null> = {
-  weekly: null,
-  monthly: "r1",
-};
+type ReportStatus = ReportState;
 
-// --- Mock Data ---
+const WEEKLY_SECTION_KEYS = ["kpi", "checkin", "ids"] as const;
+const MONTHLY_SECTION_KEYS = ["kpi", "checkin", "responsabilites", "todo", "objectifs", "ids", "cloture"] as const;
 
-type ReportStatus = "draft_preparation" | "ready_for_review" | "in_meeting" | "post_meeting_generated" | "validated";
-
-interface CurrentReport {
-  id: string;
-  type: "weekly" | "monthly";
-  label: string;
-  period: string;
-  spa: string;
-  status: ReportStatus;
-  completedSections: number;
-  totalSections: number;
+function getSectionKeysFor(type: "weekly" | "monthly"): readonly string[] {
+  return type === "weekly" ? WEEKLY_SECTION_KEYS : MONTHLY_SECTION_KEYS;
 }
 
-const currentReport: CurrentReport = {
-  id: "r1",
-  type: "monthly",
-  label: "Monthly — Mars 2026",
-  period: "1 mars → 31 mars 2026",
-  spa: "Par Gran Canaria",
-  status: "draft_preparation",
-  completedSections: 2,
-  totalSections: 7,
-};
+function computeCompletion(report: ReportRecord): { completed: number; total: number; percent: number } {
+  const keys = getSectionKeysFor(report.type);
+  const details = (report.details ?? {}) as unknown as Record<string, unknown>;
+  const completed = keys.filter((k) => details[k] != null).length;
+  return { completed, total: keys.length, percent: Math.round((completed / keys.length) * 100) };
+}
 
 const overdueTodos = [
   { id: "t1", title: "Finaliser planning cabines semaine 13", daysOverdue: 3 },
