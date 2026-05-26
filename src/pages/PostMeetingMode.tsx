@@ -410,7 +410,7 @@ export default function PostMeetingMode() {
                   key={issue.id}
                   issue={issue}
                   index={i}
-                  onChange={(updated) => setIssues((p) => p.map((x) => (x.id === updated.id ? updated : x)))}
+                  onChange={handleIssueChange}
                 />
               ))}
             </div>
