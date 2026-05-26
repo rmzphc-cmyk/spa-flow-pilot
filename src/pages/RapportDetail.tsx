@@ -76,11 +76,6 @@ export default function RapportDetail() {
 }
 
 
-
-  // PREPARATION MODE — keep existing editable layout
-  return <PreparationMode report={report} />;
-}
-
 function PreparationMode({ report }: { report: ReportRecord }) {
   const { activeSection, sectionStatuses, setSectionStatuses } = useOutletContext<OutletContext>();
   const isWeekly = report.type === "weekly";
