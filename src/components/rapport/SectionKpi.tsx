@@ -1,58 +1,17 @@
-import { useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { KpiCardSaisie, KpiCardSaisieWeekly, getKpiStatus } from "@/components/KpiCard";
 import type { KpiData, KpiCardValue } from "@/components/KpiCard";
 import type { SectionStatus } from "@/pages/RapportDetail";
-import { usePersistedSection } from "@/lib/usePersistedSection";
+import { useAuth } from "@/contexts/AuthContext";
+import { useKpiDefinitions, type KpiDefinitionRow } from "@/hooks/useKpiDefinitions";
 import {
-  loadKpiConfig,
-  getMonthlyTarget,
-  getWeeklyTarget,
-  isoWeekKey,
-} from "@/lib/kpiConfig";
-
-export const baseKpis: KpiData[] = [
-  { id: "k1", label: "CA du mois", unit: "€", target: 45000, n1: 38200, category: "spa", history: [36000, 38200, 41000, 38200] },
-  { id: "k2", label: "Taux d'occupation cabines", unit: "%", target: 80, n1: 72, category: "spa", history: [68, 70, 72, 72] },
-  { id: "k3", label: "Panier moyen", unit: "€", target: 120, n1: 115, category: "spa", history: [110, 112, 118, 115] },
-  { id: "k4", label: "NPS clients", unit: "/10", target: 8.5, n1: 7.8, category: "spa", history: [7.5, 7.6, 7.9, 7.8] },
-  { id: "k5", label: "Ventes produits", unit: "€", target: 8000, n1: 6100, category: "spa", history: [5200, 5800, 6000, 6100] },
-  { id: "k6", label: "Absentéisme équipe", unit: "j", target: 2, n1: 3, category: "manager", history: [2, 3, 2, 3] },
-  { id: "k7", label: "Nouveaux abonnements", unit: "", target: 15, n1: 11, category: "spa", history: [9, 10, 12, 11] },
-  { id: "k8", label: "Satisfaction collaborateurs", unit: "/10", target: 8, n1: 7.2, category: "manager", history: [6.8, 7.0, 7.1, 7.2] },
-];
-
-
-
-// French month parsing for period strings like "1 mars → 31 mars 2026" or "18 → 24 mars 2026"
-const FR_MONTHS: Record<string, number> = {
-  janvier: 0, février: 1, fevrier: 1, mars: 2, avril: 3, mai: 4, juin: 5,
-  juillet: 6, août: 7, aout: 7, septembre: 8, octobre: 9, novembre: 10, décembre: 11, decembre: 11,
-};
-
-function parseEndDate(period: string): Date | null {
-  if (!period) return null;
-  const right = period.split("→").pop()?.trim() ?? period;
-  // Try "31 mars 2026" or fallback to find day + month + year in whole string
-  const m = right.match(/(\d{1,2})\s+([A-Za-zéûôîâ]+)\s+(\d{4})/i)
-    || period.match(/(\d{1,2})\s+([A-Za-zéûôîâ]+)\s+(\d{4})/i);
-  if (!m) return null;
-  const day = Number(m[1]);
-  const month = FR_MONTHS[m[2].toLowerCase()];
-  const year = Number(m[3]);
-  if (month == null) return null;
-  return new Date(year, month, day);
-}
-
-function periodToMonthKey(period: string): string {
-  const d = parseEndDate(period) ?? new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-}
-
-function periodToIsoWeek(period: string): string {
-  const d = parseEndDate(period) ?? new Date();
-  return isoWeekKey(d);
-}
+  useKpiEntries,
+  useUpsertKpiEntry,
+  computeKpiStatus,
+  type KpiEntryRow,
+  type KpiStatus,
+} from "@/hooks/useKpiEntries";
 
 interface Props {
   reportId: string;
@@ -61,64 +20,162 @@ interface Props {
   onStatusChange: (status: SectionStatus) => void;
 }
 
-export function SectionKpi({ reportId, reportType, period = "", onStatusChange }: Props) {
+function mapCategory(cat: string): "spa" | "manager" {
+  return cat === "manager" || cat === "team" ? "manager" : "spa";
+}
+
+function defToKpiData(def: KpiDefinitionRow, entry: KpiEntryRow | undefined): KpiData {
+  return {
+    id: def.id,
+    label: def.name,
+    unit: def.unit ?? "",
+    target: def.threshold_amber ?? 0,
+    n1: entry?.value_n1 ?? 0,
+    category: mapCategory(def.category),
+  };
+}
+
+function entryToCardValue(entry: KpiEntryRow | undefined): KpiCardValue {
+  if (!entry) return { value: "", comment: "", isNa: false, naReason: "" };
+  const isNa = entry.status === "not_applicable" && entry.value_current === null;
+  return {
+    value: entry.value_current !== null ? String(entry.value_current) : "",
+    comment: isNa ? "" : entry.comment ?? "",
+    isNa,
+    naReason: isNa ? entry.comment ?? "" : "",
+  };
+}
+
+export function SectionKpi({ reportId, reportType, onStatusChange }: Props) {
   const { t } = useTranslation();
+  const { spaId } = useAuth();
   const isWeekly = reportType === "weekly";
 
-  // Resolve target per KPI from kpi_config localStorage
-  const kpis = useMemo(() => {
-    const cfg = loadKpiConfig();
-    const monthK = periodToMonthKey(period);
-    const weekK = periodToIsoWeek(period);
-    const resolved = baseKpis.map((k) => {
-      const cfgItem = cfg.find((c) => c.id === k.id || c.name === k.label);
-      const category = cfgItem?.category ?? k.category;
-      if (!cfgItem) return { ...k, category };
-      const tgt = isWeekly
-        ? getWeeklyTarget(cfgItem, weekK)
-        : getMonthlyTarget(cfgItem, monthK);
-      return { ...k, category, target: tgt != null ? tgt : k.target };
-    });
-    // Spa KPIs first, then Manager — matches Config order used in reports
-    return resolved.sort((a, b) => {
-      if (a.category !== b.category) return a.category === "spa" ? -1 : 1;
-      return 0;
-    });
-  }, [period, isWeekly]);
+  const { data: definitions = [] } = useKpiDefinitions(spaId);
+  const { data: entries = [] } = useKpiEntries(reportId);
+  const upsert = useUpsertKpiEntry();
 
-  const defaultValues = useMemo<Record<string, KpiCardValue>>(() => {
-    const init: Record<string, KpiCardValue> = {};
-    for (const kpi of baseKpis) {
-      init[kpi.id] = { value: "", comment: "", isNa: false, naReason: "" };
-    }
-    return init;
-  }, []);
+  const entriesByDef = useMemo(() => {
+    const map = new Map<string, KpiEntryRow>();
+    for (const e of entries) map.set(e.kpi_definition_id, e);
+    return map;
+  }, [entries]);
 
-  const [cardValues, setCardValues] = usePersistedSection<Record<string, KpiCardValue>>(
-    reportId,
-    "kpi",
-    defaultValues,
+  // Local debounced state per definition
+  const [local, setLocal] = useState<Record<string, KpiCardValue>>({});
+
+  // Sync local from server when entries arrive (only for keys not yet locally edited)
+  const initializedRef = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    setLocal((prev) => {
+      const next = { ...prev };
+      for (const def of definitions) {
+        if (!initializedRef.current.has(def.id)) {
+          next[def.id] = entryToCardValue(entriesByDef.get(def.id));
+          initializedRef.current.add(def.id);
+        }
+      }
+      return next;
+    });
+  }, [definitions, entriesByDef]);
+
+  // Sort: spa first, then manager, then display_order
+  const sortedDefs = useMemo(
+    () =>
+      [...definitions].sort((a, b) => {
+        const ca = mapCategory(a.category);
+        const cb = mapCategory(b.category);
+        if (ca !== cb) return ca === "spa" ? -1 : 1;
+        return a.display_order - b.display_order;
+      }),
+    [definitions],
   );
 
+  // Debounce timers per definition
+  const timersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  const persist = useCallback(
+    (def: KpiDefinitionRow, cv: KpiCardValue) => {
+      if (!reportId) return;
+      let value_current: number | null = null;
+      let comment: string | null = null;
+      let status: KpiStatus;
+
+      if (cv.isNa) {
+        status = "not_applicable";
+        comment = cv.naReason || null;
+      } else {
+        const n = cv.value === "" ? NaN : Number(cv.value);
+        if (isNaN(n)) {
+          status = "not_applicable";
+        } else {
+          value_current = n;
+          status = computeKpiStatus(
+            n,
+            def.threshold_amber,
+            def.threshold_red,
+            def.comparison_direction,
+          );
+        }
+        comment = cv.comment || null;
+      }
+
+      // Skip empty unsaved state to avoid creating noise rows
+      const existing = entriesByDef.get(def.id);
+      if (!existing && value_current === null && !cv.isNa && !comment) return;
+
+      upsert.mutate({
+        report_id: reportId,
+        kpi_definition_id: def.id,
+        value_current,
+        comment,
+        status,
+      });
+    },
+    [reportId, upsert, entriesByDef],
+  );
+
+  const handleChange = useCallback(
+    (def: KpiDefinitionRow, cv: KpiCardValue) => {
+      setLocal((p) => ({ ...p, [def.id]: cv }));
+      const t = timersRef.current[def.id];
+      if (t) clearTimeout(t);
+      timersRef.current[def.id] = setTimeout(() => persist(def, cv), 800);
+    },
+    [persist],
+  );
+
+  useEffect(() => {
+    return () => {
+      for (const t of Object.values(timersRef.current)) clearTimeout(t);
+    };
+  }, []);
+
+  // Completeness validation
   const isComplete = useMemo(() => {
-    for (const kpi of kpis) {
-      const cv = cardValues[kpi.id];
+    if (sortedDefs.length === 0) return false;
+    for (const def of sortedDefs) {
+      const cv = local[def.id];
+      if (!cv) return false;
       if (cv.isNa) {
         if (!cv.naReason.trim()) return false;
         continue;
       }
       if (!cv.value || isNaN(Number(cv.value))) return false;
-
+      const status = computeKpiStatus(
+        Number(cv.value),
+        def.threshold_amber,
+        def.threshold_red,
+        def.comparison_direction,
+      );
       if (isWeekly) {
-        const weeklyStatus = getWeeklyStatus(Number(cv.value), kpi.target);
-        if (weeklyStatus === "red" && !cv.comment.trim()) return false;
+        if (status === "red" && !cv.comment.trim()) return false;
       } else {
-        const status = getKpiStatus(cv.value, kpi.target);
         if ((status === "amber" || status === "red") && !cv.comment.trim()) return false;
       }
     }
     return true;
-  }, [cardValues, isWeekly, kpis]);
+  }, [local, sortedDefs, isWeekly]);
 
   useEffect(() => {
     onStatusChange(isComplete ? "complete" : "incomplete");
@@ -134,32 +191,30 @@ export function SectionKpi({ reportId, reportType, period = "", onStatusChange }
       </p>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {kpis.map((kpi) =>
-          isWeekly ? (
+        {sortedDefs.map((def) => {
+          const entry = entriesByDef.get(def.id);
+          const data = defToKpiData(def, entry);
+          const cv = local[def.id] ?? entryToCardValue(entry);
+          return isWeekly ? (
             <KpiCardSaisieWeekly
-              key={kpi.id}
-              kpi={kpi}
-              cardValue={cardValues[kpi.id]}
-              onChange={(newVal) => setCardValues((p) => ({ ...p, [kpi.id]: newVal }))}
+              key={def.id}
+              kpi={data}
+              cardValue={cv}
+              onChange={(v) => handleChange(def, v)}
             />
           ) : (
             <KpiCardSaisie
-              key={kpi.id}
-              kpi={kpi}
-              cardValue={cardValues[kpi.id]}
-              onChange={(newVal) => setCardValues((p) => ({ ...p, [kpi.id]: newVal }))}
+              key={def.id}
+              kpi={data}
+              cardValue={cv}
+              onChange={(v) => handleChange(def, v)}
             />
-          )
-        )}
+          );
+        })}
       </div>
     </section>
   );
 }
 
-/** Weekly status now compares vs target (weekly target from config), not N-1 */
-function getWeeklyStatus(value: number, target: number): "green" | "amber" | "red" {
-  const ratio = target === 0 ? 1 : value / target;
-  if (ratio >= 1) return "green";
-  if (ratio >= 0.85) return "amber";
-  return "red";
-}
+// Re-export for backwards-compat with any importers
+export { getKpiStatus };
