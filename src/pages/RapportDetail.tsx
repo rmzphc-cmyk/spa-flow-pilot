@@ -1,5 +1,5 @@
-import { useMemo, useCallback } from "react";
-import { useParams, useOutletContext } from "react-router-dom";
+import { useMemo, useCallback, useEffect } from "react";
+import { useParams, useOutletContext, useNavigate } from "react-router-dom";
 import { ReportHeader } from "@/components/rapport/ReportHeader";
 import { SectionKpi } from "@/components/rapport/SectionKpi";
 import { SectionCheckin } from "@/components/rapport/SectionCheckin";
@@ -12,9 +12,9 @@ import { SectionIdsWeekly } from "@/components/rapport/SectionIdsWeekly";
 import { SectionCloture } from "@/components/rapport/SectionCloture";
 import { AutosaveIndicator } from "@/components/rapport/AutosaveIndicator";
 import { MeetingView } from "@/components/rapport/MeetingView";
-import { isMeetingState, type ReportRecord } from "@/lib/reportsStore";
-import { useReport, mapReportRowToRecord, useUpdateReportStatus, useStartMeeting } from "@/hooks/useReports";
-import { Loader2 } from "lucide-react";
+import { type ReportRecord } from "@/lib/reportsStore";
+import { useReport, mapReportRowToRecord, useUpdateReportStatus, useStartMeeting, useFinalizeWeekly } from "@/hooks/useReports";
+import { Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Save, CheckCircle2, Play, Send } from "lucide-react";
@@ -37,7 +37,15 @@ const monthlySections: SectionId[] = ["kpi", "checkin", "responsabilites", "todo
 
 export default function RapportDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { data: row, isLoading, error } = useReport(id);
+
+  const state = row?.status;
+  useEffect(() => {
+    if (state === "post_meeting_generated" && id) {
+      navigate("/post-reunion/" + id, { replace: true });
+    }
+  }, [state, id, navigate]);
 
   if (isLoading) {
     return (
@@ -58,16 +66,15 @@ export default function RapportDetail() {
 
   const report: ReportRecord = mapReportRowToRecord(row);
 
-  // MEETING MODE — read-only, full focus
-  if (isMeetingState(report.state)) {
+  // MEETING MODE — only during active meeting
+  if (report.state === "in_meeting") {
     return <MeetingView report={report} />;
   }
 
-
-
-  // PREPARATION MODE — keep existing editable layout
+  // PREPARATION MODE (incl. validated read-only) — keep existing editable layout
   return <PreparationMode report={report} />;
 }
+
 
 function PreparationMode({ report }: { report: ReportRecord }) {
   const { activeSection, sectionStatuses, setSectionStatuses } = useOutletContext<OutletContext>();
@@ -90,6 +97,8 @@ function PreparationMode({ report }: { report: ReportRecord }) {
 
   const updateStatus = useUpdateReportStatus();
   const startMeeting = useStartMeeting();
+  const finalizeWeekly = useFinalizeWeekly();
+  const isValidated = report.state === "validated";
 
   const renderActionButton = () => {
     if (report.type === "monthly" && report.state === "draft_preparation") {
@@ -135,13 +144,37 @@ function PreparationMode({ report }: { report: ReportRecord }) {
         </Button>
       );
     }
-    // weekly: keep existing finalize button
+    // weekly: finalize button wired to edge function
+    const weeklyDisabled = !canSubmit || finalizeWeekly.isPending;
     return (
       <Tooltip>
         <TooltipTrigger asChild>
           <span>
-            <Button size="sm" disabled={!canSubmit} className="gap-1.5">
-              <CheckCircle2 className="h-4 w-4" />
+            <Button
+              size="sm"
+              disabled={weeklyDisabled}
+              className="gap-1.5"
+              onClick={() =>
+                finalizeWeekly.mutate(
+                  { reportId: report.id },
+                  {
+                    onError: (e) =>
+                      toast({
+                        title: "Erreur",
+                        description: (e as Error).message,
+                        variant: "destructive",
+                      }),
+                    onSuccess: () =>
+                      toast({ title: "Rapport finalisé" }),
+                  },
+                )
+              }
+            >
+              {finalizeWeekly.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4" />
+              )}
               Finaliser le rapport
             </Button>
           </span>
@@ -150,6 +183,7 @@ function PreparationMode({ report }: { report: ReportRecord }) {
       </Tooltip>
     );
   };
+
 
   return (
     <div className="pb-24">
@@ -161,6 +195,15 @@ function PreparationMode({ report }: { report: ReportRecord }) {
         totalSections={sections.length}
         activeSection={activeSection}
       />
+
+      {isValidated && (
+        <div className="mx-6 mt-4 mb-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 flex items-center gap-2 text-emerald-900">
+          <Lock className="h-4 w-4" />
+          <span className="text-sm font-medium">Rapport validé — lecture seule</span>
+        </div>
+      )}
+
+
 
       {activeSection === "kpi" && (
         <SectionKpi reportId={report.id} reportType={report.type} period={report.period} onStatusChange={(s) => updateSectionStatus("kpi", s)} />
