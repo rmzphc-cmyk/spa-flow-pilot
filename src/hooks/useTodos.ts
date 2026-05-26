@@ -120,7 +120,7 @@ export function useUpdateTodoStatus(reportId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: { id: string; status: DbTodoStatus }) => {
-      const patch: Record<string, unknown> = {
+      const patch: { status: DbTodoStatus; updated_at: string; completed_at?: string } = {
         status: input.status,
         updated_at: new Date().toISOString(),
       };
