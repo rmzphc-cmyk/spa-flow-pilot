@@ -196,6 +196,15 @@ function PreparationMode({ report }: { report: ReportRecord }) {
         activeSection={activeSection}
       />
 
+      {isValidated && (
+        <div className="mx-6 mt-4 mb-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 flex items-center gap-2 text-emerald-900">
+          <Lock className="h-4 w-4" />
+          <span className="text-sm font-medium">Rapport validé — lecture seule</span>
+        </div>
+      )}
+
+
+
       {activeSection === "kpi" && (
         <SectionKpi reportId={report.id} reportType={report.type} period={report.period} onStatusChange={(s) => updateSectionStatus("kpi", s)} />
       )}
