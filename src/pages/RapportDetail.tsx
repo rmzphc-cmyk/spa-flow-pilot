@@ -97,6 +97,8 @@ function PreparationMode({ report }: { report: ReportRecord }) {
 
   const updateStatus = useUpdateReportStatus();
   const startMeeting = useStartMeeting();
+  const finalizeWeekly = useFinalizeWeekly();
+  const isValidated = report.state === "validated";
 
   const renderActionButton = () => {
     if (report.type === "monthly" && report.state === "draft_preparation") {
@@ -142,13 +144,37 @@ function PreparationMode({ report }: { report: ReportRecord }) {
         </Button>
       );
     }
-    // weekly: keep existing finalize button
+    // weekly: finalize button wired to edge function
+    const weeklyDisabled = !canSubmit || finalizeWeekly.isPending;
     return (
       <Tooltip>
         <TooltipTrigger asChild>
           <span>
-            <Button size="sm" disabled={!canSubmit} className="gap-1.5">
-              <CheckCircle2 className="h-4 w-4" />
+            <Button
+              size="sm"
+              disabled={weeklyDisabled}
+              className="gap-1.5"
+              onClick={() =>
+                finalizeWeekly.mutate(
+                  { reportId: report.id },
+                  {
+                    onError: (e) =>
+                      toast({
+                        title: "Erreur",
+                        description: (e as Error).message,
+                        variant: "destructive",
+                      }),
+                    onSuccess: () =>
+                      toast({ title: "Rapport finalisé" }),
+                  },
+                )
+              }
+            >
+              {finalizeWeekly.isPending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle2 className="h-4 w-4" />
+              )}
               Finaliser le rapport
             </Button>
           </span>
@@ -157,6 +183,7 @@ function PreparationMode({ report }: { report: ReportRecord }) {
       </Tooltip>
     );
   };
+
 
   return (
     <div className="pb-24">
