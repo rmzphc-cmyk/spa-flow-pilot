@@ -1,7 +1,18 @@
 import { useState, useMemo, useEffect } from "react";
 import { useReport } from "@/hooks/useReports";
-import { useMeetingSummary, useGenerateMeetingSummary } from "@/hooks/useMeetingSummary";
-import { useIdsItems } from "@/hooks/useIdsItems";
+import {
+  useMeetingSummary,
+  useGenerateMeetingSummary,
+  useUpdateMeetingSummary,
+  useValidateMonthlySummary,
+} from "@/hooks/useMeetingSummary";
+import {
+  useIdsItems,
+  useUpdateIdsStructure,
+  useConvertIdsToTodo,
+  useConvertIdsToObjective,
+  type DbIdsItem,
+} from "@/hooks/useIdsItems";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -192,6 +203,11 @@ export default function PostMeetingMode() {
   const { data: summaryRow, isLoading: summaryLoading } = useMeetingSummary(id);
   const generateSummary = useGenerateMeetingSummary();
   const { data: dbIds } = useIdsItems(id);
+  const updateIdsStructure = useUpdateIdsStructure();
+  const convertToTodo = useConvertIdsToTodo(id ?? "");
+  const convertToObjective = useConvertIdsToObjective(id ?? "");
+  const updateSummary = useUpdateMeetingSummary();
+  const validateMonthly = useValidateMonthlySummary();
 
   const cycleType = (row?.cycle_type as ReportType | undefined) ?? report.type;
   const isMonthly = cycleType === "monthly";
@@ -235,21 +251,70 @@ export default function PostMeetingMode() {
     if (decisionsFromAi.length) setDecisions(decisionsFromAi);
   }, [decisionsFromAi]);
 
-  // IDS issues from DB
+  // IDS issues from DB (preserve user-edited cause/solution across refetches)
   const [issues, setIssues] = useState<CapturedIssue[]>([]);
   useEffect(() => {
     if (isMonthly && dbIds) {
-      setIssues(
-        dbIds.map((d) => ({
-          id: d.id,
-          text: d.capture_text,
-          cause: "",
-          solution: "",
-          conversion: null,
-        })),
+      setIssues((prev) =>
+        dbIds.map((d) => {
+          const existing = prev.find((p) => p.id === d.id);
+          const conv: CapturedIssue["conversion"] =
+            d.converted_to_todo_id && d.converted_to_objective_id
+              ? "both"
+              : d.converted_to_todo_id
+                ? "todo"
+                : d.converted_to_objective_id
+                  ? "objective"
+                  : existing?.conversion ?? null;
+          return {
+            id: d.id,
+            text: d.capture_text,
+            cause: existing?.cause ?? "",
+            solution: existing?.solution ?? "",
+            conversion: conv,
+          };
+        }),
       );
     }
   }, [dbIds, isMonthly]);
+
+  const handleIssueChange = (updated: CapturedIssue) => {
+    const prev = issues.find((i) => i.id === updated.id);
+    setIssues((p) => p.map((x) => (x.id === updated.id ? updated : x)));
+    if (!id || !prev) return;
+
+    if (prev.cause !== updated.cause || prev.solution !== updated.solution) {
+      updateIdsStructure.mutate({
+        idsItemId: updated.id,
+        reportId: id,
+        cause: updated.cause,
+        solution: updated.solution,
+      });
+    }
+
+    if (prev.conversion !== updated.conversion && updated.conversion) {
+      const dbItem = dbIds?.find((d) => d.id === updated.id) as DbIdsItem | undefined;
+      if (!dbItem) return;
+      if (
+        (updated.conversion === "todo" || updated.conversion === "both") &&
+        !dbItem.converted_to_todo_id
+      ) {
+        convertToTodo.mutate(dbItem);
+      }
+      if (
+        (updated.conversion === "objective" || updated.conversion === "both") &&
+        !dbItem.converted_to_objective_id
+      ) {
+        convertToObjective.mutate(dbItem);
+      }
+    }
+  };
+
+  const persistEdits = (s: string, d: string[]) => {
+    if (!id || !summaryRow) return;
+    if (s === summaryRow.executive_summary && JSON.stringify(d) === summaryRow.key_actions) return;
+    updateSummary.mutate({ reportId: id, newSummary: s, newKeyActions: d });
+  };
 
   // Todo suggestions
   const [todoSuggestions, setTodoSuggestions] = useState(
@@ -287,8 +352,9 @@ export default function PostMeetingMode() {
   };
 
   const confirmValidation = () => {
+    if (!id) return;
     setConfirmOpen(false);
-    navigate("/?validated=true");
+    validateMonthly.mutate({ reportId: id });
   };
 
   return (
@@ -344,7 +410,7 @@ export default function PostMeetingMode() {
                   key={issue.id}
                   issue={issue}
                   index={i}
-                  onChange={(updated) => setIssues((p) => p.map((x) => (x.id === updated.id ? updated : x)))}
+                  onChange={handleIssueChange}
                 />
               ))}
             </div>
@@ -392,7 +458,7 @@ export default function PostMeetingMode() {
                     <Textarea
                       className="text-sm min-h-[100px] mb-2"
                       value={summary}
-                      onChange={(e) => setSummary(e.target.value)}
+                      onChange={(e) => { setSummary(e.target.value); persistEdits(e.target.value, decisions); }}
                     />
                     <div className="flex gap-2">
                       <Button size="sm" onClick={() => setEditingSummary(false)}>Enregistrer</Button>
@@ -423,7 +489,7 @@ export default function PostMeetingMode() {
                       <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
                       <span className="flex-1 text-foreground">{d}</span>
                       <button
-                        onClick={() => setDecisions((p) => p.filter((_, idx) => idx !== i))}
+                        onClick={() => setDecisions((p) => { const next = p.filter((_, idx) => idx !== i); persistEdits(summary, next); return next; })}
                         className="text-muted-foreground hover:text-destructive shrink-0"
                       >
                         <X className="h-4 w-4" />
@@ -438,7 +504,7 @@ export default function PostMeetingMode() {
                     onChange={(e) => setNewDecision(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && newDecision.trim()) {
-                        setDecisions((p) => [...p, newDecision.trim()]);
+                        setDecisions((p) => { const next = [...p, newDecision.trim()]; persistEdits(summary, next); return next; });
                         setNewDecision("");
                       }
                     }}
@@ -449,7 +515,7 @@ export default function PostMeetingMode() {
                     variant="outline"
                     onClick={() => {
                       if (newDecision.trim()) {
-                        setDecisions((p) => [...p, newDecision.trim()]);
+                        setDecisions((p) => { const next = [...p, newDecision.trim()]; persistEdits(summary, next); return next; });
                         setNewDecision("");
                       }
                     }}
@@ -588,7 +654,7 @@ export default function PostMeetingMode() {
         {/* VALIDATION BUTTON */}
         {aiReady && (
           <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-[0_-2px_8px_rgba(0,0,0,0.06)] px-6 py-3 flex items-center justify-end z-50">
-            <Button size="lg" className="gap-2" onClick={handleValidate}>
+            <Button size="lg" className="gap-2" onClick={handleValidate} disabled={validateMonthly.isPending}>
               <Check className="h-4 w-4" />
               Valider et diffuser à la Direction
             </Button>

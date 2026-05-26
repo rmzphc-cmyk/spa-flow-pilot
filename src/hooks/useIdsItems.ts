@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -141,4 +142,51 @@ export function useConvertIdsToObjective(reportId: string) {
       qc.invalidateQueries({ queryKey: ["objectives", spaId] });
     },
   });
+}
+
+export interface IdsStructureInput {
+  idsItemId: string;
+  reportId: string;
+  cause: string;
+  solution: string;
+}
+
+export function useUpdateIdsStructure() {
+  const qc = useQueryClient();
+  const timers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+
+  const mutation = useMutation({
+    mutationFn: async (input: IdsStructureInput) => {
+      const status = input.solution.trim() ? "structured" : "captured";
+      const { error } = await supabase
+        .from("ids_items")
+        .update({
+          root_cause: input.cause,
+          proposed_solution: input.solution,
+          status,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", input.idsItemId);
+      if (error) throw error;
+      return input;
+    },
+    onSuccess: (input) => {
+      qc.invalidateQueries({ queryKey: ["ids_items", input.reportId] });
+    },
+  });
+
+  const debouncedMutate = useCallback(
+    (input: IdsStructureInput) => {
+      const existing = timers.current.get(input.idsItemId);
+      if (existing) clearTimeout(existing);
+      const t = setTimeout(() => {
+        mutation.mutate(input);
+        timers.current.delete(input.idsItemId);
+      }, 800);
+      timers.current.set(input.idsItemId, t);
+    },
+    [mutation],
+  );
+
+  return { mutate: debouncedMutate, isPending: mutation.isPending };
 }
