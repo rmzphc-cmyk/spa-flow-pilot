@@ -45,7 +45,19 @@ export default function DirectionSpaDetail() {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const detail = spaDetails[id ?? ""];
+  const { data: detail, isLoading } = useDirectionSpaDetail(id);
+  const { data: spas = [] } = useDirectionSpas();
+
+  if (isLoading) {
+    return (
+      <div className="max-w-[900px] mx-auto px-6 py-6 space-y-4">
+        <Skeleton className="h-10 w-1/3" />
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
   if (!detail) {
     return (
       <div className="max-w-[900px] mx-auto px-6 py-12 text-center">
