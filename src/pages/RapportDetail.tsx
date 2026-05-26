@@ -1,5 +1,5 @@
-import { useMemo, useCallback } from "react";
-import { useParams, useOutletContext } from "react-router-dom";
+import { useMemo, useCallback, useEffect } from "react";
+import { useParams, useOutletContext, useNavigate } from "react-router-dom";
 import { ReportHeader } from "@/components/rapport/ReportHeader";
 import { SectionKpi } from "@/components/rapport/SectionKpi";
 import { SectionCheckin } from "@/components/rapport/SectionCheckin";
@@ -12,9 +12,9 @@ import { SectionIdsWeekly } from "@/components/rapport/SectionIdsWeekly";
 import { SectionCloture } from "@/components/rapport/SectionCloture";
 import { AutosaveIndicator } from "@/components/rapport/AutosaveIndicator";
 import { MeetingView } from "@/components/rapport/MeetingView";
-import { isMeetingState, type ReportRecord } from "@/lib/reportsStore";
-import { useReport, mapReportRowToRecord, useUpdateReportStatus, useStartMeeting } from "@/hooks/useReports";
-import { Loader2 } from "lucide-react";
+import { type ReportRecord } from "@/lib/reportsStore";
+import { useReport, mapReportRowToRecord, useUpdateReportStatus, useStartMeeting, useFinalizeWeekly } from "@/hooks/useReports";
+import { Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Save, CheckCircle2, Play, Send } from "lucide-react";
@@ -37,7 +37,15 @@ const monthlySections: SectionId[] = ["kpi", "checkin", "responsabilites", "todo
 
 export default function RapportDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { data: row, isLoading, error } = useReport(id);
+
+  const state = row?.status;
+  useEffect(() => {
+    if (state === "post_meeting_generated" && id) {
+      navigate("/post-reunion/" + id, { replace: true });
+    }
+  }, [state, id, navigate]);
 
   if (isLoading) {
     return (
@@ -58,10 +66,14 @@ export default function RapportDetail() {
 
   const report: ReportRecord = mapReportRowToRecord(row);
 
-  // MEETING MODE — read-only, full focus
-  if (isMeetingState(report.state)) {
+  // MEETING MODE — only during active meeting
+  if (report.state === "in_meeting") {
     return <MeetingView report={report} />;
   }
+
+  // PREPARATION MODE (incl. validated read-only) — keep existing editable layout
+  return <PreparationMode report={report} />;
+}
 
 
 
