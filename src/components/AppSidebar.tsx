@@ -155,7 +155,7 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Spas</p>
           </div>
           <nav className="px-3 space-y-0.5">
-            {spas.map((spa) => {
+            {directionSpas.map((spa) => {
               const isActive = location.pathname === `/direction/spa/${spa.id}`;
               const dotColor = spa.alerts.some((a) => a.level === "red")
                 ? "bg-destructive"
