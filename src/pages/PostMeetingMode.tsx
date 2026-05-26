@@ -250,6 +250,9 @@ export default function PostMeetingMode() {
       );
     }
   }, [dbIds, isMonthly]);
+
+  // Todo suggestions
+  const [todoSuggestions, setTodoSuggestions] = useState(
     (isMonthly ? aiTodoSuggestions : aiTodoSuggestions.slice(0, 1)).map((s) => ({ ...s, status: "pending" as "pending" | "confirmed" | "ignored" }))
   );
 
