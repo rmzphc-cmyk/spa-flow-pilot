@@ -1,20 +1,12 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import type { SectionStatus } from "@/pages/RapportDetail";
-import { usePersistedSection } from "@/lib/usePersistedSection";
 import { EmojiScore } from "./EmojiScore";
+import { useCheckin, useUpsertCheckin, parseKeyContext } from "@/hooks/useCheckin";
 
 interface Props {
   reportId: string;
   onStatusChange: (status: SectionStatus) => void;
-}
-
-interface CheckinState {
-  equipeScore: number;
-  managerScore: number;
-  equipeComment: string;
-  managerComment: string;
-  situation: string;
 }
 
 function Field({
@@ -64,19 +56,43 @@ function Field({
 }
 
 export function SectionCheckin({ reportId, onStatusChange }: Props) {
-  const [state, setState] = usePersistedSection<CheckinState>(reportId, "checkin", {
-    equipeScore: 0,
-    managerScore: 0,
-    equipeComment: "",
-    managerComment: "",
-    situation: "",
-  });
-  const { equipeScore, managerScore, equipeComment, managerComment, situation } = state;
-  const setEquipeScore = (v: number) => setState((p) => ({ ...p, equipeScore: v }));
-  const setManagerScore = (v: number) => setState((p) => ({ ...p, managerScore: v }));
-  const setEquipeComment = (v: string) => setState((p) => ({ ...p, equipeComment: v }));
-  const setManagerComment = (v: string) => setState((p) => ({ ...p, managerComment: v }));
-  const setSituation = (v: string) => setState((p) => ({ ...p, situation: v }));
+  const { data: row } = useCheckin(reportId);
+  const { debouncedUpsert } = useUpsertCheckin();
+
+  const [equipeScore, setEquipeScore] = useState(0);
+  const [managerScore, setManagerScore] = useState(0);
+  const [equipeComment, setEquipeComment] = useState("");
+  const [managerComment, setManagerComment] = useState("");
+  const [situation, setSituation] = useState("");
+  const [hydrated, setHydrated] = useState(false);
+
+  // Hydrate from DB once
+  useEffect(() => {
+    if (hydrated) return;
+    if (row) {
+      const ctx = parseKeyContext(row.key_context);
+      setEquipeScore(row.mood_score ?? 0);
+      setManagerScore(row.focus_level ?? 0);
+      setEquipeComment(ctx.equipeComment ?? "");
+      setManagerComment(ctx.managerComment ?? "");
+      setSituation(ctx.situation ?? "");
+    }
+    setHydrated(true);
+  }, [row, hydrated]);
+
+  // Autosave (debounced) on any change once hydrated
+  useEffect(() => {
+    if (!hydrated || !reportId) return;
+    if (equipeScore === 0 && managerScore === 0 && !equipeComment && !managerComment && !situation) {
+      return;
+    }
+    debouncedUpsert({
+      report_id: reportId,
+      mood_score: equipeScore,
+      focus_level: managerScore,
+      key_context: { equipeComment, managerComment, situation },
+    });
+  }, [hydrated, reportId, equipeScore, managerScore, equipeComment, managerComment, situation, debouncedUpsert]);
 
   const isComplete = useMemo(() => {
     if (equipeScore === 0 || managerScore === 0) return false;

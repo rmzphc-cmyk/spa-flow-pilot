@@ -1,8 +1,8 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import type { SectionStatus } from "@/pages/RapportDetail";
-import { usePersistedSection } from "@/lib/usePersistedSection";
 import { EmojiScore } from "./EmojiScore";
+import { useCheckin, useUpsertCheckin, parseKeyContext } from "@/hooks/useCheckin";
 
 interface Props {
   reportId: string;
@@ -10,14 +10,33 @@ interface Props {
 }
 
 export function SectionCheckinWeekly({ reportId, onStatusChange }: Props) {
-  const [state, setState] = usePersistedSection<{ meteoScore: number; note: string }>(
-    reportId,
-    "checkin",
-    { meteoScore: 0, note: "" },
-  );
-  const { meteoScore, note } = state;
-  const setMeteoScore = (v: number) => setState((p) => ({ ...p, meteoScore: v }));
-  const setNote = (v: string) => setState((p) => ({ ...p, note: v }));
+  const { data: row } = useCheckin(reportId);
+  const { debouncedUpsert } = useUpsertCheckin();
+
+  const [meteoScore, setMeteoScore] = useState(0);
+  const [note, setNote] = useState("");
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    if (hydrated) return;
+    if (row) {
+      const ctx = parseKeyContext(row.key_context);
+      setMeteoScore(row.mood_score ?? 0);
+      setNote(ctx.note ?? ctx.situation ?? "");
+    }
+    setHydrated(true);
+  }, [row, hydrated]);
+
+  useEffect(() => {
+    if (!hydrated || !reportId) return;
+    if (meteoScore === 0 && !note) return;
+    debouncedUpsert({
+      report_id: reportId,
+      mood_score: meteoScore,
+      focus_level: 0,
+      key_context: { note },
+    });
+  }, [hydrated, reportId, meteoScore, note, debouncedUpsert]);
 
   const needsComment = meteoScore > 0 && meteoScore <= 2;
   const missing = needsComment && !note.trim();
