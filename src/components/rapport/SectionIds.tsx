@@ -1,14 +1,14 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Lightbulb, Plus, Lock, CheckSquare, Target, Check } from "lucide-react";
-import { usePersistedSection } from "@/lib/usePersistedSection";
 import {
-  convertIdsToTodo,
-  convertIdsToObjectif,
-  getConversions,
-  type IdsConversionMap,
-} from "@/lib/idsConversions";
+  useIdsItems,
+  useAddIdsItem,
+  useConvertIdsToTodo,
+  useConvertIdsToObjective,
+  type DbIdsItem,
+} from "@/hooks/useIdsItems";
 
 interface Props {
   reportId: string;
@@ -20,60 +20,47 @@ const previousIssues = [
   "Retards fréquents livraisons fournisseur huiles",
 ];
 
-function issueKey(text: string, i: number) {
-  return `m_${i}_${text.slice(0, 24)}`;
-}
-
 export function SectionIds({ reportId, reportType }: Props) {
-  const [issues, setIssues] = usePersistedSection<string[]>(reportId, "ids", []);
+  const { data: issues = [] } = useIdsItems(reportId);
+  const addItem = useAddIdsItem(reportId, reportType);
+  const convertToTodo = useConvertIdsToTodo(reportId);
+  const convertToObjective = useConvertIdsToObjective(reportId);
   const [newIssue, setNewIssue] = useState("");
-  const [convs, setConvs] = useState<IdsConversionMap>(() => getConversions(reportId));
-
-  useEffect(() => {
-    const refresh = () => setConvs(getConversions(reportId));
-    window.addEventListener("report-section-saved", refresh);
-    return () => window.removeEventListener("report-section-saved", refresh);
-  }, [reportId]);
 
   const addIssue = () => {
-    if (!newIssue.trim()) return;
-    setIssues((p) => [...p, newIssue.trim()]);
+    const text = newIssue.trim();
+    if (!text) return;
+    addItem.mutate(text);
     setNewIssue("");
   };
 
-  const handleConvert = (kind: "todo" | "objectif", text: string, key: string) => {
-    if (kind === "todo") convertIdsToTodo(reportId, text, key);
-    else convertIdsToObjectif(reportId, text, key);
-    setConvs(getConversions(reportId));
-  };
-
-  const renderIssueRow = (text: string, i: number) => {
-    const key = issueKey(text, i);
-    const conv = convs[key] ?? {};
+  const renderIssueRow = (item: DbIdsItem) => {
+    const hasTodo = item.converted_to_todo_id !== null;
+    const hasObj = item.converted_to_objective_id !== null;
     return (
-      <div key={i} className="bg-card border border-border rounded-xl p-3 shadow-sm">
+      <div key={item.id} className="bg-card border border-border rounded-xl p-3 shadow-sm">
         <div className="flex items-center gap-3">
           <Lightbulb className="h-4 w-4 text-amber-500 shrink-0" />
-          <span className="text-sm text-foreground flex-1">{text}</span>
+          <span className="text-sm text-foreground flex-1">{item.capture_text}</span>
         </div>
         <div className="flex gap-2 mt-2.5 flex-wrap">
-          {conv.todo ? (
+          {hasTodo ? (
             <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full">
               <Check className="h-3 w-3" /> To-do créé
             </span>
           ) : (
             <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5"
-              onClick={() => handleConvert("todo", text, key)}>
+              onClick={() => convertToTodo.mutate(item)}>
               <CheckSquare className="h-3.5 w-3.5" /> → To-do
             </Button>
           )}
-          {conv.objectif ? (
+          {hasObj ? (
             <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full">
               <Check className="h-3 w-3" /> Objectif créé
             </span>
           ) : (
             <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5"
-              onClick={() => handleConvert("objectif", text, key)}>
+              onClick={() => convertToObjective.mutate(item)}>
               <Target className="h-3.5 w-3.5" /> → Objectif
             </Button>
           )}
@@ -81,6 +68,15 @@ export function SectionIds({ reportId, reportType }: Props) {
       </div>
     );
   };
+
+  const renderIssueRowWeekly = (item: DbIdsItem) => (
+    <div key={item.id} className="bg-card border border-border rounded-xl p-3 shadow-sm">
+      <div className="flex items-center gap-3">
+        <Lightbulb className="h-4 w-4 text-amber-500 shrink-0" />
+        <span className="text-sm text-foreground flex-1">{item.capture_text}</span>
+      </div>
+    </div>
+  );
 
   if (reportType === "monthly") {
     return (
@@ -95,7 +91,7 @@ export function SectionIds({ reportId, reportType }: Props) {
             <p className="text-sm text-muted-foreground mt-1">Revenez ici lors de la réunion.</p>
           </div>
         ) : (
-          <div className="space-y-2">{issues.map((it, i) => renderIssueRow(it, i))}</div>
+          <div className="space-y-2">{issues.map(renderIssueRow)}</div>
         )}
 
         {previousIssues.length > 0 && (
@@ -119,10 +115,10 @@ export function SectionIds({ reportId, reportType }: Props) {
     <section className="mb-8">
       <h2 className="text-lg font-semibold text-foreground">IDS — Problèmes à remonter</h2>
       <p className="text-sm text-muted-foreground mb-4">
-        Problèmes identifiés — convertissez-les en to-do ou objectif
+        Capture seule — traitement lors de la prochaine réunion Monthly
       </p>
 
-      <div className="space-y-2 mb-4">{issues.map((it, i) => renderIssueRow(it, i))}</div>
+      <div className="space-y-2 mb-4">{issues.map(renderIssueRowWeekly)}</div>
 
       <div className="flex gap-2">
         <Input
