@@ -12,7 +12,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { spas, spaDetails } from "@/data/directionMockData";
+import { useDirectionSpas, useDirectionSpaDetail } from "@/hooks/useDirectionData";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AiBadge } from "@/components/AiBadge";
 
 const statusStyles: Record<string, { labelKey: string; classes: string }> = {
   draft_preparation: { labelKey: "status.draft_preparation", classes: "bg-muted text-muted-foreground" },
