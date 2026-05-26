@@ -147,6 +147,22 @@ export default function DirectionSpaDetail() {
         </div>
       </Card>
 
+      {/* AI Executive Summary */}
+      {detail.executiveSummary && (
+        <Card className="mb-6 relative">
+          <AiBadge />
+          <div className="p-4 pr-24">
+            <h3 className="text-sm font-semibold text-foreground mb-2">
+              {t("ai.executiveSummary", { defaultValue: "Synthèse IA" })}
+            </h3>
+            <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+              {detail.executiveSummary}
+            </p>
+          </div>
+        </Card>
+      )}
+
+
       {/* Last validated report */}
       <div className="mb-4">
         <h2 className="text-lg font-bold text-foreground">
