@@ -81,9 +81,9 @@ export function AppHeader() {
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 hover:bg-muted rounded-lg px-2 py-1.5 transition-colors">
               <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold">
-                MD
+                {initials}
               </div>
-              <span className="text-sm font-medium text-foreground hidden sm:inline">Marie Dupont</span>
+              <span className="text-sm font-medium text-foreground hidden sm:inline">{displayName}</span>
               <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
           </DropdownMenuTrigger>
@@ -95,7 +95,7 @@ export function AppHeader() {
               <Settings className="h-4 w-4" /> {t("header.settings")}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2 text-destructive">
+            <DropdownMenuItem className="gap-2 text-destructive" onClick={() => signOut()}>
               <LogOut className="h-4 w-4" /> {t("header.logout")}
             </DropdownMenuItem>
           </DropdownMenuContent>
