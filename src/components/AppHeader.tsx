@@ -1,6 +1,7 @@
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronDown, User, Settings, LogOut } from "lucide-react";
+import { useState } from "react";
+import { ChevronDown, User, Settings, LogOut, Bell } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,6 +10,12 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/contexts/AuthContext";
+import {
+  useNotifications,
+  useMarkNotificationRead,
+  useMarkAllRead,
+  formatRelativeTime,
+} from "@/hooks/useNotifications";
 
 function getInitials(name: string) {
   const parts = name.trim().split(/[\s@.]+/).filter(Boolean);
