@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, AlertTriangle, Sparkles, CheckCircle2, Target, Calendar, Plus, FileText, Eye } from "lucide-react";
@@ -9,13 +9,14 @@ import {
   daysUntil,
 } from "@/lib/meetingSchedule";
 import {
-  getReports,
   isPreparationState,
   type ReportRecord,
   type ReportState,
 } from "@/lib/reportsStore";
+import { useReports, mapReportRowToRecord } from "@/hooks/useReports";
 
 type ReportStatus = ReportState;
+
 
 const WEEKLY_SECTION_KEYS = ["kpi", "checkin", "ids"] as const;
 const MONTHLY_SECTION_KEYS = ["kpi", "checkin", "responsabilites", "todo", "objectifs", "ids", "cloture"] as const;
@@ -383,17 +384,13 @@ function UpcomingMeetingsCard({ reports }: { reports: ReportRecord[] }) {
 // --- Main Dashboard ---
 
 export default function Dashboard() {
-  const [reports, setReports] = useState<ReportRecord[]>(() => getReports());
-
-  useEffect(() => {
-    const reload = () => setReports(getReports());
-    window.addEventListener("reports-data-changed", reload);
-    return () => window.removeEventListener("reports-data-changed", reload);
-  }, []);
+  const { data: rows = [] } = useReports();
+  const reports = useMemo(() => rows.map(mapReportRowToRecord), [rows]);
 
   const currentReport = reports
-    .filter((r) => isPreparationState(r.state))
+    .filter((r) => r.state !== "validated" && isPreparationState(r.state))
     .sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""))[0];
+
 
   return (
     <>

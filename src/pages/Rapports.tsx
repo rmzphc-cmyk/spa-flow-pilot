@@ -1,6 +1,6 @@
-import { useEffect, useState, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { FileText, ArrowRight, Eye, Plus, Calendar, Edit3 } from "lucide-react";
+import { FileText, ArrowRight, Eye, Plus, Calendar, Edit3, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,45 +20,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  getReports,
-  setReports,
   stateConfig,
   isPreparationState,
   isMeetingState,
   type ReportRecord,
   type ReportType,
 } from "@/lib/reportsStore";
-
-const FR_MONTH_FMT = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" });
-
-function capitalize(s: string) {
-  return s.charAt(0).toUpperCase() + s.slice(1);
-}
-
-function getIsoWeek(d: Date): number {
-  const target = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  const dayNum = (target.getUTCDay() + 6) % 7;
-  target.setUTCDate(target.getUTCDate() - dayNum + 3);
-  const firstThursday = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
-  const diff = (target.getTime() - firstThursday.getTime()) / 86400000;
-  return 1 + Math.round((diff - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7);
-}
-
-function monthPeriod(d: Date): string {
-  const start = new Date(d.getFullYear(), d.getMonth(), 1);
-  const end = new Date(d.getFullYear(), d.getMonth() + 1, 0);
-  return `${FR_MONTH_FMT.format(start)} → ${FR_MONTH_FMT.format(end)}`;
-}
-
-function weekPeriod(d: Date): string {
-  // ISO week: Monday → Sunday containing d
-  const day = (d.getDay() + 6) % 7;
-  const monday = new Date(d);
-  monday.setDate(d.getDate() - day);
-  const sunday = new Date(monday);
-  sunday.setDate(monday.getDate() + 6);
-  return `${FR_MONTH_FMT.format(monday)} → ${FR_MONTH_FMT.format(sunday)}`;
-}
+import { useReports, useCreateReport, mapReportRowToRecord } from "@/hooks/useReports";
+import { toast } from "@/hooks/use-toast";
 
 function ReportCard({ report, mode }: { report: ReportRecord; mode: "prep" | "consult" }) {
   const navigate = useNavigate();
@@ -130,23 +99,41 @@ function ReportCard({ report, mode }: { report: ReportRecord; mode: "prep" | "co
   );
 }
 
+function defaultLabel(type: ReportType, start: string): string {
+  const d = new Date(start);
+  if (type === "monthly") {
+    const month = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(d);
+    return `Rapport mensuel ${month.charAt(0).toUpperCase() + month.slice(1)}`;
+  }
+  // ISO week number
+  const target = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = (target.getUTCDay() + 6) % 7;
+  target.setUTCDate(target.getUTCDate() - dayNum + 3);
+  const firstThursday = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
+  const diff = (target.getTime() - firstThursday.getTime()) / 86400000;
+  const weekNum = 1 + Math.round((diff - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7);
+  return `Rapport hebdomadaire S${weekNum}`;
+}
+
 export default function Rapports() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<"prep" | "consult">("prep");
-  const [reports, setReportsState] = useState<ReportRecord[]>(() => getReports());
+  const { data: rows = [], isLoading, error } = useReports();
+  const createReport = useCreateReport();
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newType, setNewType] = useState<ReportType>("monthly");
-  const [newMeetingDate, setNewMeetingDate] = useState<string>(() => {
+  const [periodStart, setPeriodStart] = useState<string>(() => {
     const d = new Date();
-    d.setDate(d.getDate() + 7);
-    return d.toISOString().slice(0, 10);
+    return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
   });
+  const [periodEnd, setPeriodEnd] = useState<string>(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10);
+  });
+  const [label, setLabel] = useState<string>("");
 
-  useEffect(() => {
-    const reload = () => setReportsState(getReports());
-    window.addEventListener("reports-data-changed", reload);
-    return () => window.removeEventListener("reports-data-changed", reload);
-  }, []);
+  const reports = useMemo(() => rows.map(mapReportRowToRecord), [rows]);
 
   const prepReports = useMemo(
     () => reports.filter((r) => isPreparationState(r.state)),
@@ -157,37 +144,31 @@ export default function Rapports() {
     [reports],
   );
 
-  const handleCreate = () => {
-    const d = new Date(newMeetingDate);
-    const fmtDate = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" }).format(d);
-    const monthLabel = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(d);
-    const weekNum = getIsoWeek(d);
-    const label = newType === "monthly"
-      ? `Monthly — ${capitalize(monthLabel)}`
-      : `Weekly — Semaine ${weekNum}`;
-    const period = newType === "monthly"
-      ? monthPeriod(d)
-      : weekPeriod(d);
-    const id = `r${Date.now()}`;
-    const newReport: ReportRecord = {
-      id,
-      type: newType,
-      label,
-      period,
-      state: "draft_preparation",
-      updatedAt: new Date().toISOString(),
-      meetingDate: fmtDate,
-      completion: 0,
-    };
-    setReports([newReport, ...getReports()]);
-    setDialogOpen(false);
-    navigate(`/rapport/${id}`);
+  const handleCreate = async () => {
+    const finalLabel = label.trim() || defaultLabel(newType, periodStart);
+    try {
+      const created = await createReport.mutateAsync({
+        cycle_type: newType,
+        cycle_label: finalLabel,
+        period_start: periodStart,
+        period_end: periodEnd,
+      });
+      setDialogOpen(false);
+      setLabel("");
+      navigate(`/rapport/${created.id}`);
+    } catch (e) {
+      toast({
+        title: "Erreur lors de la création",
+        description: e instanceof Error ? e.message : "Impossible de créer le rapport.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
     <>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Rapports — Par Gran Canaria</h1>
+        <h1 className="text-2xl font-bold text-foreground">Rapports</h1>
         <Button className="gap-1.5" onClick={() => setDialogOpen(true)}>
           <Plus className="h-4 w-4" /> Nouveau rapport
         </Button>
@@ -200,7 +181,7 @@ export default function Rapports() {
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div>
-              <Label className="text-sm mb-1.5 block">Type de rapport</Label>
+              <Label className="text-sm mb-1.5 block">Type de cycle</Label>
               <Select value={newType} onValueChange={(v) => setNewType(v as ReportType)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -210,67 +191,88 @@ export default function Rapports() {
               </Select>
             </div>
             <div>
-              <Label className="text-sm mb-1.5 block">Date de réunion</Label>
+              <Label className="text-sm mb-1.5 block">Label</Label>
               <Input
-                type="date"
-                value={newMeetingDate}
-                onChange={(e) => setNewMeetingDate(e.target.value)}
+                placeholder={defaultLabel(newType, periodStart)}
+                value={label}
+                onChange={(e) => setLabel(e.target.value)}
               />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-sm mb-1.5 block">Début</Label>
+                <Input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-sm mb-1.5 block">Fin</Label>
+                <Input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
+              </div>
             </div>
           </div>
           <DialogFooter className="mt-4">
-            <Button variant="ghost" onClick={() => setDialogOpen(false)}>Annuler</Button>
-            <Button onClick={handleCreate}>Créer et ouvrir</Button>
+            <Button variant="ghost" onClick={() => setDialogOpen(false)} disabled={createReport.isPending}>Annuler</Button>
+            <Button onClick={handleCreate} disabled={createReport.isPending}>
+              {createReport.isPending && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
+              Créer et ouvrir
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      <Tabs value={tab} onValueChange={(v) => setTab(v as "prep" | "consult")} className="w-full">
-        <TabsList className="mb-5">
-          <TabsTrigger value="prep" className="gap-2">
-            À compléter
-            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">
-              {prepReports.length}
-            </span>
-          </TabsTrigger>
-          <TabsTrigger value="consult" className="gap-2">
-            À consulter / En réunion
-            <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-muted text-muted-foreground text-xs font-semibold">
-              {consultReports.length}
-            </span>
-          </TabsTrigger>
-        </TabsList>
+      {isLoading ? (
+        <div className="flex items-center justify-center py-20 text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin mr-2" /> Chargement…
+        </div>
+      ) : error ? (
+        <div className="py-20 text-center text-destructive">Erreur de chargement des rapports.</div>
+      ) : (
+        <Tabs value={tab} onValueChange={(v) => setTab(v as "prep" | "consult")} className="w-full">
+          <TabsList className="mb-5">
+            <TabsTrigger value="prep" className="gap-2">
+              À compléter
+              <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">
+                {prepReports.length}
+              </span>
+            </TabsTrigger>
+            <TabsTrigger value="consult" className="gap-2">
+              À consulter / En réunion
+              <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-muted text-muted-foreground text-xs font-semibold">
+                {consultReports.length}
+              </span>
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="prep">
-          {prepReports.length === 0 ? (
-            <EmptyState
-              title="Aucun rapport en préparation"
-              subtitle="Tous vos rapports sont finalisés. Créez le prochain rapport pour démarrer."
-            />
-          ) : (
-            <div className="flex flex-col gap-3">
-              {prepReports.map((r) => (
-                <ReportCard key={r.id} report={r} mode="prep" />
-              ))}
-            </div>
-          )}
-        </TabsContent>
+          <TabsContent value="prep">
+            {prepReports.length === 0 ? (
+              <EmptyState
+                title="Aucun rapport en préparation"
+                subtitle="Tous vos rapports sont finalisés. Créez le prochain rapport pour démarrer."
+              />
+            ) : (
+              <div className="flex flex-col gap-3">
+                {prepReports.map((r) => (
+                  <ReportCard key={r.id} report={r} mode="prep" />
+                ))}
+              </div>
+            )}
+          </TabsContent>
 
-        <TabsContent value="consult">
-          {consultReports.length === 0 ? (
-            <EmptyState
-              title="Aucun rapport à consulter"
-              subtitle="Les rapports finalisés et validés apparaîtront ici."
-            />
-          ) : (
-            <div className="flex flex-col gap-3">
-              {consultReports.map((r) => (
-                <ReportCard key={r.id} report={r} mode="consult" />
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="consult">
+            {consultReports.length === 0 ? (
+              <EmptyState
+                title="Aucun rapport à consulter"
+                subtitle="Les rapports finalisés et validés apparaîtront ici."
+              />
+            ) : (
+              <div className="flex flex-col gap-3">
+                {consultReports.map((r) => (
+                  <ReportCard key={r.id} report={r} mode="consult" />
+                ))}
+              </div>
+            )}
+          </TabsContent>
+        </Tabs>
+      )}
     </>
   );
 }

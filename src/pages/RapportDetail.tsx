@@ -12,7 +12,9 @@ import { SectionIdsWeekly } from "@/components/rapport/SectionIdsWeekly";
 import { SectionCloture } from "@/components/rapport/SectionCloture";
 import { AutosaveIndicator } from "@/components/rapport/AutosaveIndicator";
 import { MeetingView } from "@/components/rapport/MeetingView";
-import { getReport, isMeetingState, type ReportRecord } from "@/lib/reportsStore";
+import { isMeetingState, type ReportRecord } from "@/lib/reportsStore";
+import { useReport, mapReportRowToRecord } from "@/hooks/useReports";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { Save, CheckCircle2 } from "lucide-react";
@@ -34,22 +36,33 @@ const monthlySections: SectionId[] = ["kpi", "checkin", "responsabilites", "todo
 
 export default function RapportDetail() {
   const { id } = useParams<{ id: string }>();
-  const record = getReport(id);
-  const report = record ?? {
-    id: id ?? "",
-    type: "monthly" as ReportType,
-    label: `Rapport ${id}`,
-    period: "",
-    state: "draft_preparation" as const,
-    meetingDate: null,
-    updatedAt: "",
-    completion: 0,
-  };
+  const { data: row, isLoading, error } = useReport(id);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-muted-foreground">
+        <Loader2 className="h-5 w-5 animate-spin mr-2" /> Chargement du rapport…
+      </div>
+    );
+  }
+
+  if (error || !row) {
+    return (
+      <div className="py-20 text-center">
+        <p className="text-foreground font-medium mb-2">Rapport introuvable</p>
+        <p className="text-sm text-muted-foreground">Ce rapport n'existe pas ou vous n'y avez pas accès.</p>
+      </div>
+    );
+  }
+
+  const report: ReportRecord = mapReportRowToRecord(row);
 
   // MEETING MODE — read-only, full focus
   if (isMeetingState(report.state)) {
     return <MeetingView report={report} />;
   }
+
+
 
   // PREPARATION MODE — keep existing editable layout
   return <PreparationMode report={report} />;
