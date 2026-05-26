@@ -8,6 +8,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/AuthContext";
+
+function getInitials(name: string) {
+  const parts = name.trim().split(/[\s@.]+/).filter(Boolean);
+  if (parts.length === 0) return "??";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
 
 const langCodes = [
   { code: "fr", label: "FR" },
@@ -18,6 +26,11 @@ const langCodes = [
 export function AppHeader() {
   const { t, i18n } = useTranslation();
   const location = useLocation();
+  const { user, signOut } = useAuth();
+
+  const displayName =
+    (user?.user_metadata?.full_name as string | undefined) ?? user?.email ?? "Utilisateur";
+  const initials = getInitials(displayName);
 
   const isInReport = location.pathname.startsWith("/rapport/");
   const currentCycle = "monthly" as "weekly" | "monthly";
@@ -68,9 +81,9 @@ export function AppHeader() {
           <DropdownMenuTrigger asChild>
             <button className="flex items-center gap-2 hover:bg-muted rounded-lg px-2 py-1.5 transition-colors">
               <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold">
-                MD
+                {initials}
               </div>
-              <span className="text-sm font-medium text-foreground hidden sm:inline">Marie Dupont</span>
+              <span className="text-sm font-medium text-foreground hidden sm:inline">{displayName}</span>
               <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />
             </button>
           </DropdownMenuTrigger>
@@ -82,7 +95,7 @@ export function AppHeader() {
               <Settings className="h-4 w-4" /> {t("header.settings")}
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2 text-destructive">
+            <DropdownMenuItem className="gap-2 text-destructive" onClick={() => signOut()}>
               <LogOut className="h-4 w-4" /> {t("header.logout")}
             </DropdownMenuItem>
           </DropdownMenuContent>
