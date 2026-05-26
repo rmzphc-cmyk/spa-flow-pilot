@@ -384,17 +384,13 @@ function UpcomingMeetingsCard({ reports }: { reports: ReportRecord[] }) {
 // --- Main Dashboard ---
 
 export default function Dashboard() {
-  const [reports, setReports] = useState<ReportRecord[]>(() => getReports());
-
-  useEffect(() => {
-    const reload = () => setReports(getReports());
-    window.addEventListener("reports-data-changed", reload);
-    return () => window.removeEventListener("reports-data-changed", reload);
-  }, []);
+  const { data: rows = [] } = useReports();
+  const reports = useMemo(() => rows.map(mapReportRowToRecord), [rows]);
 
   const currentReport = reports
-    .filter((r) => isPreparationState(r.state))
+    .filter((r) => r.state !== "validated" && isPreparationState(r.state))
     .sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""))[0];
+
 
   return (
     <>
