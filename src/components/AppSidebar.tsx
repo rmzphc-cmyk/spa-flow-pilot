@@ -20,8 +20,11 @@ import {
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { spas } from "@/data/directionMockData";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import type { SectionId } from "@/pages/RapportDetail";
 import type { ReportType } from "@/pages/RapportDetail";
 
@@ -83,6 +86,22 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
   const navigate = useNavigate();
   const isInReport = location.pathname.startsWith("/rapport/");
   const isDirection = location.pathname.startsWith("/direction");
+  const { spaId, userRole } = useAuth();
+
+  const { data: spaRow } = useQuery({
+    queryKey: ["spa", spaId],
+    enabled: !!spaId && userRole !== "direction",
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("spas")
+        .select("name")
+        .eq("id", spaId as string)
+        .maybeSingle();
+      if (error) throw error;
+      return data;
+    },
+  });
+  const spaName = userRole === "direction" ? "Vue Direction" : spaRow?.name ?? "Mon Spa";
 
   const isWeekly = reportType === "weekly";
   const reportSections = isWeekly
@@ -104,7 +123,7 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
           </>
         ) : (
           <>
-            <h2 className="text-sm font-bold text-foreground">Par Gran Canaria</h2>
+            <h2 className="text-sm font-bold text-foreground">{spaName}</h2>
             <p className="text-xs text-muted-foreground mt-0.5">{t("period.march2026")}</p>
           </>
         )}
