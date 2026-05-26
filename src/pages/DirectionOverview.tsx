@@ -121,6 +121,7 @@ function SpaCard({ spa }: { spa: SpaOverview }) {
 
 export default function DirectionOverview() {
   const { t } = useTranslation();
+  const { data: spas = [], isLoading } = useDirectionSpas();
 
   const sorted = [...spas].sort((a, b) => {
     const severity = (s: SpaOverview) => {
@@ -146,14 +147,22 @@ export default function DirectionOverview() {
         </span>
       </div>
 
-      <AlertBanner />
-
-      {/* Spa cards */}
-      <div className="space-y-4">
-        {sorted.map((spa) => (
-          <SpaCard key={spa.id} spa={spa} />
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="space-y-4">
+          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-40 w-full" />
+        </div>
+      ) : (
+        <>
+          <AlertBanner spas={spas} />
+          <div className="space-y-4">
+            {sorted.map((spa) => (
+              <SpaCard key={spa.id} spa={spa} />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }
