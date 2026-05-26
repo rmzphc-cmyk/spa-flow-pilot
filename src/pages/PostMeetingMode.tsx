@@ -458,7 +458,7 @@ export default function PostMeetingMode() {
                     <Textarea
                       className="text-sm min-h-[100px] mb-2"
                       value={summary}
-                      onChange={(e) => setSummary(e.target.value)}
+                      onChange={(e) => { setSummary(e.target.value); persistEdits(e.target.value, decisions); }}
                     />
                     <div className="flex gap-2">
                       <Button size="sm" onClick={() => setEditingSummary(false)}>Enregistrer</Button>
@@ -489,7 +489,7 @@ export default function PostMeetingMode() {
                       <Check className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
                       <span className="flex-1 text-foreground">{d}</span>
                       <button
-                        onClick={() => setDecisions((p) => p.filter((_, idx) => idx !== i))}
+                        onClick={() => setDecisions((p) => { const next = p.filter((_, idx) => idx !== i); persistEdits(summary, next); return next; })}
                         className="text-muted-foreground hover:text-destructive shrink-0"
                       >
                         <X className="h-4 w-4" />
@@ -504,7 +504,7 @@ export default function PostMeetingMode() {
                     onChange={(e) => setNewDecision(e.target.value)}
                     onKeyDown={(e) => {
                       if (e.key === "Enter" && newDecision.trim()) {
-                        setDecisions((p) => [...p, newDecision.trim()]);
+                        setDecisions((p) => { const next = [...p, newDecision.trim()]; persistEdits(summary, next); return next; });
                         setNewDecision("");
                       }
                     }}
@@ -515,7 +515,7 @@ export default function PostMeetingMode() {
                     variant="outline"
                     onClick={() => {
                       if (newDecision.trim()) {
-                        setDecisions((p) => [...p, newDecision.trim()]);
+                        setDecisions((p) => { const next = [...p, newDecision.trim()]; persistEdits(summary, next); return next; });
                         setNewDecision("");
                       }
                     }}
@@ -654,7 +654,7 @@ export default function PostMeetingMode() {
         {/* VALIDATION BUTTON */}
         {aiReady && (
           <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-[0_-2px_8px_rgba(0,0,0,0.06)] px-6 py-3 flex items-center justify-end z-50">
-            <Button size="lg" className="gap-2" onClick={handleValidate}>
+            <Button size="lg" className="gap-2" onClick={handleValidate} disabled={validateMonthly.isPending}>
               <Check className="h-4 w-4" />
               Valider et diffuser à la Direction
             </Button>
