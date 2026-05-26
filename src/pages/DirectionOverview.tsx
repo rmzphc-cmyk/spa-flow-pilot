@@ -5,7 +5,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { spas, type SpaOverview } from "@/data/directionMockData";
+import type { SpaOverview } from "@/data/directionMockData";
+import { useDirectionSpas } from "@/hooks/useDirectionData";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const statusStyles: Record<string, { labelKey: string; classes: string }> = {
   draft_preparation: { labelKey: "status.draft_preparation", classes: "bg-muted text-muted-foreground" },
@@ -24,7 +26,7 @@ const kpiColor = (val: string) => {
   return "text-foreground";
 };
 
-function AlertBanner() {
+function AlertBanner({ spas }: { spas: SpaOverview[] }) {
   const { t } = useTranslation();
   const totalAlerts = spas.reduce((sum, s) => sum + s.alerts.length, 0);
   const spasWithAlerts = spas.filter((s) => s.alerts.length > 0).length;
@@ -119,6 +121,7 @@ function SpaCard({ spa }: { spa: SpaOverview }) {
 
 export default function DirectionOverview() {
   const { t } = useTranslation();
+  const { data: spas = [], isLoading } = useDirectionSpas();
 
   const sorted = [...spas].sort((a, b) => {
     const severity = (s: SpaOverview) => {
@@ -144,14 +147,22 @@ export default function DirectionOverview() {
         </span>
       </div>
 
-      <AlertBanner />
-
-      {/* Spa cards */}
-      <div className="space-y-4">
-        {sorted.map((spa) => (
-          <SpaCard key={spa.id} spa={spa} />
-        ))}
-      </div>
+      {isLoading ? (
+        <div className="space-y-4">
+          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-40 w-full" />
+          <Skeleton className="h-40 w-full" />
+        </div>
+      ) : (
+        <>
+          <AlertBanner spas={spas} />
+          <div className="space-y-4">
+            {sorted.map((spa) => (
+              <SpaCard key={spa.id} spa={spa} />
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 }

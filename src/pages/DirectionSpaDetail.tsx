@@ -12,7 +12,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { spas, spaDetails } from "@/data/directionMockData";
+import { useDirectionSpas, useDirectionSpaDetail } from "@/hooks/useDirectionData";
+import { Skeleton } from "@/components/ui/skeleton";
+import { AiBadge } from "@/components/AiBadge";
 
 const statusStyles: Record<string, { labelKey: string; classes: string }> = {
   draft_preparation: { labelKey: "status.draft_preparation", classes: "bg-muted text-muted-foreground" },
@@ -43,7 +45,19 @@ export default function DirectionSpaDetail() {
   const navigate = useNavigate();
   const { t } = useTranslation();
 
-  const detail = spaDetails[id ?? ""];
+  const { data: detail, isLoading } = useDirectionSpaDetail(id);
+  const { data: spas = [] } = useDirectionSpas();
+
+  if (isLoading) {
+    return (
+      <div className="max-w-[900px] mx-auto px-6 py-6 space-y-4">
+        <Skeleton className="h-10 w-1/3" />
+        <Skeleton className="h-24 w-full" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
   if (!detail) {
     return (
       <div className="max-w-[900px] mx-auto px-6 py-12 text-center">
@@ -132,6 +146,22 @@ export default function DirectionSpaDetail() {
           </p>
         </div>
       </Card>
+
+      {/* AI Executive Summary */}
+      {detail.executiveSummary && (
+        <Card className="mb-6 relative">
+          <AiBadge />
+          <div className="p-4 pr-24">
+            <h3 className="text-sm font-semibold text-foreground mb-2">
+              {t("ai.executiveSummary", { defaultValue: "Synthèse IA" })}
+            </h3>
+            <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+              {detail.executiveSummary}
+            </p>
+          </div>
+        </Card>
+      )}
+
 
       {/* Last validated report */}
       <div className="mb-4">

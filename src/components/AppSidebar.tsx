@@ -22,7 +22,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { spas } from "@/data/directionMockData";
+import { useDirectionSpas } from "@/hooks/useDirectionData";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import type { SectionId } from "@/pages/RapportDetail";
@@ -87,6 +87,7 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
   const isInReport = location.pathname.startsWith("/rapport/");
   const isDirection = location.pathname.startsWith("/direction");
   const { spaId, userRole } = useAuth();
+  const { data: directionSpas = [] } = useDirectionSpas();
 
   const { data: spaRow } = useQuery({
     queryKey: ["spa", spaId],
@@ -154,7 +155,7 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Spas</p>
           </div>
           <nav className="px-3 space-y-0.5">
-            {spas.map((spa) => {
+            {directionSpas.map((spa) => {
               const isActive = location.pathname === `/direction/spa/${spa.id}`;
               const dotColor = spa.alerts.some((a) => a.level === "red")
                 ? "bg-destructive"
