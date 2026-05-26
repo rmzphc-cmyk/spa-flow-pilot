@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -17,6 +17,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  useTodos,
+  useAddTodo,
+  useUpdateTodoStatus,
+  useUpdateFollowUp,
+  parseTodoDescription,
+  priorityDbToUi,
+  statusDbToUi,
+  sourceDbToUi,
+  type DbTodo,
+} from "@/hooks/useTodos";
 
 interface Todo {
   id: string;
@@ -27,27 +39,10 @@ interface Todo {
   status: "pending" | "done" | "postponed";
   overdueDays?: number;
   source?: "ids" | "ia" | "previous";
-  /** Cycle d'origine pour les actions héritées (ex: "Février 2026") */
   originCycle?: string;
-  /** Commentaire de suivi (Retours positifs / Repoussé pour congé / ...) */
   followUp?: string;
+  _description: string | null;
 }
-
-const mockTodos: Todo[] = [
-  // ── Héritées du cycle précédent (méthode EOS) ──
-  { id: "p1", title: "Former Maria sur la gestion cabine humidité", responsible: "Sophie M.", deadline: "20 mars", priority: "high", status: "pending", overdueDays: 5, source: "previous", originCycle: "Février 2026", followUp: "Retardé : Maria en formation produit la semaine dernière" },
-  { id: "p2", title: "Mettre en place protocole rebooking +30j", responsible: "Marie D.", deadline: "25 mars", priority: "normal", status: "pending", source: "previous", originCycle: "Février 2026" },
-  { id: "p3", title: "Audit fournisseur Phytomer (retards livraisons)", responsible: "Marie D.", deadline: "15 mars", priority: "high", status: "done", source: "previous", originCycle: "Février 2026", followUp: "Fait — nouveau délai contractuel de 5j obtenu" },
-
-  // ── Actions du cycle en cours ──
-  { id: "t1", title: "Finaliser planning cabines semaine 13", responsible: "Sophie M.", deadline: "22 mars", priority: "critical", status: "pending", overdueDays: 3 },
-  { id: "t2", title: "Commander stocks produits soins visage", responsible: "Marie D.", deadline: "23 mars", priority: "high", status: "pending", overdueDays: 2 },
-  { id: "t3", title: "Entretien annuel — Sophie M.", responsible: "Marie D.", deadline: "24 mars", priority: "normal", status: "pending", overdueDays: 1 },
-  { id: "t4", title: "Mettre à jour tarifs site web", responsible: "Marie D.", deadline: "28 mars", priority: "high", status: "pending", source: "ia" },
-  { id: "t5", title: "Former Julie sur protocole soin signature", responsible: "Sophie M.", deadline: "30 mars", priority: "normal", status: "pending" },
-  { id: "t6", title: "Vérifier contrat fournisseur huiles", responsible: "Marie D.", deadline: "31 mars", priority: "normal", status: "pending", source: "ids" },
-  { id: "t7", title: "Audit qualité cabine 3", responsible: "Sophie M.", deadline: "15 mars", priority: "normal", status: "done" },
-];
 
 const priorityIcons: Record<string, string> = {
   critical: "🔴",
@@ -61,12 +56,59 @@ const sourceStyles: Record<string, { label: string; classes: string }> = {
   previous: { label: "Cycle N-1", classes: "bg-blue-100 text-blue-800" },
 };
 
-import { usePersistedSection } from "@/lib/usePersistedSection";
+function formatDeadline(due: string | null): string {
+  if (!due) return "À définir";
+  try {
+    const d = new Date(due);
+    return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  } catch {
+    return "À définir";
+  }
+}
+
+function computeOverdueDays(due: string | null): number | undefined {
+  if (!due) return undefined;
+  const d = new Date(due);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  d.setHours(0, 0, 0, 0);
+  const diff = Math.floor((today.getTime() - d.getTime()) / (1000 * 60 * 60 * 24));
+  return diff > 0 ? diff : undefined;
+}
+
+function mapDbToTodo(db: DbTodo, currentReportId: string): Todo {
+  const meta = parseTodoDescription(db.description);
+  const isPrevious = db.report_id !== currentReportId;
+  const baseSource = sourceDbToUi(db.source);
+  return {
+    id: db.id,
+    title: db.title,
+    responsible: meta.responsible,
+    deadline: formatDeadline(db.due_date),
+    priority: priorityDbToUi(db.priority),
+    status: statusDbToUi(db.status),
+    overdueDays: computeOverdueDays(db.due_date),
+    source: isPrevious ? "previous" : baseSource,
+    originCycle: meta.originCycle,
+    followUp: meta.followUp,
+    _description: db.description,
+  };
+}
 
 interface Props { reportId: string }
 
 export function SectionTodo({ reportId }: Props) {
-  const [todos, setTodos] = usePersistedSection<Todo[]>(reportId, "todo", mockTodos);
+  const { spaId } = useAuth();
+  const { data: dbTodos = [] } = useTodos(reportId, spaId);
+  const addTodo = useAddTodo(reportId);
+  const updateStatus = useUpdateTodoStatus(reportId);
+  const updateFollowUp = useUpdateFollowUp(reportId);
+
+  const todos = useMemo(
+    () => dbTodos.map((t) => mapDbToTodo(t, reportId)),
+    [dbTodos, reportId]
+  );
+
   const [newOpen, setNewOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newResponsible, setNewResponsible] = useState("");
@@ -77,13 +119,11 @@ export function SectionTodo({ reportId }: Props) {
   const [editingFollowUp, setEditingFollowUp] = useState<string | null>(null);
   const [followUpDraft, setFollowUpDraft] = useState("");
 
-  // ── Héritées du cycle précédent ──
   const inherited = todos.filter((t) => t.source === "previous");
   const inheritedPending = inherited.filter((t) => t.status !== "done");
   const inheritedDoneCount = inherited.filter((t) => t.status === "done").length;
   const inheritedMissingFollowUp = inheritedPending.filter((t) => !t.followUp?.trim()).length;
 
-  // ── Cycle en cours ──
   const current = todos.filter((t) => t.source !== "previous");
   const overdue = current.filter((t) => t.overdueDays && t.overdueDays > 0 && t.status !== "done");
   const active = current
@@ -93,28 +133,34 @@ export function SectionTodo({ reportId }: Props) {
       return prio[a.priority] - prio[b.priority];
     });
 
-  const markDone = (id: string) =>
-    setTodos((p) => p.map((t) => (t.id === id ? { ...t, status: "done" as const, overdueDays: undefined } : t)));
+  const markDone = (id: string) => updateStatus.mutate({ id, status: "done" });
 
   const saveFollowUp = (id: string) => {
-    setTodos((p) => p.map((t) => (t.id === id ? { ...t, followUp: followUpDraft } : t)));
+    const todo = todos.find((t) => t.id === id);
+    updateFollowUp.mutate({
+      id,
+      followUp: followUpDraft,
+      currentDescription: todo?._description ?? null,
+    });
     setEditingFollowUp(null);
     setFollowUpDraft("");
   };
 
   const handleCreate = () => {
     if (!newTitle.trim()) return;
-    setTodos((p) => [
-      ...p,
-      {
-        id: `t${Date.now()}`,
-        title: newTitle,
-        responsible: newResponsible || "Marie D.",
-        deadline: newDeadline === "next_meeting" ? "28 mars" : "À définir",
-        priority: newPriority as Todo["priority"],
-        status: "pending",
-      },
-    ]);
+    // "next_meeting" → ~28 du mois courant ; sinon null
+    let due: string | null = null;
+    if (newDeadline === "next_meeting") {
+      const d = new Date();
+      d.setDate(28);
+      due = d.toISOString().slice(0, 10);
+    }
+    addTodo.mutate({
+      title: newTitle,
+      responsible: newResponsible || "Marie D.",
+      priority: newPriority as "critical" | "high" | "normal",
+      due_date: due,
+    });
     setNewTitle("");
     setNewResponsible("");
     setNewOpen(false);
@@ -161,7 +207,7 @@ export function SectionTodo({ reportId }: Props) {
         </Dialog>
       </div>
 
-      {/* ═══════ HÉRITÉES DU CYCLE PRÉCÉDENT (méthode EOS) ═══════ */}
+      {/* ═══════ HÉRITÉES DU CYCLE PRÉCÉDENT ═══════ */}
       {inherited.length > 0 && (
         <div className="rounded-xl p-4 mb-4 border border-blue-200 bg-blue-50/50">
           <div className="flex items-center justify-between mb-3">
@@ -169,7 +215,8 @@ export function SectionTodo({ reportId }: Props) {
               <History className="h-4 w-4" />
               Héritées du cycle précédent
               <span className="font-normal text-blue-700">
-                — {inherited[0].originCycle} · {inheritedPending.length} en cours, {inheritedDoneCount} terminée{inheritedDoneCount > 1 ? "s" : ""}
+                {inherited[0].originCycle ? `— ${inherited[0].originCycle} · ` : "— "}
+                {inheritedPending.length} en cours, {inheritedDoneCount} terminée{inheritedDoneCount > 1 ? "s" : ""}
               </span>
             </h3>
             {inheritedMissingFollowUp > 0 && (
@@ -205,7 +252,6 @@ export function SectionTodo({ reportId }: Props) {
                   )}
                 </div>
 
-                {/* Commentaire de suivi (obligatoire pour la Direction) */}
                 {editingFollowUp === t.id ? (
                   <div className="mt-2 flex gap-2">
                     <Input
@@ -237,7 +283,7 @@ export function SectionTodo({ reportId }: Props) {
         </div>
       )}
 
-      {/* Overdue block (cycle en cours) */}
+      {/* Overdue block */}
       {overdue.length > 0 && (
         <div className="rounded-xl p-4 mb-4 border-l-4 border-l-destructive" style={{ backgroundColor: "#FFF5F5" }}>
           <h3 className="text-sm font-bold text-destructive flex items-center gap-2 mb-3">
@@ -266,7 +312,7 @@ export function SectionTodo({ reportId }: Props) {
                       <DialogHeader><DialogTitle>Reporter l'action</DialogTitle></DialogHeader>
                       <div className="space-y-3 mt-2">
                         <Textarea placeholder="Raison du report" value={reportComment} onChange={(e) => setReportComment(e.target.value)} />
-                        <Button className="w-full" onClick={() => { markDone(t.id); setReportingId(null); }}>Confirmer le report</Button>
+                        <Button className="w-full" onClick={() => { updateStatus.mutate({ id: t.id, status: "deferred" }); setReportingId(null); }}>Confirmer le report</Button>
                       </div>
                     </DialogContent>
                   </Dialog>
