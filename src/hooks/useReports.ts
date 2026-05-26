@@ -128,3 +128,39 @@ export function useStartMeeting() {
     },
   });
 }
+
+export function useCloseMeeting() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { reportId: string }) => {
+      const { data, error } = await supabase.functions.invoke("close-monthly-meeting", {
+        body: { report_id: input.reportId },
+      });
+      if (error) throw new Error(data?.error ?? error.message ?? "Erreur clôture réunion");
+      if (data?.error) throw new Error(data.error);
+      return data as { data: ReportRow; warning?: string };
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["report", vars.reportId] });
+      qc.invalidateQueries({ queryKey: ["reports"] });
+    },
+  });
+}
+
+export function useFinalizeWeekly() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { reportId: string }) => {
+      const { data, error } = await supabase.functions.invoke("finalize-weekly-report", {
+        body: { report_id: input.reportId },
+      });
+      if (error) throw new Error(data?.error ?? error.message ?? "Erreur finalisation");
+      if (data?.error) throw new Error(data.error);
+      return data.data as ReportRow;
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["report", vars.reportId] });
+      qc.invalidateQueries({ queryKey: ["reports"] });
+    },
+  });
+}

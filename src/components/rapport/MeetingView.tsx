@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { X, Target, BarChart3, MessageSquare, Lightbulb, Users, CheckSquare, Lock, Loader2, Plus } from "lucide-react";
+import { X, Target, BarChart3, MessageSquare, Lightbulb, Users, CheckSquare, Lock, Loader2, Plus, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { ReportRecord } from "@/lib/reportsStore";
@@ -11,6 +11,8 @@ import { useCheckin, parseKeyContext } from "@/hooks/useCheckin";
 import { useTodos, parseTodoDescription } from "@/hooks/useTodos";
 import { useObjectives, parseObjectiveDescription } from "@/hooks/useObjectives";
 import { useIdsItems, useAddIdsItem } from "@/hooks/useIdsItems";
+import { useCloseMeeting } from "@/hooks/useReports";
+import { toast } from "@/hooks/use-toast";
 
 interface SectionCardProps {
   icon: React.ComponentType<{ className?: string }>;
@@ -64,6 +66,8 @@ export function MeetingView({ report }: { report: ReportRecord }) {
   const objectivesQ = useObjectives(spaId);
   const idsQ = useIdsItems(report.id);
   const addIds = useAddIdsItem(report.id, report.type);
+  const closeMeeting = useCloseMeeting();
+
 
   const isLoading =
     kpiEntriesQ.isLoading ||
@@ -113,10 +117,47 @@ export function MeetingView({ report }: { report: ReportRecord }) {
               </p>
             </div>
           </div>
-          <Button variant="outline" size="sm" className="gap-1.5 shrink-0" onClick={() => navigate("/rapports")}>
-            <X className="h-4 w-4" />
-            Quitter la présentation
-          </Button>
+          <div className="flex items-center gap-2 shrink-0">
+            <Button variant="outline" size="sm" className="gap-1.5" onClick={() => navigate("/rapports")}>
+              <X className="h-4 w-4" />
+              Quitter
+            </Button>
+            {report.state === "in_meeting" && (
+              <Button
+                size="sm"
+                className="gap-1.5 bg-teal-600 hover:bg-teal-700 text-white"
+                disabled={closeMeeting.isPending}
+                onClick={() =>
+                  closeMeeting.mutate(
+                    { reportId: report.id },
+                    {
+                      onSuccess: (res) => {
+                        if (res.warning) {
+                          toast({ title: "Réunion clôturée", description: res.warning });
+                        } else {
+                          toast({ title: "Réunion clôturée" });
+                        }
+                        navigate("/post-reunion/" + report.id);
+                      },
+                      onError: (e) =>
+                        toast({
+                          title: "Erreur",
+                          description: (e as Error).message,
+                          variant: "destructive",
+                        }),
+                    },
+                  )
+                }
+              >
+                {closeMeeting.isPending ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <CheckCircle className="h-4 w-4" />
+                )}
+                Clôturer la réunion
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
