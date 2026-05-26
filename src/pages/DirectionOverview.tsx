@@ -26,7 +26,7 @@ const kpiColor = (val: string) => {
   return "text-foreground";
 };
 
-function AlertBanner() {
+function AlertBanner({ spas }: { spas: SpaOverview[] }) {
   const { t } = useTranslation();
   const totalAlerts = spas.reduce((sum, s) => sum + s.alerts.length, 0);
   const spasWithAlerts = spas.filter((s) => s.alerts.length > 0).length;
