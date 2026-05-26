@@ -1,4 +1,7 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { useReport } from "@/hooks/useReports";
+import { useMeetingSummary, useGenerateMeetingSummary } from "@/hooks/useMeetingSummary";
+import { useIdsItems } from "@/hooks/useIdsItems";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -184,17 +187,69 @@ export default function PostMeetingMode() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const report = reportInfo[id ?? ""] ?? { label: `Rapport ${id}`, period: "", type: "monthly" as ReportType, spa: "Spa" };
-  const isMonthly = report.type === "monthly";
 
-  // AI synthesis state
-  const [aiReady, setAiReady] = useState(true); // mock: already ready
-  const [summary, setSummary] = useState(aiSummary);
+  const { data: row } = useReport(id);
+  const { data: summaryRow, isLoading: summaryLoading } = useMeetingSummary(id);
+  const generateSummary = useGenerateMeetingSummary();
+  const { data: dbIds } = useIdsItems(id);
+
+  const cycleType = (row?.cycle_type as ReportType | undefined) ?? report.type;
+  const isMonthly = cycleType === "monthly";
+
+  // Auto-trigger AI generation when needed
+  useEffect(() => {
+    if (
+      id &&
+      row?.status === "post_meeting_generated" &&
+      !summaryRow &&
+      !summaryLoading &&
+      !generateSummary.isPending
+    ) {
+      generateSummary.mutate({ reportId: id });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [row?.status, summaryRow, summaryLoading]);
+
+  const aiReady = summaryRow?.executive_summary != null;
+  const decisionsFromAi = useMemo<string[]>(() => {
+    if (!summaryRow?.key_actions) return [];
+    try {
+      const p = JSON.parse(summaryRow.key_actions);
+      return Array.isArray(p) ? p : [];
+    } catch {
+      return [];
+    }
+  }, [summaryRow?.key_actions]);
+
+  // AI synthesis editable state
+  const [summary, setSummary] = useState("");
   const [editingSummary, setEditingSummary] = useState(false);
-  const [decisions, setDecisions] = useState(aiDecisions);
+  const [decisions, setDecisions] = useState<string[]>([]);
   const [newDecision, setNewDecision] = useState("");
 
-  // IDS
-  const [issues, setIssues] = useState<CapturedIssue[]>(isMonthly ? mockCapturedIssues : []);
+  // Sync editable state when summary arrives
+  useEffect(() => {
+    if (summaryRow?.executive_summary) setSummary(summaryRow.executive_summary);
+  }, [summaryRow?.executive_summary]);
+  useEffect(() => {
+    if (decisionsFromAi.length) setDecisions(decisionsFromAi);
+  }, [decisionsFromAi]);
+
+  // IDS issues from DB
+  const [issues, setIssues] = useState<CapturedIssue[]>([]);
+  useEffect(() => {
+    if (isMonthly && dbIds) {
+      setIssues(
+        dbIds.map((d) => ({
+          id: d.id,
+          text: d.capture_text,
+          cause: "",
+          solution: "",
+          conversion: null,
+        })),
+      );
+    }
+  }, [dbIds, isMonthly]);
 
   // Todo suggestions
   const [todoSuggestions, setTodoSuggestions] = useState(
