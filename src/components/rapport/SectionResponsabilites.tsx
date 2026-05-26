@@ -1,58 +1,12 @@
-import { useState, useEffect } from "react";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Input } from "@/components/ui/input";
+import { useEffect, useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
 import type { SectionStatus } from "@/pages/RapportDetail";
-import { usePersistedSection } from "@/lib/usePersistedSection";
-
-type Frequency = "daily" | "weekly" | "biweekly" | "monthly" | "quarterly";
-type ToggleStatus = "done" | "partial" | "not_done" | null;
-
-interface Responsabilite {
-  id: string;
-  label: string;
-  frequency: Frequency;
-  expected: number;
-  conditional?: boolean;
-}
-
-const RESP_TEMPLATES_KEY = "resp_templates_v1";
-
-function loadActiveResponsabilites(reportType: "monthly" | "weekly" = "monthly"): Responsabilite[] {
-  try {
-    const raw = localStorage.getItem(RESP_TEMPLATES_KEY);
-    if (!raw) return [];
-    const templates = JSON.parse(raw) as Array<{
-      id: string;
-      name: string;
-      description: string;
-      frequency: Frequency;
-      expectedQty: number;
-      conditional: boolean;
-      active: boolean;
-    }>;
-    const isNumericFreq = (f: Frequency) => f === "daily" || f === "weekly" || f === "biweekly";
-    const isMonthlyFreq = (f: Frequency) => f === "monthly" || f === "quarterly";
-    return templates
-      .filter((t) => t.active)
-      .filter((t) => (reportType === "weekly" ? isNumericFreq(t.frequency) : isMonthlyFreq(t.frequency)))
-      .map((t) => ({
-        id: t.id,
-        label: t.name,
-        frequency: t.frequency,
-        expected: t.expectedQty,
-        conditional: t.conditional,
-      }));
-  } catch {
-    return [];
-  }
-}
-
-const toggleColors: Record<string, string> = {
-  done: "bg-emerald-100 text-emerald-800 border-emerald-300",
-  partial: "bg-amber-100 text-amber-800 border-amber-300",
-  not_done: "bg-red-100 text-red-800 border-red-300",
-};
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  useResponsabilityTemplates,
+  useResponsabilityLogs,
+  useUpsertResponsabilityLog,
+} from "@/hooks/useResponsabilites";
 
 interface Props {
   reportId: string;
@@ -60,68 +14,75 @@ interface Props {
   onStatusChange: (status: SectionStatus) => void;
 }
 
-interface RespState {
-  numericValues: Record<string, string>;
-  toggleValues: Record<string, ToggleStatus>;
-  comments: Record<string, string>;
-  naFlags: Record<string, boolean>;
-}
+type LocalState = Record<string, { completion_rate: number | null; comment: string }>;
 
-export function SectionResponsabilites({ reportId, reportType = "monthly", onStatusChange }: Props) {
-  const [responsabilites, setResponsabilites] = useState<Responsabilite[]>(() => loadActiveResponsabilites(reportType));
-  const [state, setState] = usePersistedSection<RespState>(reportId, "responsabilites", {
-    numericValues: {},
-    toggleValues: {},
-    comments: {},
-    naFlags: {},
-  });
-  const { numericValues, toggleValues, comments, naFlags } = state;
-  const setNumericValues = (u: (p: Record<string, string>) => Record<string, string>) =>
-    setState((p) => ({ ...p, numericValues: u(p.numericValues) }));
-  const setToggleValues = (u: (p: Record<string, ToggleStatus>) => Record<string, ToggleStatus>) =>
-    setState((p) => ({ ...p, toggleValues: u(p.toggleValues) }));
-  const setComments = (u: (p: Record<string, string>) => Record<string, string>) =>
-    setState((p) => ({ ...p, comments: u(p.comments) }));
-  const setNaFlags = (u: (p: Record<string, boolean>) => Record<string, boolean>) =>
-    setState((p) => ({ ...p, naFlags: u(p.naFlags) }));
+const STATES: { value: 100 | 50 | 0; label: string; cls: string }[] = [
+  { value: 100, label: "Réalisé ✓", cls: "bg-emerald-100 text-emerald-800 border-emerald-300" },
+  { value: 50, label: "Partiel ◐", cls: "bg-amber-100 text-amber-800 border-amber-300" },
+  { value: 0, label: "Non réalisé ✗", cls: "bg-red-100 text-red-800 border-red-300" },
+];
 
+export function SectionResponsabilites({ reportId, onStatusChange }: Props) {
+  const { spaId } = useAuth();
+  const { data: templates = [] } = useResponsabilityTemplates(spaId);
+  const { data: logs } = useResponsabilityLogs(reportId);
+  const { debouncedUpsert } = useUpsertResponsabilityLog();
+
+  const [local, setLocal] = useState<LocalState>({});
+  const [hydratedFor, setHydratedFor] = useState<string | null>(null);
+
+  // Hydrate local state from logs once per report
   useEffect(() => {
-    setResponsabilites(loadActiveResponsabilites(reportType));
-  }, [reportType]);
+    if (!logs || hydratedFor === reportId) return;
+    const next: LocalState = {};
+    for (const [tid, v] of Object.entries(logs)) {
+      next[tid] = { completion_rate: v.completion_rate, comment: v.comment ?? "" };
+    }
+    setLocal(next);
+    setHydratedFor(reportId);
+  }, [logs, reportId, hydratedFor]);
 
-  const isNumeric = (f: Frequency) => f === "daily" || f === "weekly" || f === "biweekly";
-
-  // Completion score (realisé / attendu) across active responsabilites
+  // Status: complete when every template has a state chosen
   useEffect(() => {
-    const items = responsabilites.filter((r) => !(naFlags[r.id] ?? false));
-    if (items.length === 0) {
+    if (templates.length === 0) {
       onStatusChange("incomplete");
       return;
     }
-    let totalScore = 0;
-    let counted = 0;
-    for (const r of items) {
-      if (isNumeric(r.frequency)) {
-        const raw = numericValues[r.id];
-        if (raw == null || raw === "" || isNaN(Number(raw))) continue;
-        const ratio = r.expected > 0 ? Math.min(1, Number(raw) / r.expected) : 1;
-        totalScore += ratio;
-        counted += 1;
-      } else {
-        const tv = toggleValues[r.id];
-        if (!tv) continue;
-        const ratio = tv === "done" ? 1 : tv === "partial" ? 0.5 : 0;
-        totalScore += ratio;
-        counted += 1;
+    const allSet = templates.every((t) => {
+      const entry = local[t.id];
+      return entry && entry.completion_rate !== null && entry.completion_rate !== undefined;
+    });
+    onStatusChange(allSet ? "complete" : "incomplete");
+  }, [templates, local, onStatusChange]);
+
+  const updateState = (templateId: string, completion_rate: number) => {
+    setLocal((p) => {
+      const next = { ...p, [templateId]: { completion_rate, comment: p[templateId]?.comment ?? "" } };
+      debouncedUpsert({
+        report_id: reportId,
+        responsibility_template_id: templateId,
+        completion_rate,
+        comment: next[templateId].comment || null,
+      });
+      return next;
+    });
+  };
+
+  const updateComment = (templateId: string, comment: string) => {
+    setLocal((p) => {
+      const prev = p[templateId] ?? { completion_rate: null, comment: "" };
+      const next = { ...p, [templateId]: { ...prev, comment } };
+      if (prev.completion_rate !== null && prev.completion_rate !== undefined) {
+        debouncedUpsert({
+          report_id: reportId,
+          responsibility_template_id: templateId,
+          completion_rate: prev.completion_rate,
+          comment: comment || null,
+        });
       }
-    }
-    if (counted === 0) {
-      onStatusChange("incomplete");
-      return;
-    }
-    const score = totalScore / counted;
-    onStatusChange(score >= 0.8 ? "complete" : "incomplete");
-  }, [responsabilites, numericValues, toggleValues, naFlags, onStatusChange]);
+      return next;
+    });
+  };
 
   return (
     <section className="mb-8">
@@ -131,7 +92,6 @@ export function SectionResponsabilites({ reportId, reportType = "monthly", onSta
       </div>
       <p className="text-sm text-muted-foreground mb-4">Évaluez la réalisation de chaque responsabilité</p>
 
-      {/* Progress bar placeholder */}
       <div className="bg-card border border-border rounded-xl p-4 shadow-sm mb-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-2xl font-bold text-foreground">—%</span>
@@ -140,93 +100,59 @@ export function SectionResponsabilites({ reportId, reportType = "monthly", onSta
         <div className="h-2 bg-border rounded-full" />
       </div>
 
-      {/* Table */}
       <div className="space-y-3">
-        {responsabilites.length === 0 && (
+        {templates.length === 0 && (
           <div className="bg-card border border-border rounded-xl p-4 shadow-sm text-sm text-muted-foreground">
-            Aucune responsabilité configurée pour ce cycle. Vérifiez la configuration dans "Config Resp.".
+            Aucune responsabilité configurée pour ce spa
           </div>
         )}
-        {responsabilites.map((resp) => {
-          const isNa = naFlags[resp.id] ?? false;
+        {templates.map((resp) => {
+          const entry = local[resp.id];
+          const selected = entry?.completion_rate ?? null;
+          const comment = entry?.comment ?? "";
 
           return (
             <div key={resp.id} className="bg-card border border-border rounded-xl p-4 shadow-sm">
               <div className="flex items-start gap-4 flex-wrap">
-                {/* Label */}
                 <div className="flex-1 min-w-[200px]">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-foreground text-sm">{resp.label}</span>
-                    <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                      {resp.frequency}
-                    </span>
-                    {resp.conditional && (
-                      <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded" title="Responsabilité conditionnelle">
-                        Conditionnel
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-medium text-foreground text-sm">{resp.title}</span>
+                    {resp.category && (
+                      <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                        {resp.category}
                       </span>
                     )}
                   </div>
-
-                  {/* NA for conditional */}
-                  {resp.conditional && (
-                    <div className="flex items-center gap-2 mt-2">
-                      <Checkbox
-                        id={`na-resp-${resp.id}`}
-                        checked={isNa}
-                        onCheckedChange={(c) => setNaFlags((p) => ({ ...p, [resp.id]: c === true }))}
-                      />
-                      <label htmlFor={`na-resp-${resp.id}`} className="text-xs text-muted-foreground cursor-pointer">
-                        Non applicable ce cycle
-                      </label>
-                    </div>
+                  {resp.description && (
+                    <p className="text-xs text-muted-foreground mt-1">{resp.description}</p>
                   )}
                 </div>
 
-                {/* Input */}
-                {!isNa && (
-                  <div className="shrink-0">
-                    {isNumeric(resp.frequency) ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-muted-foreground">Réalisé</span>
-                        <Input
-                          type="number"
-                          className="w-16 text-center"
-                          placeholder="—"
-                          value={numericValues[resp.id] ?? ""}
-                          onChange={(e) => setNumericValues((p) => ({ ...p, [resp.id]: e.target.value }))}
-                        />
-                        <span className="text-xs text-muted-foreground">/ {resp.expected}</span>
-                      </div>
-                    ) : (
-                      <div className="flex gap-1">
-                        {(["done", "partial", "not_done"] as const).map((s) => (
-                          <button
-                            key={s}
-                            onClick={() => setToggleValues((p) => ({ ...p, [resp.id]: s }))}
-                            className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
-                              toggleValues[resp.id] === s ? toggleColors[s] : "bg-card text-muted-foreground border-border hover:bg-muted"
-                            }`}
-                          >
-                            {s === "done" ? "Réalisé ✓" : s === "partial" ? "Partiel ◐" : "Non réalisé ✗"}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
+                <div className="shrink-0 flex gap-1">
+                  {STATES.map((s) => (
+                    <button
+                      key={s.value}
+                      onClick={() => updateState(resp.id, s.value)}
+                      className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                        selected === s.value
+                          ? s.cls
+                          : "bg-card text-muted-foreground border-border hover:bg-muted"
+                      }`}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              {/* Comment */}
-              {!isNa && (
-                <div className="mt-3">
-                  <Textarea
-                    className="text-sm min-h-[40px]"
-                    placeholder="Commentaire (optionnel)"
-                    value={comments[resp.id] ?? ""}
-                    onChange={(e) => setComments((p) => ({ ...p, [resp.id]: e.target.value }))}
-                  />
-                </div>
-              )}
+              <div className="mt-3">
+                <Textarea
+                  className="text-sm min-h-[40px]"
+                  placeholder="Commentaire (optionnel)"
+                  value={comment}
+                  onChange={(e) => updateComment(resp.id, e.target.value)}
+                />
+              </div>
             </div>
           );
         })}
