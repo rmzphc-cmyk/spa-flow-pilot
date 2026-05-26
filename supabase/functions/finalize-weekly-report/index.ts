@@ -85,6 +85,20 @@ Deno.serve(async (req) => {
       .single();
     if (fErr) throw fErr;
 
+    // Fire-and-forget AI summary generation (do not block on failure)
+    try {
+      await fetch(`${supabaseUrl}/functions/v1/generate-weekly-summary`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: authHeader,
+        },
+        body: JSON.stringify({ report_id }),
+      });
+    } catch (_e) {
+      // silent
+    }
+
     return json({ data: finalReport }, 200);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
