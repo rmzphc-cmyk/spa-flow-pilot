@@ -13,11 +13,12 @@ import { SectionCloture } from "@/components/rapport/SectionCloture";
 import { AutosaveIndicator } from "@/components/rapport/AutosaveIndicator";
 import { MeetingView } from "@/components/rapport/MeetingView";
 import { isMeetingState, type ReportRecord } from "@/lib/reportsStore";
-import { useReport, mapReportRowToRecord } from "@/hooks/useReports";
+import { useReport, mapReportRowToRecord, useUpdateReportStatus, useStartMeeting } from "@/hooks/useReports";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { Save, CheckCircle2 } from "lucide-react";
+import { Save, CheckCircle2, Play, Send } from "lucide-react";
+import { toast } from "@/hooks/use-toast";
 
 export type ReportType = "monthly" | "weekly";
 export type SectionId = "kpi" | "checkin" | "responsabilites" | "todo" | "objectifs" | "ids" | "cloture";
@@ -87,6 +88,69 @@ function PreparationMode({ report }: { report: ReportRecord }) {
 
   const canSubmit = sectionStatuses.kpi === "complete" && sectionStatuses.checkin === "complete";
 
+  const updateStatus = useUpdateReportStatus();
+  const startMeeting = useStartMeeting();
+
+  const renderActionButton = () => {
+    if (report.type === "monthly" && report.state === "draft_preparation") {
+      return (
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-1.5"
+          disabled={updateStatus.isPending}
+          onClick={() =>
+            updateStatus.mutate(
+              { reportId: report.id, status: "ready_for_review" },
+              {
+                onError: (e) =>
+                  toast({ title: "Erreur", description: (e as Error).message, variant: "destructive" }),
+              },
+            )
+          }
+        >
+          <Send className="h-4 w-4" />
+          Soumettre pour révision
+        </Button>
+      );
+    }
+    if (report.type === "monthly" && report.state === "ready_for_review") {
+      return (
+        <Button
+          size="sm"
+          className="gap-1.5 bg-teal-600 hover:bg-teal-700 text-white"
+          disabled={startMeeting.isPending}
+          onClick={() =>
+            startMeeting.mutate(
+              { reportId: report.id },
+              {
+                onError: (e) =>
+                  toast({ title: "Erreur", description: (e as Error).message, variant: "destructive" }),
+              },
+            )
+          }
+        >
+          <Play className="h-4 w-4" />
+          Lancer la réunion
+        </Button>
+      );
+    }
+    // weekly: keep existing finalize button
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span>
+            <Button size="sm" disabled={!canSubmit} className="gap-1.5">
+              <CheckCircle2 className="h-4 w-4" />
+              Finaliser le rapport
+            </Button>
+          </span>
+        </TooltipTrigger>
+        {!canSubmit && <TooltipContent>Complétez KPI et Check-in minimum</TooltipContent>}
+      </Tooltip>
+    );
+  };
+
   return (
     <div className="pb-24">
       <ReportHeader
@@ -127,17 +191,7 @@ function PreparationMode({ report }: { report: ReportRecord }) {
           </Button>
           <AutosaveIndicator />
         </div>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <span>
-              <Button size="sm" disabled={!canSubmit} className="gap-1.5">
-                <CheckCircle2 className="h-4 w-4" />
-                Finaliser le rapport
-              </Button>
-            </span>
-          </TooltipTrigger>
-          {!canSubmit && <TooltipContent>Complétez KPI et Check-in minimum</TooltipContent>}
-        </Tooltip>
+        {renderActionButton()}
       </div>
     </div>
   );
