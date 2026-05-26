@@ -100,3 +100,106 @@ export function useUpsertResponsabilityLog() {
 
   return { ...mutation, debouncedUpsert };
 }
+
+// ============= Admin/Config-only hooks (templates CRUD) =============
+
+export interface RespTemplateFullRow {
+  id: string;
+  spa_id: string;
+  title: string;
+  description: string | null;
+  category: string | null;
+  display_order: number;
+  is_active: boolean;
+}
+
+export function useAllRespTemplates(spaId: string | null) {
+  return useQuery({
+    queryKey: ["all_resp_templates", spaId],
+    enabled: !!spaId,
+    queryFn: async (): Promise<RespTemplateFullRow[]> => {
+      const { data, error } = await supabase
+        .from("responsibility_templates")
+        .select("id, spa_id, title, description, category, display_order, is_active")
+        .eq("spa_id", spaId!)
+        .order("display_order", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as RespTemplateFullRow[];
+    },
+  });
+}
+
+function invalidateRespTemplates(qc: ReturnType<typeof useQueryClient>, spaId: string) {
+  qc.invalidateQueries({ queryKey: ["all_resp_templates", spaId] });
+  qc.invalidateQueries({ queryKey: ["responsibility_templates", spaId] });
+}
+
+export interface AddRespTemplateInput {
+  spaId: string;
+  title: string;
+  description: string | null;
+  category: string | null;
+  display_order: number;
+}
+
+export function useAddRespTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: AddRespTemplateInput) => {
+      const { data, error } = await supabase
+        .from("responsibility_templates")
+        .insert({
+          spa_id: input.spaId,
+          title: input.title,
+          description: input.description,
+          category: input.category,
+          display_order: input.display_order,
+          is_active: true,
+        })
+        .select()
+        .single();
+      if (error) throw error;
+      return data;
+    },
+    onSuccess: (_d, vars) => invalidateRespTemplates(qc, vars.spaId),
+  });
+}
+
+export interface UpdateRespTemplateInput {
+  id: string;
+  spaId: string;
+  title?: string;
+  description?: string | null;
+  category?: string | null;
+  is_active?: boolean;
+  display_order?: number;
+}
+
+export function useUpdateRespTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: UpdateRespTemplateInput) => {
+      const { id, spaId, ...fields } = input;
+      const { error } = await supabase
+        .from("responsibility_templates")
+        .update(fields)
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => invalidateRespTemplates(qc, vars.spaId),
+  });
+}
+
+export function useSoftDeleteRespTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { id: string; spaId: string }) => {
+      const { error } = await supabase
+        .from("responsibility_templates")
+        .update({ is_active: false })
+        .eq("id", input.id);
+      if (error) throw error;
+    },
+    onSuccess: (_d, vars) => invalidateRespTemplates(qc, vars.spaId),
+  });
+}
