@@ -72,18 +72,18 @@ export function useCreateReport() {
     mutationFn: async (input: CreateReportInput) => {
       if (!spaId) throw new Error("Aucun spa associé à l'utilisateur");
       if (!user) throw new Error("Utilisateur non authentifié");
-      const payload: ReportInsert = {
-        spa_id: spaId,
-        manager_id: user.id,
-        cycle_type: input.cycle_type,
-        cycle_label: input.cycle_label,
-        period_start: input.period_start,
-        period_end: input.period_end,
-        status: "draft_preparation",
-      };
-      const { data, error } = await supabase.from("reports").insert(payload).select("*").single();
+      const { data, error } = await supabase.functions.invoke("create-report-cycle", {
+        body: {
+          spa_id: spaId,
+          cycle_type: input.cycle_type,
+          cycle_label: input.cycle_label,
+          period_start: input.period_start,
+          period_end: input.period_end,
+        },
+      });
       if (error) throw error;
-      return data;
+      if (data?.error) throw new Error(data.error);
+      return data.data as ReportRow;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["reports"] });
