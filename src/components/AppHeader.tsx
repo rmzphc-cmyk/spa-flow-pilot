@@ -8,6 +8,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { useAuth } from "@/contexts/AuthContext";
+
+function getInitials(name: string) {
+  const parts = name.trim().split(/[\s@.]+/).filter(Boolean);
+  if (parts.length === 0) return "??";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[1][0]).toUpperCase();
+}
 
 const langCodes = [
   { code: "fr", label: "FR" },
@@ -18,6 +26,11 @@ const langCodes = [
 export function AppHeader() {
   const { t, i18n } = useTranslation();
   const location = useLocation();
+  const { user, signOut } = useAuth();
+
+  const displayName =
+    (user?.user_metadata?.full_name as string | undefined) ?? user?.email ?? "Utilisateur";
+  const initials = getInitials(displayName);
 
   const isInReport = location.pathname.startsWith("/rapport/");
   const currentCycle = "monthly" as "weekly" | "monthly";
