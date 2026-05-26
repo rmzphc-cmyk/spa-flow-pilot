@@ -90,3 +90,41 @@ export function useCreateReport() {
     },
   });
 }
+
+export function useUpdateReportStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { reportId: string; status: ReportState }) => {
+      const { data, error } = await supabase
+        .from("reports")
+        .update({ status: input.status, updated_at: new Date().toISOString() })
+        .eq("id", input.reportId)
+        .select()
+        .single();
+      if (error) throw error;
+      return data as ReportRow;
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["report", vars.reportId] });
+      qc.invalidateQueries({ queryKey: ["reports"] });
+    },
+  });
+}
+
+export function useStartMeeting() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { reportId: string }) => {
+      const { data, error } = await supabase.functions.invoke("start-monthly-meeting", {
+        body: { report_id: input.reportId },
+      });
+      if (error) throw new Error(data?.error ?? error.message ?? "Erreur démarrage réunion");
+      if (data?.error) throw new Error(data.error);
+      return data.data as ReportRow;
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["report", vars.reportId] });
+      qc.invalidateQueries({ queryKey: ["reports"] });
+    },
+  });
+}
