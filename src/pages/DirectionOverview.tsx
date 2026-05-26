@@ -5,7 +5,9 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { spas, type SpaOverview } from "@/data/directionMockData";
+import type { SpaOverview } from "@/data/directionMockData";
+import { useDirectionSpas } from "@/hooks/useDirectionData";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const statusStyles: Record<string, { labelKey: string; classes: string }> = {
   draft_preparation: { labelKey: "status.draft_preparation", classes: "bg-muted text-muted-foreground" },
