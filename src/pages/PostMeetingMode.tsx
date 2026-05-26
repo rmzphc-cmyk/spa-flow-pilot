@@ -1,7 +1,18 @@
 import { useState, useMemo, useEffect } from "react";
 import { useReport } from "@/hooks/useReports";
-import { useMeetingSummary, useGenerateMeetingSummary } from "@/hooks/useMeetingSummary";
-import { useIdsItems } from "@/hooks/useIdsItems";
+import {
+  useMeetingSummary,
+  useGenerateMeetingSummary,
+  useUpdateMeetingSummary,
+  useValidateMonthlySummary,
+} from "@/hooks/useMeetingSummary";
+import {
+  useIdsItems,
+  useUpdateIdsStructure,
+  useConvertIdsToTodo,
+  useConvertIdsToObjective,
+  type DbIdsItem,
+} from "@/hooks/useIdsItems";
 import { useParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -192,6 +203,11 @@ export default function PostMeetingMode() {
   const { data: summaryRow, isLoading: summaryLoading } = useMeetingSummary(id);
   const generateSummary = useGenerateMeetingSummary();
   const { data: dbIds } = useIdsItems(id);
+  const updateIdsStructure = useUpdateIdsStructure();
+  const convertToTodo = useConvertIdsToTodo(id ?? "");
+  const convertToObjective = useConvertIdsToObjective(id ?? "");
+  const updateSummary = useUpdateMeetingSummary();
+  const validateMonthly = useValidateMonthlySummary();
 
   const cycleType = (row?.cycle_type as ReportType | undefined) ?? report.type;
   const isMonthly = cycleType === "monthly";
@@ -235,21 +251,70 @@ export default function PostMeetingMode() {
     if (decisionsFromAi.length) setDecisions(decisionsFromAi);
   }, [decisionsFromAi]);
 
-  // IDS issues from DB
+  // IDS issues from DB (preserve user-edited cause/solution across refetches)
   const [issues, setIssues] = useState<CapturedIssue[]>([]);
   useEffect(() => {
     if (isMonthly && dbIds) {
-      setIssues(
-        dbIds.map((d) => ({
-          id: d.id,
-          text: d.capture_text,
-          cause: "",
-          solution: "",
-          conversion: null,
-        })),
+      setIssues((prev) =>
+        dbIds.map((d) => {
+          const existing = prev.find((p) => p.id === d.id);
+          const conv: CapturedIssue["conversion"] =
+            d.converted_to_todo_id && d.converted_to_objective_id
+              ? "both"
+              : d.converted_to_todo_id
+                ? "todo"
+                : d.converted_to_objective_id
+                  ? "objective"
+                  : existing?.conversion ?? null;
+          return {
+            id: d.id,
+            text: d.capture_text,
+            cause: existing?.cause ?? "",
+            solution: existing?.solution ?? "",
+            conversion: conv,
+          };
+        }),
       );
     }
   }, [dbIds, isMonthly]);
+
+  const handleIssueChange = (updated: CapturedIssue) => {
+    const prev = issues.find((i) => i.id === updated.id);
+    setIssues((p) => p.map((x) => (x.id === updated.id ? updated : x)));
+    if (!id || !prev) return;
+
+    if (prev.cause !== updated.cause || prev.solution !== updated.solution) {
+      updateIdsStructure.mutate({
+        idsItemId: updated.id,
+        reportId: id,
+        cause: updated.cause,
+        solution: updated.solution,
+      });
+    }
+
+    if (prev.conversion !== updated.conversion && updated.conversion) {
+      const dbItem = dbIds?.find((d) => d.id === updated.id) as DbIdsItem | undefined;
+      if (!dbItem) return;
+      if (
+        (updated.conversion === "todo" || updated.conversion === "both") &&
+        !dbItem.converted_to_todo_id
+      ) {
+        convertToTodo.mutate(dbItem);
+      }
+      if (
+        (updated.conversion === "objective" || updated.conversion === "both") &&
+        !dbItem.converted_to_objective_id
+      ) {
+        convertToObjective.mutate(dbItem);
+      }
+    }
+  };
+
+  const persistEdits = (s: string, d: string[]) => {
+    if (!id || !summaryRow) return;
+    if (s === summaryRow.executive_summary && JSON.stringify(d) === summaryRow.key_actions) return;
+    updateSummary.mutate({ reportId: id, newSummary: s, newKeyActions: d });
+  };
 
   // Todo suggestions
   const [todoSuggestions, setTodoSuggestions] = useState(
@@ -287,8 +352,9 @@ export default function PostMeetingMode() {
   };
 
   const confirmValidation = () => {
+    if (!id) return;
     setConfirmOpen(false);
-    navigate("/?validated=true");
+    validateMonthly.mutate({ reportId: id });
   };
 
   return (
