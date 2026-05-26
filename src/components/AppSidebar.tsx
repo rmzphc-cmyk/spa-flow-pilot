@@ -22,7 +22,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { spas } from "@/data/directionMockData";
+import { useDirectionSpas } from "@/hooks/useDirectionData";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import type { SectionId } from "@/pages/RapportDetail";
