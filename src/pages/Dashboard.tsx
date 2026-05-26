@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, AlertTriangle, Sparkles, CheckCircle2, Target, Calendar, Plus, FileText, Eye } from "lucide-react";
@@ -9,13 +9,14 @@ import {
   daysUntil,
 } from "@/lib/meetingSchedule";
 import {
-  getReports,
   isPreparationState,
   type ReportRecord,
   type ReportState,
 } from "@/lib/reportsStore";
+import { useReports, mapReportRowToRecord } from "@/hooks/useReports";
 
 type ReportStatus = ReportState;
+
 
 const WEEKLY_SECTION_KEYS = ["kpi", "checkin", "ids"] as const;
 const MONTHLY_SECTION_KEYS = ["kpi", "checkin", "responsabilites", "todo", "objectifs", "ids", "cloture"] as const;
