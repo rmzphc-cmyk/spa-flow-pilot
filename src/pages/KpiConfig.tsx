@@ -138,7 +138,7 @@ export default function KpiConfig() {
     <>
       <tr className="bg-muted/40 border-t border-border">
         <td
-          colSpan={11}
+          colSpan={9}
           className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-muted-foreground"
         >
           {label}
@@ -146,7 +146,7 @@ export default function KpiConfig() {
       </tr>
       {list.length === 0 ? (
         <tr>
-          <td colSpan={11} className="px-3 py-2.5 text-xs text-muted-foreground italic">
+          <td colSpan={9} className="px-3 py-2.5 text-xs text-muted-foreground italic">
             Aucun KPI dans ce groupe.
           </td>
         </tr>
@@ -180,6 +180,7 @@ export default function KpiConfig() {
       )}
     </>
   );
+
 
   return (
     <div className="max-w-[1400px] mx-auto px-6 py-6 pb-20">
