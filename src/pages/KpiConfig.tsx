@@ -354,6 +354,9 @@ function UnifiedKpiRow({
   const [overrideLocal, setOverrideLocal] = useState<string>(
     current?.weekly_override != null ? String(current.weekly_override) : "",
   );
+  const [actualLocal, setActualLocal] = useState<string>(
+    current?.actual_monthly_value != null ? String(current.actual_monthly_value) : "",
+  );
 
   useEffect(() => setName(kpi.name), [kpi.name]);
 
@@ -361,6 +364,10 @@ function UnifiedKpiRow({
     setMonthlyLocal(current?.monthly_value != null ? String(current.monthly_value) : "");
     setOverrideLocal(current?.weekly_override != null ? String(current.weekly_override) : "");
   }, [yearMonth, current?.monthly_value, current?.weekly_override]);
+
+  useEffect(() => {
+    setActualLocal(current?.actual_monthly_value != null ? String(current.actual_monthly_value) : "");
+  }, [yearMonth, current?.actual_monthly_value]);
 
   const disabled = current?.monthly_value == null;
   const computed = getWeeklyTarget(current);
@@ -377,6 +384,7 @@ function UnifiedKpiRow({
         monthly_value: newVal,
         weekly_mode: current?.weekly_mode ?? "divide",
         weekly_override: current?.weekly_override ?? null,
+        actual_monthly_value: current?.actual_monthly_value ?? null,
       },
       { onError },
     );
@@ -391,6 +399,7 @@ function UnifiedKpiRow({
         monthly_value: current?.monthly_value ?? null,
         weekly_mode: newMode,
         weekly_override: null,
+        actual_monthly_value: current?.actual_monthly_value ?? null,
       },
       { onError },
     );
@@ -409,6 +418,24 @@ function UnifiedKpiRow({
         monthly_value: current?.monthly_value ?? null,
         weekly_mode: current?.weekly_mode ?? "divide",
         weekly_override: newOverride,
+        actual_monthly_value: current?.actual_monthly_value ?? null,
+      },
+      { onError },
+    );
+  };
+
+  const handleActualBlur = () => {
+    const newVal = actualLocal === "" ? null : Number(actualLocal);
+    if (newVal === (current?.actual_monthly_value ?? null)) return;
+    upsertMut.mutate(
+      {
+        spa_id: spaId,
+        kpi_definition_id: kpi.id,
+        year_month: yearMonth,
+        monthly_value: current?.monthly_value ?? null,
+        weekly_mode: current?.weekly_mode ?? "divide",
+        weekly_override: current?.weekly_override ?? null,
+        actual_monthly_value: newVal,
       },
       { onError },
     );
@@ -416,13 +443,25 @@ function UnifiedKpiRow({
 
   const showPrevHint = !current && previous?.monthly_value != null;
 
+  const actual = current?.actual_monthly_value;
+  const target = current?.monthly_value;
+  let dotColor = "";
+  if (actual != null && target != null && target !== 0) {
+    const ratio = kpi.comparison_direction === "lower_is_better"
+      ? target / actual
+      : actual / target;
+    dotColor = ratio >= 1 ? "text-emerald-500"
+             : ratio >= 0.85 ? "text-amber-500"
+             : "text-red-500";
+  }
+
   return (
     <tr
       className={`border-b border-border last:border-0 transition-colors hover:bg-muted/20 ${
         kpi.is_active ? "" : "opacity-40"
       }`}
     >
-      <td className="py-2 px-3">
+      <td className="px-2 py-2">
         <Input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -430,10 +469,11 @@ function UnifiedKpiRow({
             if (name !== kpi.name) onUpdate({ name });
           }}
           className="h-8 text-sm w-full"
+          placeholder="Nom du KPI"
         />
       </td>
 
-      <td className="py-2 px-3">
+      <td className="px-2 py-2">
         <Select value={kpi.unit ?? ""} onValueChange={(v) => onUpdate({ unit: v })}>
           <SelectTrigger className="h-8 text-sm w-full">
             <SelectValue placeholder="—" />
@@ -448,7 +488,7 @@ function UnifiedKpiRow({
         </Select>
       </td>
 
-      <td className="py-2 px-3">
+      <td className="px-2 py-2">
         <Select
           value={(kpi.kpi_group ?? "spa") as KpiGroup}
           onValueChange={(v) => onUpdate({ kpi_group: v as KpiGroup })}
@@ -463,33 +503,26 @@ function UnifiedKpiRow({
         </Select>
       </td>
 
-      <td className="py-2 px-3 text-center">
+      <td className="px-2 py-2 text-center">
         <Switch checked={kpi.is_active} onCheckedChange={(v) => onUpdate({ is_active: v })} />
       </td>
 
       <td className="p-0 bg-border" />
 
-      <td className="py-2 px-3">
-        <div>
-          <Input
-            type="number"
-            className={`h-8 text-sm w-full ${
-              !current && !showPrevHint ? "border-dashed border-border/60 bg-muted/20" : ""
-            }`}
-            value={monthlyLocal}
-            placeholder={showPrevHint ? String(previous!.monthly_value) : "—"}
-            onChange={(e) => setMonthlyLocal(e.target.value)}
-            onBlur={handleMonthlyBlur}
-          />
-          {showPrevHint && (
-            <p className="text-[10px] text-muted-foreground italic mt-0.5">
-              M-1 : {previous!.monthly_value}
-            </p>
-          )}
-        </div>
+      <td className="px-2 py-2">
+        <Input
+          type="number"
+          className={`h-8 text-sm w-full ${
+            !current && !showPrevHint ? "border-dashed border-border/60 bg-muted/20" : ""
+          }`}
+          value={monthlyLocal}
+          placeholder={showPrevHint ? String(previous!.monthly_value) : "—"}
+          onChange={(e) => setMonthlyLocal(e.target.value)}
+          onBlur={handleMonthlyBlur}
+        />
       </td>
 
-      <td className="py-2 px-3">
+      <td className="px-2 py-2">
         <Select
           value={current?.weekly_mode ?? "divide"}
           onValueChange={(v) => handleModeChange(v as WeeklyMode)}
@@ -505,7 +538,7 @@ function UnifiedKpiRow({
         </Select>
       </td>
 
-      <td className="py-2 px-3">
+      <td className="px-2 py-2">
         <div className="relative">
           <Input
             type="number"
@@ -524,7 +557,25 @@ function UnifiedKpiRow({
         </div>
       </td>
 
-      <td className="py-2 px-3">
+      <td className="p-0 bg-border" />
+
+      <td className="px-2 py-2">
+        <div className="flex items-center gap-1.5">
+          <Input
+            type="number"
+            className="h-8 text-sm w-full"
+            value={actualLocal}
+            placeholder="—"
+            onChange={(e) => setActualLocal(e.target.value)}
+            onBlur={handleActualBlur}
+          />
+          {dotColor && (
+            <span className={`text-base leading-none flex-shrink-0 ${dotColor}`}>●</span>
+          )}
+        </div>
+      </td>
+
+      <td className="px-2 py-2">
         <div className="flex items-center justify-end gap-0.5">
           <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={onOpenSettings}>
             <Settings2 className="h-3.5 w-3.5" />
@@ -543,6 +594,7 @@ function UnifiedKpiRow({
     </tr>
   );
 }
+
 
 
 
