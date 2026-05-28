@@ -1,4 +1,3 @@
-// Shared authorization helpers for edge functions.
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
 export const corsHeaders = {
@@ -20,7 +19,6 @@ export type Caller = {
   spaId: string | null;
 };
 
-/** Validate JWT and extract role + spa_id from app_metadata claims. */
 export async function authenticate(req: Request): Promise<
   { ok: true; caller: Caller; admin: ReturnType<typeof createClient> } | { ok: false; response: Response }
 > {
@@ -30,22 +28,20 @@ export async function authenticate(req: Request): Promise<
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-  const authClient = createClient(supabaseUrl, anonKey, {
+  const authClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
     global: { headers: { Authorization: authHeader } },
   });
 
-  const token = authHeader.replace("Bearer ", "");
-  const { data: claims, error } = await authClient.auth.getClaims(token);
-  if (error || !claims?.claims?.sub) {
+  const { data: { user }, error } = await authClient.auth.getUser();
+  if (error || !user) {
     return { ok: false, response: json({ error: "Unauthorized" }, 401) };
   }
 
-  const appMeta = (claims.claims as any).app_metadata ?? {};
+  const appMeta = user.app_metadata ?? {};
   const caller: Caller = {
-    userId: claims.claims.sub as string,
+    userId: user.id,
     role: (appMeta.role as string) ?? "anonymous",
     spaId: appMeta.spa_id ? (appMeta.spa_id as string) : null,
   };
@@ -54,7 +50,6 @@ export async function authenticate(req: Request): Promise<
   return { ok: true, caller, admin };
 }
 
-/** Ensure the caller may act on the given report (admin OR spa_manager owning it). */
 export async function authorizeReportAccess(
   admin: ReturnType<typeof createClient>,
   caller: Caller,
@@ -79,7 +74,6 @@ export async function authorizeReportAccess(
   return { ok: false, response: json({ error: "Forbidden" }, 403) };
 }
 
-/** Wrap an unexpected error: log details, return generic message. */
 export function internalError(e: unknown): Response {
   console.error("Edge function error:", e);
   return json({ error: "Internal server error" }, 500);
