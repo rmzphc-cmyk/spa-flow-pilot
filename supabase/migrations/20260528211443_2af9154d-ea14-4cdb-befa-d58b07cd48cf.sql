@@ -1,0 +1,1 @@
+ALTER TABLE public.kpi_monthly_targets ADD COLUMN IF NOT EXISTS actual_monthly_value NUMERIC NULL;
