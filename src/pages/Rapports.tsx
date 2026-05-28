@@ -168,11 +168,19 @@ export default function Rapports() {
       setLabel("");
       navigate(`/rapport/${created.id}`);
     } catch (e) {
-      toast({
-        title: "Erreur lors de la création",
-        description: e instanceof Error ? e.message : "Impossible de créer le rapport.",
-        variant: "destructive",
-      });
+      const message = e instanceof Error ? e.message : "";
+      if (message === "Un rapport actif existe déjà pour ce cycle.") {
+        const activeReport = reports.find(
+          (r) => r.type === newType && r.state !== "validated"
+        ) ?? null;
+        setBlockedBy(activeReport);
+      } else {
+        toast({
+          title: "Erreur lors de la création",
+          description: message || "Impossible de créer le rapport.",
+          variant: "destructive",
+        });
+      }
     }
   };
 
