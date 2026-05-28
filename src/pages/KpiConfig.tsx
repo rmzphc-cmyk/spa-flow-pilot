@@ -183,7 +183,6 @@ export default function KpiConfig() {
 
 
   return (
-    <div className="max-w-[1400px] mx-auto px-6 py-6 pb-20">
       <header className="flex items-center justify-between gap-4 mb-5">
         <div>
           <h1 className="text-xl font-bold text-foreground">Configuration des KPI</h1>
@@ -191,7 +190,7 @@ export default function KpiConfig() {
             Définir et planifier les KPI de votre spa
           </p>
         </div>
-        <div className="flex items-center gap-2 border border-border rounded-lg px-3 py-1.5 bg-background">
+        <div className="flex items-center gap-1 border border-border rounded-lg px-3 py-1.5 bg-background shadow-sm">
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handlePrevMonth}>
             <ChevronLeft className="h-3.5 w-3.5" />
           </Button>
@@ -224,6 +223,8 @@ export default function KpiConfig() {
             <Plus className="h-4 w-4" /> Ajouter un KPI
           </Button>
         </div>
+      </header>
+
       </header>
 
       {!spaId ? (
