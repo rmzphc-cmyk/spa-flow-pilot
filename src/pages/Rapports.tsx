@@ -159,22 +159,23 @@ export default function Rapports() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newType, setNewType] = useState<ReportType>("monthly");
-  const [periodStart, setPeriodStart] = useState<string>(() => {
-    const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
-  });
-  const [periodEnd, setPeriodEnd] = useState<string>(() => {
-    const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10);
-  });
-  const [label, setLabel] = useState<string>(() =>
-    defaultLabel("monthly", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10))
-  );
+  const initialPeriod = computePeriod("monthly");
+  const [periodStart, setPeriodStart] = useState<string>(initialPeriod.start);
+  const [periodEnd, setPeriodEnd] = useState<string>(initialPeriod.end);
+  const [label, setLabel] = useState<string>(() => defaultLabel("monthly", initialPeriod.start));
   const [labelEdited, setLabelEdited] = useState(false);
+
+  // Quand le type change → recalculer début + fin par défaut
+  useEffect(() => {
+    const { start, end } = computePeriod(newType);
+    setPeriodStart(start);
+    setPeriodEnd(end);
+  }, [newType]);
 
   useEffect(() => {
     if (!labelEdited) setLabel(defaultLabel(newType, periodStart));
   }, [newType, periodStart, labelEdited]);
+
 
   const [blockedInfo, setBlockedInfo] = useState<{ type: ReportType; label: string; stateLabel: string; id: string } | null>(null);
 
