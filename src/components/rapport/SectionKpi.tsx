@@ -162,20 +162,24 @@ export function SectionKpi({ reportId, reportType, onStatusChange }: Props) {
         continue;
       }
       if (!cv.value || isNaN(Number(cv.value))) return false;
-      const status = computeKpiStatus(
-        Number(cv.value),
-        def.threshold_amber,
-        def.threshold_red,
-        def.comparison_direction,
-      );
       if (isWeekly) {
-        if (status === "red" && !cv.comment.trim()) return false;
+        // Weekly: "red" = same logic as KpiCardSaisieWeekly (compare vs N-1)
+        // If n1 = 0 (first report, no prior data), ratio = 1 → never red
+        const n1 = entriesByDef.get(def.id)?.value_n1 ?? 0;
+        const ratio = n1 > 0 ? Number(cv.value) / n1 : 1;
+        if (ratio < 0.85 && !cv.comment.trim()) return false;
       } else {
+        const status = computeKpiStatus(
+          Number(cv.value),
+          def.threshold_amber,
+          def.threshold_red,
+          def.comparison_direction,
+        );
         if ((status === "amber" || status === "red") && !cv.comment.trim()) return false;
       }
     }
     return true;
-  }, [local, sortedDefs, isWeekly]);
+  }, [local, sortedDefs, isWeekly, entriesByDef]);
 
   useEffect(() => {
     onStatusChange(isComplete ? "complete" : "incomplete");
