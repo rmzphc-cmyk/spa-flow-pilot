@@ -269,14 +269,14 @@ function QuickMetrics() {
   );
 }
 
-function RecentActivity() {
+function RecentActivity({ items }: { items: RecentActivityItem[] }) {
   const navigate = useNavigate();
-  if (recentActivity.length === 0) return null;
+  if (items.length === 0) return null;
   return (
     <div className="bg-card rounded-xl shadow-sm border border-border p-5">
       <h2 className="text-base font-semibold text-foreground mb-3">Activité récente</h2>
       <ul className="space-y-2">
-        {recentActivity.map((item) => (
+        {items.map((item) => (
           <li key={item.id} className="flex items-center justify-between text-sm">
             <div className="flex items-center gap-2">
               <CheckCircle2 className="h-4 w-4 text-emerald-600" />
