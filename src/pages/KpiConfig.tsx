@@ -139,7 +139,7 @@ export default function KpiConfig() {
       <tr className="bg-muted/30 border-t border-border">
         <td
           colSpan={9}
-          className="px-[40px] py-[10px] text-xs font-semibold uppercase tracking-widest text-muted-foreground"
+          className="py-2 px-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground"
         >
           {label}
         </td>
@@ -150,7 +150,6 @@ export default function KpiConfig() {
             Aucun KPI dans ce groupe.
           </td>
         </tr>
-
       ) : (
         list.map((k, idx) => (
           <UnifiedKpiRow
@@ -244,15 +243,15 @@ export default function KpiConfig() {
           <table className="w-full text-sm">
             <thead className="bg-muted/60">
               <tr>
-                <th className="text-left px-[40px] py-[10px] text-xs font-semibold text-muted-foreground" style={{ width: "35%" }}>Nom</th>
-                <th className="text-left px-[40px] py-[10px] text-xs font-semibold text-muted-foreground" style={{ width: "72px" }}>Unité</th>
-                <th className="text-left px-[40px] py-[10px] text-xs font-semibold text-muted-foreground" style={{ width: "96px" }}>Groupe</th>
-                <th className="text-center px-[40px] py-[10px] text-xs font-semibold text-muted-foreground" style={{ width: "52px" }}>Actif</th>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "35%" }}>Nom</th>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "72px" }}>Unité</th>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "96px" }}>Groupe</th>
+                <th className="text-center py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "52px" }}>Actif</th>
                 <th className="p-0 bg-border" style={{ width: "1px" }} />
-                <th className="text-left px-[40px] py-[10px] text-xs font-semibold text-muted-foreground" style={{ width: "110px" }}>Mensuel</th>
-                <th className="text-left px-[40px] py-[10px] text-xs font-semibold text-muted-foreground" style={{ width: "88px" }}>Mode</th>
-                <th className="text-left px-[40px] py-[10px] text-xs font-semibold text-muted-foreground" style={{ width: "120px" }}>Hebdo</th>
-                <th className="text-right px-[40px] py-[10px] text-xs font-semibold text-muted-foreground" style={{ width: "116px" }}>Actions</th>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "110px" }}>Mensuel</th>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "88px" }}>Mode</th>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "120px" }}>Hebdo</th>
+                <th className="text-right py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "116px" }}>Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -410,19 +409,18 @@ function UnifiedKpiRow({
         kpi.is_active ? "" : "opacity-40"
       }`}
     >
-      <td className="px-[40px] py-[10px]">
+      <td className="py-2 px-3">
         <Input
           value={name}
           onChange={(e) => setName(e.target.value)}
           onBlur={() => {
             if (name !== kpi.name) onUpdate({ name });
           }}
-          className="h-8 text-sm w-full py-[10px] px-[40px]"
+          className="h-8 text-sm w-full"
         />
-
       </td>
 
-      <td className="px-[40px] py-[10px]">
+      <td className="py-2 px-3">
         <Select value={kpi.unit ?? ""} onValueChange={(v) => onUpdate({ unit: v })}>
           <SelectTrigger className="h-8 text-sm w-full">
             <SelectValue placeholder="—" />
@@ -437,7 +435,7 @@ function UnifiedKpiRow({
         </Select>
       </td>
 
-      <td className="px-[40px] py-[10px]">
+      <td className="py-2 px-3">
         <Select
           value={(kpi.kpi_group ?? "spa") as KpiGroup}
           onValueChange={(v) => onUpdate({ kpi_group: v as KpiGroup })}
@@ -452,20 +450,19 @@ function UnifiedKpiRow({
         </Select>
       </td>
 
-      <td className="px-[40px] py-[10px] text-center">
+      <td className="py-2 px-3 text-center">
         <Switch checked={kpi.is_active} onCheckedChange={(v) => onUpdate({ is_active: v })} />
       </td>
 
       <td className="p-0 bg-border" />
 
-      <td className="px-[40px] py-[10px]">
+      <td className="py-2 px-3">
         <div>
           <Input
             type="number"
-            className={`h-8 text-sm w-full py-[10px] px-[40px] ${
+            className={`h-8 text-sm w-full ${
               !current && !showPrevHint ? "border-dashed border-border/60 bg-muted/20" : ""
             }`}
-
             value={monthlyLocal}
             placeholder={showPrevHint ? String(previous!.monthly_value) : "—"}
             onChange={(e) => setMonthlyLocal(e.target.value)}
@@ -479,7 +476,7 @@ function UnifiedKpiRow({
         </div>
       </td>
 
-      <td className="px-[40px] py-[10px]">
+      <td className="py-2 px-3">
         <Select
           value={current?.weekly_mode ?? "divide"}
           onValueChange={(v) => handleModeChange(v as WeeklyMode)}
@@ -495,13 +492,12 @@ function UnifiedKpiRow({
         </Select>
       </td>
 
-      <td className="px-[40px] py-[10px]">
+      <td className="py-2 px-3">
         <div className="relative">
           <Input
             type="number"
-            className="h-8 text-sm w-full pr-12 py-[10px] px-[40px]"
+            className="h-8 text-sm w-full pr-12"
             value={overrideLocal}
-
             placeholder={computed != null ? String(Math.round(computed * 100) / 100) : "—"}
             disabled={disabled}
             onChange={(e) => setOverrideLocal(e.target.value)}
@@ -515,7 +511,7 @@ function UnifiedKpiRow({
         </div>
       </td>
 
-      <td className="px-[40px] py-[10px]">
+      <td className="py-2 px-3">
         <div className="flex items-center justify-end gap-0.5">
           <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={onOpenSettings}>
             <Settings2 className="h-3.5 w-3.5" />
