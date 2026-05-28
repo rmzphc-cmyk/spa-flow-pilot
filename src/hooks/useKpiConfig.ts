@@ -5,7 +5,6 @@ export type KpiCategoryDb = "financial" | "operational" | "customer" | "hr" | "c
 export type ComparisonDirection = "higher_is_better" | "lower_is_better";
 
 export interface KpiDefinitionFull {
-export interface KpiDefinitionFull {
   id: string;
   spa_id: string;
   name: string;
@@ -21,6 +20,8 @@ export interface KpiDefinitionFull {
   comparison_direction: ComparisonDirection;
   comment_guidance_fr: string | null;
 }
+
+
 export function useAllKpiDefinitions(spaId: string | null) {
   return useQuery({
     queryKey: ["kpi_definitions_all", spaId],
