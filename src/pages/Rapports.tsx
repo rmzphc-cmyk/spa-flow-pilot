@@ -141,7 +141,7 @@ export default function Rapports() {
     return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10);
   });
   const [label, setLabel] = useState<string>("");
-  const [showBlockedDialog, setShowBlockedDialog] = useState(false);
+  const [blockedInfo, setBlockedInfo] = useState<{ type: ReportType; label: string; stateLabel: string; id: string } | null>(null);
 
   const reports = useMemo(() => rows.map(mapReportRowToRecord), [rows]);
 
@@ -169,7 +169,19 @@ export default function Rapports() {
     } catch (e) {
       const message = e instanceof Error ? e.message : "";
       if (message === "Un rapport actif existe déjà pour ce cycle.") {
-        setShowBlockedDialog(true);
+        const existing = reports.find(
+          (r) => r.type === newType && isPreparationState(r.state),
+        );
+        if (existing) {
+          setBlockedInfo({
+            type: existing.type,
+            label: existing.label,
+            stateLabel: stateConfig[existing.state].label,
+            id: existing.id,
+          });
+        } else {
+          setBlockedInfo({ type: newType, label: "", stateLabel: "", id: "" });
+        }
       } else {
         toast({
           title: "Erreur lors de la création",
@@ -234,17 +246,41 @@ export default function Rapports() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={showBlockedDialog} onOpenChange={setShowBlockedDialog}>
+      <AlertDialog open={!!blockedInfo} onOpenChange={(o) => !o && setBlockedInfo(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Un rapport est déjà en cours</AlertDialogTitle>
+            <AlertDialogTitle>
+              Un rapport {blockedInfo?.type === "weekly" ? "Weekly" : "Monthly"} est déjà en cours
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Vous avez déjà un rapport de ce type en cours de préparation.
-              Finalisez-le avant d'en créer un nouveau.
+              {blockedInfo?.label ? (
+                <>
+                  Le rapport <strong>« {blockedInfo.label} »</strong>
+                  {blockedInfo.stateLabel ? <> est actuellement <strong>{blockedInfo.stateLabel.toLowerCase()}</strong></> : " est en cours"}.
+                  <br />
+                  Vous devez le finaliser (ou le valider) avant d'en créer un nouveau de ce type.
+                </>
+              ) : (
+                <>Vous avez déjà un rapport de ce type en cours. Finalisez-le avant d'en créer un nouveau.</>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setShowBlockedDialog(false)}>
+            {blockedInfo?.id && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const id = blockedInfo.id;
+                  setBlockedInfo(null);
+                  setDialogOpen(false);
+                  navigate(`/rapport/${id}`);
+                }}
+              >
+                <Eye className="h-4 w-4 mr-1.5" />
+                Voir le rapport
+              </Button>
+            )}
+            <AlertDialogAction onClick={() => setBlockedInfo(null)}>
               Compris
             </AlertDialogAction>
           </AlertDialogFooter>
