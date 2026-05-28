@@ -5,7 +5,6 @@ import { supabase } from "@/integrations/supabase/client";
 export type WeeklyMode = "divide" | "fixed";
 
 export interface KpiMonthlyTarget {
-export interface KpiMonthlyTarget {
   id: string;
   spa_id: string;
   kpi_definition_id: string;
