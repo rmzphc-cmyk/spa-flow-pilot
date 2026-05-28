@@ -9,9 +9,9 @@ export function AppLayout() {
   const location = useLocation();
   const reportMatch = location.pathname.match(/^\/rapport\/([\w-]+)/);
   const reportId = reportMatch?.[1] ?? "";
-  const reportRecord = getReport(reportId);
-  const reportType: ReportType = reportRecord?.type ?? "monthly";
-  const fullscreenMeeting = !!reportRecord && isMeetingState(reportRecord.state);
+  const { data: reportRow } = useReport(reportId || undefined);
+  const reportType: ReportType = (reportRow?.cycle_type as ReportType) ?? "monthly";
+  const fullscreenMeeting = reportRow?.status === "in_meeting";
 
   const [activeSection, setActiveSection] = useState<SectionId>("kpi");
   const [sectionStatuses, setSectionStatuses] = useState<Record<SectionId, SectionStatus>>({
