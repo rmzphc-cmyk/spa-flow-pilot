@@ -10,6 +10,7 @@ import {
   ArrowDownNarrowWide,
   ChevronLeft,
   ChevronRight,
+  Settings2,
 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { fr } from "date-fns/locale";
@@ -30,7 +31,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -60,13 +60,11 @@ const CATEGORY_LABELS: Record<KpiCategoryDb, string> = {
   custom: "Autre",
 };
 
-const SPA_CATEGORIES: KpiCategoryDb[] = ["financial", "operational", "customer"];
-const MANAGER_CATEGORIES: KpiCategoryDb[] = ["hr", "custom"];
+type KpiGroup = "spa" | "manager";
 
 export default function KpiConfig() {
   const { user, userRole, spaId: authSpaId } = useAuth();
   const [adminSpaId, setAdminSpaId] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"definitions" | "objectives">("definitions");
   const [yearMonth, setYearMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
@@ -91,13 +89,22 @@ export default function KpiConfig() {
   const addMut = useAddKpiDefinition();
   const updateMut = useUpdateKpiDefinition();
   const deleteMut = useSoftDeleteKpiDefinition();
+  const { currentMap, previousMap, isLoading: targetsLoading } = useKpiMonthlyTargets(
+    spaId,
+    yearMonth,
+  );
+  const upsertMut = useUpsertKpiMonthlyTarget();
 
   const [addOpen, setAddOpen] = useState(false);
+  const [settingsKpi, setSettingsKpi] = useState<KpiDefinitionFull | null>(null);
 
   const sortedItems = useMemo(
     () => [...items].sort((a, b) => a.display_order - b.display_order),
     [items],
   );
+
+  const spaKpis = sortedItems.filter((k) => (k.kpi_group ?? "spa") === "spa");
+  const managerKpis = sortedItems.filter((k) => (k.kpi_group ?? "spa") === "manager");
 
   const handleUpdate = (id: string, fields: Partial<KpiDefinitionFull>, toastIt = true) => {
     if (!spaId) return;
@@ -110,9 +117,9 @@ export default function KpiConfig() {
     );
   };
 
-  const handleSwap = (idx: number, dir: -1 | 1) => {
-    const a = sortedItems[idx];
-    const b = sortedItems[idx + dir];
+  const handleSwap = (list: KpiDefinitionFull[], idx: number, dir: -1 | 1) => {
+    const a = list[idx];
+    const b = list[idx + dir];
     if (!a || !b || !spaId) return;
     updateMut.mutate({ id: a.id, spaId, display_order: b.display_order });
     updateMut.mutate({ id: b.id, spaId, display_order: a.display_order });
@@ -124,14 +131,64 @@ export default function KpiConfig() {
     setYearMonth(m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`);
   };
 
+  const monthLabel = format(parseISO(`${yearMonth}-01`), "MMMM yyyy", { locale: fr });
+  const monthLabelCap = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
+
+  const renderSection = (label: string, list: KpiDefinitionFull[], isFirst: boolean) => (
+    <div className={isFirst ? "" : "border-t border-border mt-4 pt-4"}>
+      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground py-2">
+        {label}
+      </h3>
+      {list.length === 0 ? (
+        <div className="text-sm text-muted-foreground italic py-3">Aucun KPI dans ce groupe.</div>
+      ) : (
+        list.map((k, idx) => (
+          <UnifiedKpiRow
+            key={k.id}
+            kpi={k}
+            spaId={spaId!}
+            yearMonth={yearMonth}
+            current={currentMap.get(k.id)}
+            previous={previousMap.get(k.id)}
+            isFirst={idx === 0}
+            isLast={idx === list.length - 1}
+            onUpdate={(fields, toastIt) => handleUpdate(k.id, fields, toastIt)}
+            onMoveUp={() => handleSwap(list, idx, -1)}
+            onMoveDown={() => handleSwap(list, idx, 1)}
+            onOpenSettings={() => setSettingsKpi(k)}
+            onDelete={() =>
+              deleteMut.mutate(
+                { id: k.id, spaId: spaId! },
+                {
+                  onSuccess: () => toast.success("KPI désactivé"),
+                  onError: (e: any) => toast.error(e?.message ?? "Erreur"),
+                },
+              )
+            }
+            upsertMut={upsertMut}
+          />
+        ))
+      )}
+    </div>
+  );
+
   return (
-    <div className="max-w-[1200px] mx-auto px-6 py-6 pb-20">
-      <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+    <div className="max-w-[1400px] mx-auto px-6 py-6 pb-20">
+      <header className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-xl font-bold text-foreground">Configuration des KPI</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Définir les KPI suivis par votre spa
+            Définir et planifier les KPI de votre spa
           </p>
+        </div>
+        <div className="flex items-center justify-center gap-2">
+          <Button variant="ghost" size="icon" onClick={handlePrevMonth}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-sm font-semibold min-w-[140px] text-center">{monthLabelCap}</span>
+          <Button variant="ghost" size="icon" onClick={handleNextMonth}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
         </div>
         <div className="flex items-center gap-2">
           {userRole === "admin" && (
@@ -148,94 +205,35 @@ export default function KpiConfig() {
               </SelectContent>
             </Select>
           )}
-          {activeTab === "definitions" && (
-            <Button
-              size="sm"
-              className="gap-1.5 bg-teal-600 hover:bg-teal-700 text-white"
-              onClick={() => setAddOpen(true)}
-              disabled={!spaId}
-            >
-              <Plus className="h-4 w-4" /> Ajouter un KPI
-            </Button>
-          )}
+          <Button
+            size="sm"
+            className="gap-1.5 bg-teal-600 hover:bg-teal-700 text-white"
+            onClick={() => setAddOpen(true)}
+            disabled={!spaId}
+          >
+            <Plus className="h-4 w-4" /> Ajouter un KPI
+          </Button>
         </div>
       </header>
 
-      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "definitions" | "objectives")}>
-        <TabsList className="mb-4">
-          <TabsTrigger value="definitions">Définitions</TabsTrigger>
-          <TabsTrigger value="objectives">Objectifs</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="definitions">
-          {!spaId ? (
-            <div className="border border-border rounded-xl p-12 text-center text-muted-foreground">
-              Sélectionner un spa pour configurer ses KPI
-            </div>
-          ) : isLoading ? (
-            <div className="border border-border rounded-xl p-12 text-center text-muted-foreground">
-              Chargement…
-            </div>
-          ) : (
-            <div className="border border-border rounded-xl overflow-hidden shadow-sm">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-muted">
-                    <th className="text-left py-2.5 px-3 font-semibold">Nom</th>
-                    <th className="text-left py-2.5 px-3 font-semibold w-24">Unité</th>
-                    <th className="text-left py-2.5 px-3 font-semibold w-36">Catégorie</th>
-                    <th className="text-left py-2.5 px-3 font-semibold w-28">Objectif</th>
-                    <th className="text-left py-2.5 px-3 font-semibold w-28">Seuil rouge</th>
-                    <th className="text-left py-2.5 px-3 font-semibold w-40">Direction</th>
-                    <th className="text-left py-2.5 px-3 font-semibold w-16">Actif</th>
-                    <th className="text-left py-2.5 px-3 font-semibold w-28">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedItems.map((k, idx) => (
-                    <KpiRow
-                      key={k.id}
-                      kpi={k}
-                      isFirst={idx === 0}
-                      isLast={idx === sortedItems.length - 1}
-                      onUpdate={(fields, toastIt) => handleUpdate(k.id, fields, toastIt)}
-                      onMoveUp={() => handleSwap(idx, -1)}
-                      onMoveDown={() => handleSwap(idx, 1)}
-                      onDelete={() => {
-                        deleteMut.mutate(
-                          { id: k.id, spaId: spaId! },
-                          {
-                            onSuccess: () => toast.success("KPI désactivé"),
-                            onError: (e: any) => toast.error(e?.message ?? "Erreur"),
-                          },
-                        );
-                      }}
-                    />
-                  ))}
-                  {sortedItems.length === 0 && (
-                    <tr>
-                      <td colSpan={8} className="py-8 text-center text-muted-foreground">
-                        Aucun KPI configuré pour ce spa.
-                      </td>
-                    </tr>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </TabsContent>
-
-        <TabsContent value="objectives">
-          <ObjectivesTab
-            spaId={spaId}
-            yearMonth={yearMonth}
-            onPrev={handlePrevMonth}
-            onNext={handleNextMonth}
-            activeKpis={sortedItems.filter((k) => k.is_active)}
-            definitionsLoading={isLoading}
-          />
-        </TabsContent>
-      </Tabs>
+      {!spaId ? (
+        <div className="border border-border rounded-xl p-12 text-center text-muted-foreground">
+          Sélectionner un spa
+        </div>
+      ) : isLoading || targetsLoading ? (
+        <div className="border border-border rounded-xl p-12 text-center text-muted-foreground">
+          Chargement…
+        </div>
+      ) : sortedItems.length === 0 ? (
+        <div className="border border-border rounded-xl p-12 text-center text-muted-foreground">
+          Aucun KPI configuré. Cliquez sur + Ajouter un KPI.
+        </div>
+      ) : (
+        <div className="border border-border rounded-xl p-4 shadow-sm">
+          {renderSection("KPI Spa", spaKpis, true)}
+          {renderSection("KPI Manager", managerKpis, spaKpis.length === 0)}
+        </div>
+      )}
 
       <AddKpiDialog
         open={addOpen}
@@ -247,6 +245,8 @@ export default function KpiConfig() {
               spaId,
               created_by: user.id,
               display_order: sortedItems.length,
+              threshold_amber: null,
+              threshold_red: null,
               ...payload,
             },
             {
@@ -259,127 +259,62 @@ export default function KpiConfig() {
           );
         }}
       />
+
+      <SettingsDialog
+        kpi={settingsKpi}
+        onClose={() => setSettingsKpi(null)}
+        onSave={(fields) => {
+          if (!settingsKpi) return;
+          handleUpdate(settingsKpi.id, fields, true);
+          setSettingsKpi(null);
+        }}
+      />
     </div>
   );
 }
 
-// ----- Objectives Tab -----
+// ----- Unified row -----
 
-interface ObjectivesTabProps {
-  spaId: string | null;
-  yearMonth: string;
-  onPrev: () => void;
-  onNext: () => void;
-  activeKpis: KpiDefinitionFull[];
-  definitionsLoading: boolean;
-}
-
-function ObjectivesTab({
-  spaId,
-  yearMonth,
-  onPrev,
-  onNext,
-  activeKpis,
-  definitionsLoading,
-}: ObjectivesTabProps) {
-  const { currentMap, previousMap, isLoading } = useKpiMonthlyTargets(spaId, yearMonth);
-  const upsertMut = useUpsertKpiMonthlyTarget();
-
-  const monthLabel = format(parseISO(`${yearMonth}-01`), "MMMM yyyy", { locale: fr });
-  const monthLabelCap = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
-
-  const spaKpis = activeKpis.filter((k) => SPA_CATEGORIES.includes(k.category));
-  const managerKpis = activeKpis.filter((k) => MANAGER_CATEGORIES.includes(k.category));
-
-  const navigator = (
-    <div className="flex items-center justify-center gap-3 mb-6">
-      <Button variant="ghost" size="icon" onClick={onPrev}>
-        <ChevronLeft className="h-4 w-4" />
-      </Button>
-      <span className="text-sm font-semibold min-w-[140px] text-center">{monthLabelCap}</span>
-      <Button variant="ghost" size="icon" onClick={onNext}>
-        <ChevronRight className="h-4 w-4" />
-      </Button>
-    </div>
-  );
-
-  if (!spaId) {
-    return (
-      <div className="border border-border rounded-xl p-12 text-center text-muted-foreground">
-        Sélectionner un spa pour configurer ses objectifs
-      </div>
-    );
-  }
-
-  if (definitionsLoading || isLoading) {
-    return (
-      <>
-        {navigator}
-        <div className="border border-border rounded-xl p-12 text-center text-muted-foreground">
-          Chargement…
-        </div>
-      </>
-    );
-  }
-
-  if (activeKpis.length === 0) {
-    return (
-      <>
-        {navigator}
-        <div className="border border-border rounded-xl p-12 text-center text-muted-foreground">
-          Aucun KPI configuré. Ajouter des KPI dans l'onglet Définitions.
-        </div>
-      </>
-    );
-  }
-
-  const renderGroup = (label: string, kpis: KpiDefinitionFull[], isFirst: boolean) => {
-    if (kpis.length === 0) return null;
-    return (
-      <div key={label} className={isFirst ? "" : "border-t border-border pt-4 mt-2"}>
-        <h3 className="text-sm font-semibold text-muted-foreground mb-2">{label}</h3>
-        <div className="divide-y divide-border">
-          {kpis.map((k) => (
-            <ObjectiveRow
-              key={k.id}
-              kpi={k}
-              spaId={spaId}
-              yearMonth={yearMonth}
-              current={currentMap.get(k.id)}
-              previous={previousMap.get(k.id)}
-              upsertMut={upsertMut}
-            />
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  return (
-    <div className="border border-border rounded-xl p-6 shadow-sm">
-      {navigator}
-      {renderGroup("KPI Spa", spaKpis, true)}
-      {renderGroup("KPI Manager", managerKpis, spaKpis.length === 0)}
-    </div>
-  );
-}
-
-interface ObjectiveRowProps {
+interface UnifiedKpiRowProps {
   kpi: KpiDefinitionFull;
   spaId: string;
   yearMonth: string;
   current: KpiMonthlyTarget | undefined;
   previous: KpiMonthlyTarget | undefined;
+  isFirst: boolean;
+  isLast: boolean;
+  onUpdate: (fields: Partial<KpiDefinitionFull>, toastIt?: boolean) => void;
+  onMoveUp: () => void;
+  onMoveDown: () => void;
+  onOpenSettings: () => void;
+  onDelete: () => void;
   upsertMut: ReturnType<typeof useUpsertKpiMonthlyTarget>;
 }
 
-function ObjectiveRow({ kpi, spaId, yearMonth, current, previous, upsertMut }: ObjectiveRowProps) {
+function UnifiedKpiRow({
+  kpi,
+  spaId,
+  yearMonth,
+  current,
+  previous,
+  isFirst,
+  isLast,
+  onUpdate,
+  onMoveUp,
+  onMoveDown,
+  onOpenSettings,
+  onDelete,
+  upsertMut,
+}: UnifiedKpiRowProps) {
+  const [name, setName] = useState(kpi.name);
   const [monthlyLocal, setMonthlyLocal] = useState<string>(
     current?.monthly_value != null ? String(current.monthly_value) : "",
   );
   const [overrideLocal, setOverrideLocal] = useState<string>(
     current?.weekly_override != null ? String(current.weekly_override) : "",
   );
+
+  useEffect(() => setName(kpi.name), [kpi.name]);
 
   useEffect(() => {
     setMonthlyLocal(current?.monthly_value != null ? String(current.monthly_value) : "");
@@ -388,7 +323,6 @@ function ObjectiveRow({ kpi, spaId, yearMonth, current, previous, upsertMut }: O
 
   const disabled = current?.monthly_value == null;
   const computed = getWeeklyTarget(current);
-
   const onError = (e: any) => toast.error(e?.message ?? "Erreur de sauvegarde");
 
   const handleMonthlyBlur = () => {
@@ -442,45 +376,93 @@ function ObjectiveRow({ kpi, spaId, yearMonth, current, previous, upsertMut }: O
   const showPrevHint = !current && previous?.monthly_value != null;
 
   return (
-    <div className="flex flex-row items-center gap-4 py-2.5">
-      <div className="flex-1 min-w-0 text-sm">
-        {kpi.name}
-        {kpi.unit ? <span className="text-muted-foreground"> ({kpi.unit})</span> : null}
+    <div
+      className={`flex flex-row items-start gap-3 py-2 border-b border-border last:border-0 ${
+        kpi.is_active ? "" : "opacity-50"
+      }`}
+    >
+      {/* Nom */}
+      <Input
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        onBlur={() => {
+          if (name !== kpi.name) onUpdate({ name });
+        }}
+        className="flex-1 min-w-[180px] h-9 text-sm"
+      />
+
+      {/* Unité */}
+      <Select value={kpi.unit ?? ""} onValueChange={(v) => onUpdate({ unit: v })}>
+        <SelectTrigger className="w-[72px] h-9 text-sm">
+          <SelectValue placeholder="—" />
+        </SelectTrigger>
+        <SelectContent>
+          {UNIT_OPTIONS.map((u) => (
+            <SelectItem key={u} value={u}>
+              {u}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      {/* Groupe */}
+      <Select
+        value={(kpi.kpi_group ?? "spa") as KpiGroup}
+        onValueChange={(v) => onUpdate({ kpi_group: v as KpiGroup })}
+      >
+        <SelectTrigger className="w-[100px] h-9 text-sm">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="spa">Spa</SelectItem>
+          <SelectItem value="manager">Manager</SelectItem>
+        </SelectContent>
+      </Select>
+
+      {/* Actif */}
+      <div className="flex items-center h-9">
+        <Switch checked={kpi.is_active} onCheckedChange={(v) => onUpdate({ is_active: v })} />
       </div>
-      <div className="w-32">
+
+      <div className="w-px bg-border self-stretch mx-1" />
+
+      {/* Obj mensuel */}
+      <div className="w-28">
         <Input
           type="number"
-          className="h-9 text-sm w-32"
+          className="h-9 text-sm w-28"
           value={monthlyLocal}
           placeholder={showPrevHint ? String(previous!.monthly_value) : "—"}
           onChange={(e) => setMonthlyLocal(e.target.value)}
           onBlur={handleMonthlyBlur}
         />
         {showPrevHint && (
-          <div className="text-[10px] text-muted-foreground mt-0.5">
+          <div className="text-[10px] text-muted-foreground italic mt-0.5">
             M-1 : {previous!.monthly_value}
           </div>
         )}
       </div>
-      <div className="w-28">
-        <Select
-          value={current?.weekly_mode ?? "divide"}
-          onValueChange={(v) => handleModeChange(v as WeeklyMode)}
-          disabled={disabled}
-        >
-          <SelectTrigger className="h-9 text-sm w-28">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="divide">÷ 4</SelectItem>
-            <SelectItem value="fixed">Fixe</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="w-32 flex items-center gap-1.5">
+
+      {/* Mode */}
+      <Select
+        value={current?.weekly_mode ?? "divide"}
+        onValueChange={(v) => handleModeChange(v as WeeklyMode)}
+        disabled={disabled}
+      >
+        <SelectTrigger className="w-24 h-9 text-sm">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="divide">÷ 4</SelectItem>
+          <SelectItem value="fixed">Fixe</SelectItem>
+        </SelectContent>
+      </Select>
+
+      {/* Obj hebdo */}
+      <div className="w-28 flex items-center gap-1">
         <Input
           type="number"
-          className="h-9 text-sm w-32"
+          className="h-9 text-sm w-28"
           value={overrideLocal}
           placeholder={computed !== null ? String(Math.round(computed * 100) / 100) : "—"}
           disabled={disabled}
@@ -488,146 +470,137 @@ function ObjectiveRow({ kpi, spaId, yearMonth, current, previous, upsertMut }: O
           onBlur={handleOverrideBlur}
         />
         {current?.weekly_override != null && (
-          <span className="text-teal-600 text-xs">Manuel</span>
+          <span className="text-teal-600 text-xs ml-1">Manuel</span>
         )}
       </div>
+
+      <div className="w-px bg-border self-stretch mx-1" />
+
+      {/* Settings */}
+      <Button variant="ghost" size="icon" className="h-9 w-9" onClick={onOpenSettings}>
+        <Settings2 className="h-4 w-4" />
+      </Button>
+
+      {/* Reorder */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-9 w-9"
+        onClick={onMoveUp}
+        disabled={isFirst}
+      >
+        <ArrowUp className="h-4 w-4" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-9 w-9"
+        onClick={onMoveDown}
+        disabled={isLast}
+      >
+        <ArrowDown className="h-4 w-4" />
+      </Button>
+
+      {/* Delete */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="h-9 w-9 text-destructive"
+        onClick={onDelete}
+      >
+        <Trash2 className="h-4 w-4" />
+      </Button>
     </div>
   );
 }
 
-// ----- Row -----
+// ----- Settings dialog -----
 
-interface RowProps {
-  kpi: KpiDefinitionFull;
-  isFirst: boolean;
-  isLast: boolean;
-  onUpdate: (fields: Partial<KpiDefinitionFull>, toastIt?: boolean) => void;
-  onMoveUp: () => void;
-  onMoveDown: () => void;
-  onDelete: () => void;
-}
+function SettingsDialog({
+  kpi,
+  onClose,
+  onSave,
+}: {
+  kpi: KpiDefinitionFull | null;
+  onClose: () => void;
+  onSave: (fields: Partial<KpiDefinitionFull>) => void;
+}) {
+  const [category, setCategory] = useState<KpiCategoryDb>("operational");
+  const [direction, setDirection] = useState<ComparisonDirection>("higher_is_better");
+  const [amber, setAmber] = useState("");
+  const [red, setRed] = useState("");
 
-function KpiRow({ kpi, isFirst, isLast, onUpdate, onMoveUp, onMoveDown, onDelete }: RowProps) {
-  const [name, setName] = useState(kpi.name);
-  const [amber, setAmber] = useState(kpi.threshold_amber != null ? String(kpi.threshold_amber) : "");
-  const [red, setRed] = useState(kpi.threshold_red != null ? String(kpi.threshold_red) : "");
+  useEffect(() => {
+    if (kpi) {
+      setCategory(kpi.category);
+      setDirection(kpi.comparison_direction);
+      setAmber(kpi.threshold_amber != null ? String(kpi.threshold_amber) : "");
+      setRed(kpi.threshold_red != null ? String(kpi.threshold_red) : "");
+    }
+  }, [kpi]);
 
   return (
-    <tr className="border-t border-border">
-      <td className="py-2 px-3">
-        <Input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          onBlur={() => {
-            if (name !== kpi.name) onUpdate({ name });
-          }}
-          className="h-8 text-sm"
-        />
-      </td>
-      <td className="py-2 px-3">
-        <Select
-          value={kpi.unit ?? ""}
-          onValueChange={(v) => onUpdate({ unit: v })}
-        >
-          <SelectTrigger className="h-8 text-sm">
-            <SelectValue placeholder="—" />
-          </SelectTrigger>
-          <SelectContent>
-            {UNIT_OPTIONS.map((u) => (
-              <SelectItem key={u} value={u}>
-                {u}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </td>
-      <td className="py-2 px-3">
-        <Select
-          value={kpi.category}
-          onValueChange={(v) => onUpdate({ category: v as KpiCategoryDb })}
-        >
-          <SelectTrigger className="h-8 text-sm">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {(Object.keys(CATEGORY_LABELS) as KpiCategoryDb[]).map((c) => (
-              <SelectItem key={c} value={c}>
-                {CATEGORY_LABELS[c]}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </td>
-      <td className="py-2 px-3">
-        <Input
-          type="number"
-          value={amber}
-          onChange={(e) => setAmber(e.target.value)}
-          onBlur={() => {
-            const v = amber === "" ? null : Number(amber);
-            if (v !== kpi.threshold_amber) onUpdate({ threshold_amber: v });
-          }}
-          placeholder="—"
-          className="h-8 text-sm"
-        />
-      </td>
-      <td className="py-2 px-3">
-        <Input
-          type="number"
-          value={red}
-          onChange={(e) => setRed(e.target.value)}
-          onBlur={() => {
-            const v = red === "" ? null : Number(red);
-            if (v !== kpi.threshold_red) onUpdate({ threshold_red: v });
-          }}
-          placeholder="—"
-          className="h-8 text-sm"
-        />
-      </td>
-      <td className="py-2 px-3">
-        <button
-          onClick={() =>
-            onUpdate({
-              comparison_direction:
-                kpi.comparison_direction === "higher_is_better"
-                  ? "lower_is_better"
-                  : "higher_is_better",
-            })
-          }
-          className="text-xs font-medium px-2 py-1 rounded-md bg-muted hover:bg-muted/70 inline-flex items-center gap-1"
-          title="Cliquer pour basculer"
-        >
-          {kpi.comparison_direction === "higher_is_better" ? (
-            <>
-              <ArrowUpNarrowWide className="h-3.5 w-3.5" /> Plus = mieux
-            </>
-          ) : (
-            <>
-              <ArrowDownNarrowWide className="h-3.5 w-3.5" /> Moins = mieux
-            </>
-          )}
-        </button>
-      </td>
-      <td className="py-2 px-3">
-        <Switch
-          checked={kpi.is_active}
-          onCheckedChange={(v) => onUpdate({ is_active: v })}
-        />
-      </td>
-      <td className="py-2 px-3">
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onMoveUp} disabled={isFirst}>
-            <ArrowUp className="h-3.5 w-3.5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onMoveDown} disabled={isLast}>
-            <ArrowDown className="h-3.5 w-3.5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={onDelete}>
-            <Trash2 className="h-3.5 w-3.5" />
-          </Button>
+    <Dialog open={!!kpi} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Paramètres — {kpi?.name}</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4">
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Catégorie</label>
+            <Select value={category} onValueChange={(v) => setCategory(v as KpiCategoryDb)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {(Object.keys(CATEGORY_LABELS) as KpiCategoryDb[]).map((c) => (
+                  <SelectItem key={c} value={c}>{CATEGORY_LABELS[c]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground block mb-1">Direction</label>
+            <button
+              onClick={() =>
+                setDirection(direction === "higher_is_better" ? "lower_is_better" : "higher_is_better")
+              }
+              className="text-xs font-medium px-3 py-1.5 rounded-md bg-muted hover:bg-muted/70 inline-flex items-center gap-1.5"
+            >
+              {direction === "higher_is_better" ? (
+                <><ArrowUpNarrowWide className="h-3.5 w-3.5" /> Plus = mieux</>
+              ) : (
+                <><ArrowDownNarrowWide className="h-3.5 w-3.5" /> Moins = mieux</>
+              )}
+            </button>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Seuil vert</label>
+              <Input type="number" value={amber} onChange={(e) => setAmber(e.target.value)} placeholder="—" />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-muted-foreground">Seuil rouge</label>
+              <Input type="number" value={red} onChange={(e) => setRed(e.target.value)} placeholder="—" />
+            </div>
+          </div>
         </div>
-      </td>
-    </tr>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Annuler</Button>
+          <Button
+            className="bg-teal-600 hover:bg-teal-700 text-white"
+            onClick={() =>
+              onSave({
+                category,
+                comparison_direction: direction,
+                threshold_amber: amber === "" ? null : Number(amber),
+                threshold_red: red === "" ? null : Number(red),
+              })
+            }
+          >
+            Enregistrer
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -637,8 +610,7 @@ interface AddKpiPayload {
   name: string;
   unit: string | null;
   category: KpiCategoryDb;
-  threshold_amber: number | null;
-  threshold_red: number | null;
+  kpi_group: KpiGroup;
   comparison_direction: ComparisonDirection;
 }
 
@@ -654,16 +626,14 @@ function AddKpiDialog({
   const [name, setName] = useState("");
   const [unit, setUnit] = useState<string>("");
   const [category, setCategory] = useState<KpiCategoryDb>("operational");
-  const [amber, setAmber] = useState("");
-  const [red, setRed] = useState("");
+  const [group, setGroup] = useState<KpiGroup>("spa");
   const [direction, setDirection] = useState<ComparisonDirection>("higher_is_better");
 
   const reset = () => {
     setName("");
     setUnit("");
     setCategory("operational");
-    setAmber("");
-    setRed("");
+    setGroup("spa");
     setDirection("higher_is_better");
   };
 
@@ -697,26 +667,26 @@ function AddKpiDialog({
               </Select>
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Catégorie</label>
-              <Select value={category} onValueChange={(v) => setCategory(v as KpiCategoryDb)}>
+              <label className="text-xs font-medium text-muted-foreground">Groupe</label>
+              <Select value={group} onValueChange={(v) => setGroup(v as KpiGroup)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {(Object.keys(CATEGORY_LABELS) as KpiCategoryDb[]).map((c) => (
-                    <SelectItem key={c} value={c}>{CATEGORY_LABELS[c]}</SelectItem>
-                  ))}
+                  <SelectItem value="spa">KPI Spa</SelectItem>
+                  <SelectItem value="manager">KPI Manager</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs font-medium text-muted-foreground">Objectif</label>
-              <Input type="number" value={amber} onChange={(e) => setAmber(e.target.value)} />
-            </div>
-            <div>
-              <label className="text-xs font-medium text-muted-foreground">Seuil rouge</label>
-              <Input type="number" value={red} onChange={(e) => setRed(e.target.value)} placeholder="—" />
-            </div>
+          <div>
+            <label className="text-xs font-medium text-muted-foreground">Catégorie</label>
+            <Select value={category} onValueChange={(v) => setCategory(v as KpiCategoryDb)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {(Object.keys(CATEGORY_LABELS) as KpiCategoryDb[]).map((c) => (
+                  <SelectItem key={c} value={c}>{CATEGORY_LABELS[c]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           <div>
             <label className="text-xs font-medium text-muted-foreground block mb-1">Direction</label>
@@ -744,8 +714,7 @@ function AddKpiDialog({
                 name: name.trim(),
                 unit: unit || null,
                 category,
-                threshold_amber: amber === "" ? null : Number(amber),
-                threshold_red: red === "" ? null : Number(red),
+                kpi_group: group,
                 comparison_direction: direction,
               })
             }
