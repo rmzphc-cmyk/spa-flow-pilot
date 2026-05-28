@@ -48,6 +48,7 @@ export interface AddKpiInput {
   name: string;
   unit: string | null;
   category: KpiCategoryDb;
+  kpi_group?: "spa" | "manager";
   threshold_amber: number | null;
   threshold_red: number | null;
   comparison_direction: ComparisonDirection;
@@ -66,13 +67,14 @@ export function useAddKpiDefinition() {
           name: input.name,
           unit: input.unit,
           category: input.category,
+          kpi_group: input.kpi_group ?? "spa",
           threshold_amber: input.threshold_amber,
           threshold_red: input.threshold_red,
           comparison_direction: input.comparison_direction,
           display_order: input.display_order,
           created_by: input.created_by,
           is_active: true,
-        })
+        } as any)
         .select()
         .single();
       if (error) throw error;
@@ -88,6 +90,7 @@ export interface UpdateKpiInput {
   name?: string;
   unit?: string | null;
   category?: KpiCategoryDb;
+  kpi_group?: "spa" | "manager";
   threshold_amber?: number | null;
   threshold_red?: number | null;
   comparison_direction?: ComparisonDirection;
