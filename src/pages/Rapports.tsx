@@ -108,6 +108,31 @@ function ReportCard({ report, mode }: { report: ReportRecord; mode: "prep" | "co
   );
 }
 
+function toISO(d: Date): string {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().slice(0, 10);
+}
+
+function computePeriod(type: ReportType, ref: Date = new Date()): { start: string; end: string } {
+  if (type === "monthly") {
+    const start = new Date(ref.getFullYear(), ref.getMonth(), 1);
+    const end = new Date(ref.getFullYear(), ref.getMonth() + 1, 0);
+    return { start: toISO(start), end: toISO(end) };
+  }
+  // Weekly — lundi → dimanche de la semaine contenant ref
+  const day = (ref.getDay() + 6) % 7; // 0 = lundi
+  const start = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate() - day);
+  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
+  return { start: toISO(start), end: toISO(end) };
+}
+
+function computeEndFromStart(type: ReportType, startISO: string): string {
+  const d = new Date(startISO + "T12:00:00");
+  if (type === "monthly") {
+    return toISO(new Date(d.getFullYear(), d.getMonth() + 1, 0));
+  }
+  return toISO(new Date(d.getFullYear(), d.getMonth(), d.getDate() + 6));
+}
+
 function defaultLabel(type: ReportType, start: string): string {
   const d = new Date(start + "T12:00:00");
   if (type === "monthly") {
@@ -124,6 +149,7 @@ function defaultLabel(type: ReportType, start: string): string {
   const weekNum = 1 + Math.round((diff - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7);
   return `Semaine ${weekNum} — ${d.getFullYear()}`;
 }
+
 
 export default function Rapports() {
   const navigate = useNavigate();
