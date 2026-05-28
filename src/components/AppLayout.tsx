@@ -3,7 +3,7 @@ import { AppSidebar } from "./AppSidebar";
 import { AppHeader } from "./AppHeader";
 import { useState } from "react";
 import type { SectionId, SectionStatus, ReportType } from "@/pages/RapportDetail";
-import { getReport, isMeetingState } from "@/lib/reportsStore";
+import { useReport } from "@/hooks/useReports";
 
 export function AppLayout() {
   const location = useLocation();
