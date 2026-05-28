@@ -121,6 +121,7 @@ function PreparationMode({ report }: { report: ReportRecord }) {
   const isValidated = report.state === "validated";
 
   const renderActionButton = () => {
+    if (isValidated) return null;
     if (report.type === "monthly" && report.state === "draft_preparation") {
       return (
         <Button
