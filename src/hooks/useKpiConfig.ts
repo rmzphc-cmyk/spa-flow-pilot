@@ -100,10 +100,10 @@ export interface UpdateKpiInput {
 
 export function useUpdateKpiDefinition() {
   const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: UpdateKpiInput) => {
       const { id, spaId, ...fields } = input;
       const { error } = await supabase.from("kpi_definitions").update(fields as any).eq("id", id);
-      if (error) throw error;
-      const { error } = await supabase.from("kpi_definitions").update(fields).eq("id", id);
       if (error) throw error;
     },
     onSuccess: (_d, vars) => invalidate(qc, vars.spaId),
