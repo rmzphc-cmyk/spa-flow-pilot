@@ -138,7 +138,7 @@ export default function KpiConfig() {
     <>
       <tr className="bg-muted/40 border-t border-border">
         <td
-          colSpan={11}
+          colSpan={9}
           className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-muted-foreground"
         >
           {label}
@@ -146,7 +146,7 @@ export default function KpiConfig() {
       </tr>
       {list.length === 0 ? (
         <tr>
-          <td colSpan={11} className="px-3 py-2.5 text-xs text-muted-foreground italic">
+          <td colSpan={9} className="px-3 py-2.5 text-xs text-muted-foreground italic">
             Aucun KPI dans ce groupe.
           </td>
         </tr>
@@ -181,16 +181,18 @@ export default function KpiConfig() {
     </>
   );
 
+
   return (
     <div className="max-w-[1400px] mx-auto px-6 py-6 pb-20">
       <header className="flex items-center justify-between gap-4 mb-5">
+
         <div>
           <h1 className="text-xl font-bold text-foreground">Configuration des KPI</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             Définir et planifier les KPI de votre spa
           </p>
         </div>
-        <div className="flex items-center gap-2 border border-border rounded-lg px-3 py-1.5 bg-background">
+        <div className="flex items-center gap-1 border border-border rounded-lg px-3 py-1.5 bg-background shadow-sm">
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handlePrevMonth}>
             <ChevronLeft className="h-3.5 w-3.5" />
           </Button>
@@ -238,19 +240,15 @@ export default function KpiConfig() {
           <table className="w-full table-fixed text-sm">
             <thead>
               <tr>
-                <th colSpan={4} className="bg-muted/60" />
+                <th colSpan={4} className="bg-muted/60 p-0" />
                 <th className="p-0 bg-border" />
                 <th
                   colSpan={3}
-                  className="text-center text-[10px] font-semibold text-teal-700 bg-teal-50/60 px-2 py-1.5 uppercase tracking-wide border-b border-teal-200"
+                  className="text-center text-[10px] font-semibold text-teal-700 bg-teal-50/60 px-2 py-1.5 uppercase tracking-wide border-b border-teal-100"
                 >
                   Planification mensuelle
                 </th>
-                <th className="p-0 bg-border" />
-                <th className="text-center text-[10px] font-semibold text-blue-700 bg-blue-50/60 px-2 py-1.5 uppercase tracking-wide border-b border-blue-200">
-                  Résultat
-                </th>
-                <th className="bg-muted/60" />
+                <th className="bg-muted/60 p-0" />
               </tr>
               <tr>
                 <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "28%" }}>Nom</th>
@@ -261,11 +259,11 @@ export default function KpiConfig() {
                 <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "108px" }}>Mensuel</th>
                 <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "76px" }}>Mode</th>
                 <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "108px" }}>Hebdo</th>
-                <th className="p-0 bg-border" style={{ width: "1px" }} />
-                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "120px" }}>Réel</th>
-                <th className="text-center px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "104px" }} />
+                <th className="text-center px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "108px" }} />
               </tr>
             </thead>
+
+
             <tbody>
               {renderSectionRows("KPI Spa", spaKpis)}
               {renderSectionRows("KPI Manager", managerKpis)}
@@ -557,23 +555,6 @@ function UnifiedKpiRow({
         </div>
       </td>
 
-      <td className="p-0 bg-border" />
-
-      <td className="px-2 py-2">
-        <div className="flex items-center gap-1.5">
-          <Input
-            type="number"
-            className="h-8 text-sm w-full"
-            value={actualLocal}
-            placeholder="—"
-            onChange={(e) => setActualLocal(e.target.value)}
-            onBlur={handleActualBlur}
-          />
-          {dotColor && (
-            <span className={`text-base leading-none flex-shrink-0 ${dotColor}`}>●</span>
-          )}
-        </div>
-      </td>
 
       <td className="px-2 py-2">
         <div className="flex items-center justify-end gap-0.5">
