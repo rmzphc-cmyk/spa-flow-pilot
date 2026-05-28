@@ -265,7 +265,15 @@ export default function Rapports() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-sm mb-1.5 block">Début</Label>
-                <Input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} />
+                <Input
+                  type="date"
+                  value={periodStart}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setPeriodStart(v);
+                    if (v) setPeriodEnd(computeEndFromStart(newType, v));
+                  }}
+                />
               </div>
               <div>
                 <Label className="text-sm mb-1.5 block">Fin</Label>
