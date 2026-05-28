@@ -1,10 +1,4 @@
-import { createClient } from "jsr:@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { authenticate, corsHeaders, internalError, json } from "../_shared/auth.ts";
 
 interface Input {
   spa_id: string;
@@ -18,33 +12,23 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return json({ error: "Unauthorized" }, 401);
-    }
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-
-    const authClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claims, error: claimsErr } = await authClient.auth.getClaims(token);
-    if (claimsErr || !claims?.claims?.sub) {
-      return json({ error: "Unauthorized" }, 401);
-    }
-    const userId = claims.claims.sub as string;
+    const auth = await authenticate(req);
+    if (!auth.ok) return auth.response;
+    const { caller, admin } = auth;
+    const userId = caller.userId;
 
     const body = (await req.json()) as Input;
     if (!body.spa_id || !body.cycle_type || !body.cycle_label || !body.period_start || !body.period_end) {
       return json({ error: "Missing required fields" }, 400);
     }
 
-    const admin = createClient(supabaseUrl, serviceKey);
+    // Authorize: admin OR spa_manager creating for their own spa
+    if (caller.role !== "admin") {
+      if (caller.role !== "spa_manager" || body.spa_id !== caller.spaId) {
+        return json({ error: "Forbidden" }, 403);
+      }
+    }
 
-    // 2. Check no active report
     const { data: existing, error: existingErr } = await admin
       .from("reports")
       .select("id")
@@ -57,7 +41,6 @@ Deno.serve(async (req) => {
       return json({ error: "Un rapport actif existe déjà pour ce cycle." }, 409);
     }
 
-    // 3. Create report
     const { data: newReport, error: insertErr } = await admin
       .from("reports")
       .insert({
@@ -74,7 +57,6 @@ Deno.serve(async (req) => {
     if (insertErr) throw insertErr;
     const newReportId = newReport.id as string;
 
-    // 4. Previous validated report
     const { data: prevReport } = await admin
       .from("reports")
       .select("id")
@@ -86,7 +68,6 @@ Deno.serve(async (req) => {
       .maybeSingle();
     const prevReportId = prevReport?.id as string | undefined;
 
-    // 5. KPI entries pre-create
     const { data: kpiDefs } = await admin
       .from("kpi_definitions")
       .select("id")
@@ -113,7 +94,6 @@ Deno.serve(async (req) => {
       if (kpiErr && kpiErr.code !== "23505") throw kpiErr;
     }
 
-    // 6. Responsibility logs pre-create
     const { data: respTpls } = await admin
       .from("responsibility_templates")
       .select("id")
@@ -130,7 +110,6 @@ Deno.serve(async (req) => {
       if (respErr && respErr.code !== "23505") throw respErr;
     }
 
-    // 7. Carry over open todos
     if (prevReportId) {
       await admin
         .from("todos")
@@ -139,7 +118,6 @@ Deno.serve(async (req) => {
         .in("status", ["pending", "in_progress"]);
     }
 
-    // 8. Final fetch
     const { data: finalReport, error: finalErr } = await admin
       .from("reports")
       .select("*")
@@ -149,14 +127,6 @@ Deno.serve(async (req) => {
 
     return json({ data: finalReport }, 200);
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return json({ error: msg }, 500);
+    return internalError(e);
   }
 });
-
-function json(body: unknown, status: number) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}

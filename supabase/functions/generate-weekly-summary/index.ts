@@ -1,49 +1,25 @@
-import { createClient } from "jsr:@supabase/supabase-js@2";
-
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
-
-function json(body: unknown, status: number) {
-  return new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
-}
+import { authenticate, authorizeReportAccess, corsHeaders, internalError, json } from "../_shared/auth.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) return json({ error: "Unauthorized" }, 401);
+    const auth = await authenticate(req);
+    if (!auth.ok) return auth.response;
+    const { caller, admin } = auth;
 
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
-    if (!openaiKey) return json({ error: "OPENAI_API_KEY missing" }, 500);
-
-    const authClient = createClient(supabaseUrl, anonKey, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claims, error: claimsErr } = await authClient.auth.getClaims(token);
-    if (claimsErr || !claims?.claims?.sub) return json({ error: "Unauthorized" }, 401);
+    if (!openaiKey) {
+      console.error("OPENAI_API_KEY missing");
+      return json({ error: "AI generation unavailable" }, 500);
+    }
 
     const { report_id } = (await req.json()) as { report_id?: string };
     if (!report_id) return json({ error: "Missing report_id" }, 400);
 
-    const admin = createClient(supabaseUrl, serviceKey);
-
-    const { data: report } = await admin
-      .from("reports")
-      .select("*")
-      .eq("id", report_id)
-      .maybeSingle();
-    if (!report) return json({ error: "Rapport introuvable." }, 404);
+    const access = await authorizeReportAccess(admin, caller, report_id);
+    if (!access.ok) return access.response;
+    const report = access.report;
 
     const [{ data: kpis }, { data: ids }] = await Promise.all([
       admin
@@ -87,7 +63,8 @@ Génère un JSON: { executive_summary (150 mots max), key_actions (array de 3 st
 
     if (!openaiResp.ok) {
       const t = await openaiResp.text();
-      return json({ error: `OpenAI error: ${t}` }, 500);
+      console.error("OpenAI error:", t);
+      return json({ error: "AI generation failed" }, 500);
     }
 
     const completion = await openaiResp.json();
@@ -115,7 +92,6 @@ Génère un JSON: { executive_summary (150 mots max), key_actions (array de 3 st
 
     return json({ data: summary }, 200);
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return json({ error: msg }, 500);
+    return internalError(e);
   }
 });
