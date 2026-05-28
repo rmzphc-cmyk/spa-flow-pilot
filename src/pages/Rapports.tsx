@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FileText, ArrowRight, Eye, Plus, Calendar, Edit3, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -109,19 +109,20 @@ function ReportCard({ report, mode }: { report: ReportRecord; mode: "prep" | "co
 }
 
 function defaultLabel(type: ReportType, start: string): string {
-  const d = new Date(start);
+  const d = new Date(start + "T12:00:00");
   if (type === "monthly") {
-    const month = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(d);
-    return `Rapport mensuel ${month.charAt(0).toUpperCase() + month.slice(1)}`;
+    const month = new Intl.DateTimeFormat("fr-FR", { month: "long" }).format(d);
+    const year = d.getFullYear();
+    return `${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`;
   }
-  // ISO week number
+  // Weekly — numéro de semaine ISO
   const target = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
   const dayNum = (target.getUTCDay() + 6) % 7;
   target.setUTCDate(target.getUTCDate() - dayNum + 3);
   const firstThursday = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
   const diff = (target.getTime() - firstThursday.getTime()) / 86400000;
   const weekNum = 1 + Math.round((diff - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7);
-  return `Rapport hebdomadaire S${weekNum}`;
+  return `Semaine ${weekNum} — ${d.getFullYear()}`;
 }
 
 export default function Rapports() {
