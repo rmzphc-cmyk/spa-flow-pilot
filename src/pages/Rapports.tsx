@@ -246,17 +246,41 @@ export default function Rapports() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={showBlockedDialog} onOpenChange={setShowBlockedDialog}>
+      <AlertDialog open={!!blockedInfo} onOpenChange={(o) => !o && setBlockedInfo(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Un rapport est déjà en cours</AlertDialogTitle>
+            <AlertDialogTitle>
+              Un rapport {blockedInfo?.type === "weekly" ? "Weekly" : "Monthly"} est déjà en cours
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Vous avez déjà un rapport de ce type en cours de préparation.
-              Finalisez-le avant d'en créer un nouveau.
+              {blockedInfo?.label ? (
+                <>
+                  Le rapport <strong>« {blockedInfo.label} »</strong>
+                  {blockedInfo.stateLabel ? <> est actuellement <strong>{blockedInfo.stateLabel.toLowerCase()}</strong></> : " est en cours"}.
+                  <br />
+                  Vous devez le finaliser (ou le valider) avant d'en créer un nouveau de ce type.
+                </>
+              ) : (
+                <>Vous avez déjà un rapport de ce type en cours. Finalisez-le avant d'en créer un nouveau.</>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setShowBlockedDialog(false)}>
+            {blockedInfo?.id && (
+              <Button
+                variant="outline"
+                onClick={() => {
+                  const id = blockedInfo.id;
+                  setBlockedInfo(null);
+                  setDialogOpen(false);
+                  navigate(`/rapport/${id}`);
+                }}
+              >
+                <Eye className="h-4 w-4 mr-1.5" />
+                Voir le rapport
+              </Button>
+            )}
+            <AlertDialogAction onClick={() => setBlockedInfo(null)}>
               Compris
             </AlertDialogAction>
           </AlertDialogFooter>
