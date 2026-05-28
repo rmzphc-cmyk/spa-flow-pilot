@@ -261,7 +261,7 @@ export default function KpiConfig() {
               </tr>
             </thead>
 
-            </thead>
+
             <tbody>
               {renderSectionRows("KPI Spa", spaKpis)}
               {renderSectionRows("KPI Manager", managerKpis)}
