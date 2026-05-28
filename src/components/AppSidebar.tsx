@@ -104,6 +104,22 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
   });
   const spaName = userRole === "direction" ? "Vue Direction" : spaRow?.name ?? "Mon Spa";
 
+  const fullName = user?.user_metadata?.full_name as string | undefined;
+  const email = user?.email;
+  const initials = (() => {
+    if (fullName) {
+      const parts = fullName.trim().split(/\s+/);
+      if (parts.length >= 2 && parts[0][0] && parts[parts.length - 1][0]) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      }
+      return fullName.slice(0, 2).toUpperCase();
+    }
+    if (email) return email.slice(0, 2).toUpperCase();
+    return "—";
+  })();
+  const displayName = fullName ?? email ?? "—";
+  const displayRole = userRole === "manager" ? "Spa Manager" : userRole === "direction" ? "Direction" : userRole === "admin" ? "Admin" : "";
+
   const isWeekly = reportType === "weekly";
   const reportSections = isWeekly
     ? allReportSections.filter((s) => weeklySectionIds.includes(s.id))
