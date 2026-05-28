@@ -331,17 +331,19 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
             ))}
           </nav>
 
-          <div className="p-3 border-t border-border">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold shrink-0">
-                MD
-              </div>
-              <div className="lg:block hidden">
-                <p className="text-sm font-medium text-foreground leading-tight">Marie Dupont</p>
-                <p className="text-xs text-muted-foreground">Spa Manager</p>
+          {userRole !== null && (
+            <div className="p-3 border-t border-border">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold shrink-0">
+                  {initials}
+                </div>
+                <div className="lg:block hidden">
+                  <p className="text-sm font-medium text-foreground leading-tight">{displayName}</p>
+                  <p className="text-xs text-muted-foreground">{displayRole}</p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </>
       )}
     </div>
