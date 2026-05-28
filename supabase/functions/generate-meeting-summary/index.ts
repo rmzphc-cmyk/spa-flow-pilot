@@ -102,7 +102,8 @@ Génère un JSON avec exactement ces clés: executive_summary (200-250 mots), kp
 
     if (!openaiResp.ok) {
       const t = await openaiResp.text();
-      return json({ error: `OpenAI error: ${t}` }, 500);
+      console.error("OpenAI error:", t);
+      return json({ error: "AI generation failed" }, 500);
     }
 
     const completion = await openaiResp.json();
