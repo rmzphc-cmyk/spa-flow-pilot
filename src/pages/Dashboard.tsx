@@ -173,8 +173,9 @@ function NoCurrentReportCard() {
   );
 }
 
-function AiBriefCard() {
+function AiBriefCard({ items }: { items: AiBriefItem[] }) {
   const navigate = useNavigate();
+  if (items.length === 0) return null;
   return (
     <div className="rounded-xl border border-primary/20 p-5 mb-4" style={{ backgroundColor: "hsl(174, 95%, 95%)" }}>
       <div className="flex items-center justify-between mb-3">
@@ -185,7 +186,7 @@ function AiBriefCard() {
         </span>
       </div>
       <ul className="space-y-2 mb-4">
-        {aiBriefItems.map((item, i) => (
+        {items.map((item, i) => (
           <li key={i} className="text-sm text-foreground flex items-start gap-2">
             <span>{item.icon}</span>
             <span>{item.text}</span>
