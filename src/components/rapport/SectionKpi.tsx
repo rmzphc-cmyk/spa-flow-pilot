@@ -64,15 +64,14 @@ export function SectionKpi({ reportId, reportType, onStatusChange }: Props) {
   // Local debounced state per definition
   const [local, setLocal] = useState<Record<string, KpiCardValue>>({});
 
-  // Sync local from server when entries arrive (only for keys not yet locally edited)
-  const initializedRef = useRef<Set<string>>(new Set());
+  // Track only user-edited fields — server data can overwrite unedited fields on reload
+  const userEditedRef = useRef<Set<string>>(new Set());
   useEffect(() => {
     setLocal((prev) => {
       const next = { ...prev };
       for (const def of definitions) {
-        if (!initializedRef.current.has(def.id)) {
+        if (!userEditedRef.current.has(def.id)) {
           next[def.id] = entryToCardValue(entriesByDef.get(def.id));
-          initializedRef.current.add(def.id);
         }
       }
       return next;
