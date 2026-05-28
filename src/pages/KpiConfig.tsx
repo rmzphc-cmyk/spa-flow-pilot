@@ -183,7 +183,9 @@ export default function KpiConfig() {
 
 
   return (
+    <div className="max-w-[1400px] mx-auto px-6 py-6 pb-20">
       <header className="flex items-center justify-between gap-4 mb-5">
+
         <div>
           <h1 className="text-xl font-bold text-foreground">Configuration des KPI</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
