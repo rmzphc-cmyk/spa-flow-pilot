@@ -375,7 +375,10 @@ function UpcomingMeetingsCard({ reports }: { reports: ReportRecord[] }) {
 
 // --- Main Dashboard ---
 
+const FR_LONG_DATE = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+
 export default function Dashboard() {
+  const { spaId } = useAuth();
   const { data: rows = [] } = useReports();
   const reports = useMemo(() => rows.map(mapReportRowToRecord), [rows]);
 
@@ -383,6 +386,66 @@ export default function Dashboard() {
     .filter((r) => r.state !== "validated" && isPreparationState(r.state))
     .sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""))[0];
 
+  // Last validated report (raw row, for validated_at + KPI lookup)
+  const validatedRows = useMemo(
+    () =>
+      [...rows]
+        .filter((r) => r.status === "validated")
+        .sort((a, b) => (b.validated_at ?? "").localeCompare(a.validated_at ?? "")),
+    [rows]
+  );
+  const lastValidatedReportId = validatedRows[0]?.id;
+
+  const { data: todos = [] } = useTodos("dashboard-overdue", spaId);
+  const { data: kpiEntries = [] } = useKpiEntries(lastValidatedReportId);
+  const { data: objectives = [] } = useObjectives(spaId);
+
+  // 1. Overdue todos
+  const overdueTodos = useMemo<OverdueTodo[]>(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return todos
+      .filter((t) => t.status !== "done" && t.due_date && new Date(t.due_date) < today)
+      .map((t) => {
+        const due = new Date(t.due_date as string);
+        const days = Math.floor((today.getTime() - due.getTime()) / 86400000);
+        return { id: t.id, title: t.title, daysOverdue: days };
+      })
+      .sort((a, b) => b.daysOverdue - a.daysOverdue);
+  }, [todos]);
+
+  // 2. AI brief items
+  const aiBriefItems = useMemo<AiBriefItem[]>(() => {
+    const overdueCount = overdueTodos.length;
+    const redKpiCount = kpiEntries.filter((e) => e.status === "red").length;
+    const atRiskObjectives = objectives.filter((o) => {
+      const parsed = parseObjectiveDescription(o.description);
+      return parsed.status_ui === "at_risk" || parsed.status_ui === "behind";
+    }).length;
+
+    const items: AiBriefItem[] = [];
+    if (overdueCount > 0) {
+      items.push({ icon: "📋", text: `${overdueCount} to-do en retard` });
+    }
+    if (redKpiCount > 0) {
+      items.push({ icon: "📉", text: `${redKpiCount} KPI en alerte sur le dernier rapport validé` });
+    }
+    if (atRiskObjectives > 0) {
+      items.push({ icon: "🎯", text: `${atRiskObjectives} objectif${atRiskObjectives > 1 ? "s" : ""} à risque` });
+    }
+    return items;
+  }, [overdueTodos.length, kpiEntries, objectives]);
+
+  // 3. Recent activity
+  const recentActivity = useMemo<RecentActivityItem[]>(
+    () =>
+      validatedRows.slice(0, 3).map((r) => ({
+        id: r.id,
+        label: r.cycle_label,
+        date: r.validated_at ? FR_LONG_DATE.format(new Date(r.validated_at)) : "",
+      })),
+    [validatedRows]
+  );
 
   return (
     <>
@@ -390,9 +453,9 @@ export default function Dashboard() {
       <UpcomingMeetingsCard reports={reports} />
       <OverdueAlert todos={overdueTodos} />
       {currentReport ? <CurrentReportCard report={currentReport} /> : <NoCurrentReportCard />}
-      <AiBriefCard />
+      <AiBriefCard items={aiBriefItems} />
       <QuickMetrics />
-      <RecentActivity />
+      <RecentActivity items={recentActivity} />
     </>
   );
 }
