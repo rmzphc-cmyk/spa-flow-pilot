@@ -238,6 +238,28 @@ export default function Rapports() {
         </DialogContent>
       </Dialog>
 
+      <AlertDialog open={!!blockedBy} onOpenChange={(open) => { if (!open) setBlockedBy(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Un rapport est déjà en cours</AlertDialogTitle>
+            <AlertDialogDescription>
+              {blockedBy
+                ? `Le rapport "${blockedBy.label}" est en cours (${blockedBy.state === "draft_preparation" ? "en préparation" : "en réunion"}). Vous devez le finaliser avant d'en créer un nouveau.`
+                : "Un rapport de ce type est déjà actif. Veuillez le finaliser avant d'en créer un nouveau."
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Fermer</AlertDialogCancel>
+            {blockedBy && (
+              <AlertDialogAction onClick={() => { navigate(`/rapport/${blockedBy.id}`); setBlockedBy(null); }}>
+                Voir le rapport
+              </AlertDialogAction>
+            )}
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       {isLoading ? (
         <div className="flex items-center justify-center py-20 text-muted-foreground">
           <Loader2 className="h-5 w-5 animate-spin mr-2" /> Chargement…
