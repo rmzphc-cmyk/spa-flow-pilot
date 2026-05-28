@@ -109,12 +109,24 @@ export function SectionKpi({ reportId, reportType, onStatusChange }: Props) {
           status = "not_applicable";
         } else {
           value_current = n;
-          status = computeKpiStatus(
-            n,
-            def.threshold_amber,
-            def.threshold_red,
-            def.comparison_direction,
-          );
+          if (isWeekly) {
+            const n1Val = entriesByDef.get(def.id)?.value_n1 ?? 0;
+            if (n1Val === 0) {
+              status = "green";
+            } else {
+              const ratio = n / n1Val;
+              if (ratio >= 1) status = "green";
+              else if (ratio >= 0.85) status = "amber";
+              else status = "red";
+            }
+          } else {
+            status = computeKpiStatus(
+              n,
+              def.threshold_amber,
+              def.threshold_red,
+              def.comparison_direction,
+            );
+          }
         }
         comment = cv.comment || null;
       }
@@ -131,7 +143,7 @@ export function SectionKpi({ reportId, reportType, onStatusChange }: Props) {
         status,
       });
     },
-    [reportId, upsert, entriesByDef],
+    [reportId, upsert, entriesByDef, isWeekly],
   );
 
   const handleChange = useCallback(
