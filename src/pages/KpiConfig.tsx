@@ -225,8 +225,6 @@ export default function KpiConfig() {
         </div>
       </header>
 
-      </header>
-
       {!spaId ? (
         <div className="border border-border rounded-xl p-12 text-center text-muted-foreground">
           Sélectionner un spa
@@ -240,19 +238,15 @@ export default function KpiConfig() {
           <table className="w-full table-fixed text-sm">
             <thead>
               <tr>
-                <th colSpan={4} className="bg-muted/60" />
+                <th colSpan={4} className="bg-muted/60 p-0" />
                 <th className="p-0 bg-border" />
                 <th
                   colSpan={3}
-                  className="text-center text-[10px] font-semibold text-teal-700 bg-teal-50/60 px-2 py-1.5 uppercase tracking-wide border-b border-teal-200"
+                  className="text-center text-[10px] font-semibold text-teal-700 bg-teal-50/60 px-2 py-1.5 uppercase tracking-wide border-b border-teal-100"
                 >
                   Planification mensuelle
                 </th>
-                <th className="p-0 bg-border" />
-                <th className="text-center text-[10px] font-semibold text-blue-700 bg-blue-50/60 px-2 py-1.5 uppercase tracking-wide border-b border-blue-200">
-                  Résultat
-                </th>
-                <th className="bg-muted/60" />
+                <th className="bg-muted/60 p-0" />
               </tr>
               <tr>
                 <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "28%" }}>Nom</th>
@@ -263,10 +257,10 @@ export default function KpiConfig() {
                 <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "108px" }}>Mensuel</th>
                 <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "76px" }}>Mode</th>
                 <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "108px" }}>Hebdo</th>
-                <th className="p-0 bg-border" style={{ width: "1px" }} />
-                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "120px" }}>Réel</th>
-                <th className="text-center px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "104px" }} />
+                <th className="text-center px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "108px" }} />
               </tr>
+            </thead>
+
             </thead>
             <tbody>
               {renderSectionRows("KPI Spa", spaKpis)}
