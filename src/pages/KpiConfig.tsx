@@ -136,17 +136,17 @@ export default function KpiConfig() {
 
   const renderSectionRows = (label: string, list: KpiDefinitionFull[]) => (
     <>
-      <tr className="bg-muted/30 border-t border-border">
+      <tr className="bg-muted/40 border-t border-border">
         <td
-          colSpan={9}
-          className="py-2 px-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground"
+          colSpan={11}
+          className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-muted-foreground"
         >
           {label}
         </td>
       </tr>
       {list.length === 0 ? (
         <tr>
-          <td colSpan={9} className="py-3 px-3 text-sm text-muted-foreground italic">
+          <td colSpan={11} className="px-3 py-2.5 text-xs text-muted-foreground italic">
             Aucun KPI dans ce groupe.
           </td>
         </tr>
@@ -183,12 +183,21 @@ export default function KpiConfig() {
 
   return (
     <div className="max-w-[1400px] mx-auto px-6 py-6 pb-20">
-      <header className="flex justify-between items-start gap-4 mb-4">
+      <header className="flex items-center justify-between gap-4 mb-5">
         <div>
           <h1 className="text-xl font-bold text-foreground">Configuration des KPI</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             Définir et planifier les KPI de votre spa
           </p>
+        </div>
+        <div className="flex items-center gap-2 border border-border rounded-lg px-3 py-1.5 bg-background">
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handlePrevMonth}>
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </Button>
+          <span className="text-sm font-semibold min-w-[120px] text-center">{monthLabelCap}</span>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleNextMonth}>
+            <ChevronRight className="h-3.5 w-3.5" />
+          </Button>
         </div>
         <div className="flex items-center gap-2">
           {userRole === "admin" && (
@@ -216,20 +225,6 @@ export default function KpiConfig() {
         </div>
       </header>
 
-      <div className="bg-muted/40 border border-border rounded-lg py-2.5 px-5 flex items-center justify-between mb-4">
-        <span className="text-xs text-muted-foreground">Objectifs du mois</span>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" onClick={handlePrevMonth}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-sm font-semibold min-w-[160px] text-center">{monthLabelCap}</span>
-          <Button variant="ghost" size="icon" onClick={handleNextMonth}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </div>
-        <span className="text-xs text-muted-foreground italic">Sauvegarde automatique</span>
-      </div>
-
       {!spaId ? (
         <div className="border border-border rounded-xl p-12 text-center text-muted-foreground">
           Sélectionner un spa
@@ -240,18 +235,35 @@ export default function KpiConfig() {
         </div>
       ) : (
         <div className="border border-border rounded-xl overflow-hidden shadow-sm">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/60">
+          <table className="w-full table-fixed text-sm">
+            <thead>
               <tr>
-                <th className="text-left py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "35%" }}>Nom</th>
-                <th className="text-left py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "72px" }}>Unité</th>
-                <th className="text-left py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "96px" }}>Groupe</th>
-                <th className="text-center py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "52px" }}>Actif</th>
+                <th colSpan={4} className="bg-muted/60" />
+                <th className="p-0 bg-border" />
+                <th
+                  colSpan={3}
+                  className="text-center text-[10px] font-semibold text-teal-700 bg-teal-50/60 px-2 py-1.5 uppercase tracking-wide border-b border-teal-200"
+                >
+                  Planification mensuelle
+                </th>
+                <th className="p-0 bg-border" />
+                <th className="text-center text-[10px] font-semibold text-blue-700 bg-blue-50/60 px-2 py-1.5 uppercase tracking-wide border-b border-blue-200">
+                  Résultat
+                </th>
+                <th className="bg-muted/60" />
+              </tr>
+              <tr>
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "28%" }}>Nom</th>
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "60px" }}>Unité</th>
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "88px" }}>Groupe</th>
+                <th className="text-center px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "48px" }}>Actif</th>
                 <th className="p-0 bg-border" style={{ width: "1px" }} />
-                <th className="text-left py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "110px" }}>Mensuel</th>
-                <th className="text-left py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "88px" }}>Mode</th>
-                <th className="text-left py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "120px" }}>Hebdo</th>
-                <th className="text-right py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "116px" }}>Actions</th>
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "108px" }}>Mensuel</th>
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "76px" }}>Mode</th>
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "108px" }}>Hebdo</th>
+                <th className="p-0 bg-border" style={{ width: "1px" }} />
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "120px" }}>Réel</th>
+                <th className="text-center px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "104px" }} />
               </tr>
             </thead>
             <tbody>
@@ -261,6 +273,7 @@ export default function KpiConfig() {
           </table>
         </div>
       )}
+
 
       <AddKpiDialog
         open={addOpen}
