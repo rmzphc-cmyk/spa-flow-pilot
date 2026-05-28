@@ -169,10 +169,7 @@ export default function Rapports() {
     } catch (e) {
       const message = e instanceof Error ? e.message : "";
       if (message === "Un rapport actif existe déjà pour ce cycle.") {
-        const activeReport = reports.find(
-          (r) => r.type === newType && r.state !== "validated"
-        ) ?? null;
-        setBlockedBy(activeReport);
+        setShowBlockedDialog(true);
       } else {
         toast({
           title: "Erreur lors de la création",
