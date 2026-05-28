@@ -226,22 +226,22 @@ function PreparationMode({ report }: { report: ReportRecord }) {
 
 
       {activeSection === "kpi" && (
-        <SectionKpi reportId={report.id} reportType={report.type} period={report.period} onStatusChange={(s) => updateSectionStatus("kpi", s)} />
+        <SectionKpi reportId={report.id} reportType={report.type} period={report.period} onStatusChange={onKpiStatusChange} />
       )}
       {activeSection === "checkin" && !isWeekly && (
-        <SectionCheckin reportId={report.id} onStatusChange={(s) => updateSectionStatus("checkin", s)} />
+        <SectionCheckin reportId={report.id} onStatusChange={onCheckinStatusChange} />
       )}
       {activeSection === "checkin" && isWeekly && (
-        <SectionCheckinWeekly reportId={report.id} onStatusChange={(s) => updateSectionStatus("checkin", s)} />
+        <SectionCheckinWeekly reportId={report.id} onStatusChange={onCheckinStatusChange} />
       )}
       {activeSection === "responsabilites" && !isWeekly && (
-        <SectionResponsabilites reportId={report.id} reportType={report.type} onStatusChange={(s) => updateSectionStatus("responsabilites", s)} />
+        <SectionResponsabilites reportId={report.id} reportType={report.type} onStatusChange={onResponsabilitesStatusChange} />
       )}
       {activeSection === "todo" && !isWeekly && <SectionTodo reportId={report.id} />}
       {activeSection === "objectifs" && !isWeekly && <SectionObjectifs reportId={report.id} reportType={report.type} />}
       {activeSection === "ids" && !isWeekly && <SectionIds reportId={report.id} reportType={report.type} />}
       {activeSection === "ids" && isWeekly && (
-        <SectionIdsWeekly reportId={report.id} onStatusChange={(s) => updateSectionStatus("ids", s)} />
+        <SectionIdsWeekly reportId={report.id} onStatusChange={onIdsStatusChange} />
       )}
       {activeSection === "cloture" && !isWeekly && <SectionCloture reportId={report.id} reportType={report.type} />}
 
