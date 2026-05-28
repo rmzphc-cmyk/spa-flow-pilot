@@ -555,23 +555,6 @@ function UnifiedKpiRow({
         </div>
       </td>
 
-      <td className="p-0 bg-border" />
-
-      <td className="px-2 py-2">
-        <div className="flex items-center gap-1.5">
-          <Input
-            type="number"
-            className="h-8 text-sm w-full"
-            value={actualLocal}
-            placeholder="—"
-            onChange={(e) => setActualLocal(e.target.value)}
-            onBlur={handleActualBlur}
-          />
-          {dotColor && (
-            <span className={`text-base leading-none flex-shrink-0 ${dotColor}`}>●</span>
-          )}
-        </div>
-      </td>
 
       <td className="px-2 py-2">
         <div className="flex items-center justify-end gap-0.5">
