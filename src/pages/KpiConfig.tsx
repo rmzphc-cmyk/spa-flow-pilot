@@ -404,142 +404,133 @@ function UnifiedKpiRow({
   const showPrevHint = !current && previous?.monthly_value != null;
 
   return (
-    <div
-      className={`flex flex-row items-start gap-3 py-2 border-b border-border last:border-0 ${
-        kpi.is_active ? "" : "opacity-50"
+    <tr
+      className={`border-b border-border last:border-0 transition-colors hover:bg-muted/20 ${
+        kpi.is_active ? "" : "opacity-40"
       }`}
     >
-      {/* Nom */}
-      <Input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        onBlur={() => {
-          if (name !== kpi.name) onUpdate({ name });
-        }}
-        className="flex-1 min-w-[180px] h-9 text-sm"
-      />
+      <td className="py-2 px-3">
+        <Input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onBlur={() => {
+            if (name !== kpi.name) onUpdate({ name });
+          }}
+          className="h-8 text-sm w-full"
+        />
+      </td>
 
-      {/* Unité */}
-      <Select value={kpi.unit ?? ""} onValueChange={(v) => onUpdate({ unit: v })}>
-        <SelectTrigger className="w-[72px] h-9 text-sm">
-          <SelectValue placeholder="—" />
-        </SelectTrigger>
-        <SelectContent>
-          {UNIT_OPTIONS.map((u) => (
-            <SelectItem key={u} value={u}>
-              {u}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <td className="py-2 px-3">
+        <Select value={kpi.unit ?? ""} onValueChange={(v) => onUpdate({ unit: v })}>
+          <SelectTrigger className="h-8 text-sm w-full">
+            <SelectValue placeholder="—" />
+          </SelectTrigger>
+          <SelectContent>
+            {UNIT_OPTIONS.map((u) => (
+              <SelectItem key={u} value={u}>
+                {u}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </td>
 
-      {/* Groupe */}
-      <Select
-        value={(kpi.kpi_group ?? "spa") as KpiGroup}
-        onValueChange={(v) => onUpdate({ kpi_group: v as KpiGroup })}
-      >
-        <SelectTrigger className="w-[100px] h-9 text-sm">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="spa">Spa</SelectItem>
-          <SelectItem value="manager">Manager</SelectItem>
-        </SelectContent>
-      </Select>
+      <td className="py-2 px-3">
+        <Select
+          value={(kpi.kpi_group ?? "spa") as KpiGroup}
+          onValueChange={(v) => onUpdate({ kpi_group: v as KpiGroup })}
+        >
+          <SelectTrigger className="h-8 text-sm w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="spa">Spa</SelectItem>
+            <SelectItem value="manager">Manager</SelectItem>
+          </SelectContent>
+        </Select>
+      </td>
 
-      {/* Actif */}
-      <div className="flex items-center h-9">
+      <td className="py-2 px-3 text-center">
         <Switch checked={kpi.is_active} onCheckedChange={(v) => onUpdate({ is_active: v })} />
-      </div>
+      </td>
 
-      <div className="w-px bg-border self-stretch mx-1" />
+      <td className="p-0 bg-border" />
 
-      {/* Obj mensuel */}
-      <div className="w-28">
-        <Input
-          type="number"
-          className="h-9 text-sm w-28"
-          value={monthlyLocal}
-          placeholder={showPrevHint ? String(previous!.monthly_value) : "—"}
-          onChange={(e) => setMonthlyLocal(e.target.value)}
-          onBlur={handleMonthlyBlur}
-        />
-        {showPrevHint && (
-          <div className="text-[10px] text-muted-foreground italic mt-0.5">
-            M-1 : {previous!.monthly_value}
-          </div>
-        )}
-      </div>
+      <td className="py-2 px-3">
+        <div>
+          <Input
+            type="number"
+            className={`h-8 text-sm w-full ${
+              !current && !showPrevHint ? "border-dashed border-border/60 bg-muted/20" : ""
+            }`}
+            value={monthlyLocal}
+            placeholder={showPrevHint ? String(previous!.monthly_value) : "—"}
+            onChange={(e) => setMonthlyLocal(e.target.value)}
+            onBlur={handleMonthlyBlur}
+          />
+          {showPrevHint && (
+            <p className="text-[10px] text-muted-foreground italic mt-0.5">
+              M-1 : {previous!.monthly_value}
+            </p>
+          )}
+        </div>
+      </td>
 
-      {/* Mode */}
-      <Select
-        value={current?.weekly_mode ?? "divide"}
-        onValueChange={(v) => handleModeChange(v as WeeklyMode)}
-        disabled={disabled}
-      >
-        <SelectTrigger className="w-24 h-9 text-sm">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="divide">÷ 4</SelectItem>
-          <SelectItem value="fixed">Fixe</SelectItem>
-        </SelectContent>
-      </Select>
-
-      {/* Obj hebdo */}
-      <div className="w-28 flex items-center gap-1">
-        <Input
-          type="number"
-          className="h-9 text-sm w-28"
-          value={overrideLocal}
-          placeholder={computed !== null ? String(Math.round(computed * 100) / 100) : "—"}
+      <td className="py-2 px-3">
+        <Select
+          value={current?.weekly_mode ?? "divide"}
+          onValueChange={(v) => handleModeChange(v as WeeklyMode)}
           disabled={disabled}
-          onChange={(e) => setOverrideLocal(e.target.value)}
-          onBlur={handleOverrideBlur}
-        />
-        {current?.weekly_override != null && (
-          <span className="text-teal-600 text-xs ml-1">Manuel</span>
-        )}
-      </div>
+        >
+          <SelectTrigger className="h-8 text-sm w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="divide">÷ 4</SelectItem>
+            <SelectItem value="fixed">Fixe</SelectItem>
+          </SelectContent>
+        </Select>
+      </td>
 
-      <div className="w-px bg-border self-stretch mx-1" />
+      <td className="py-2 px-3">
+        <div className="relative">
+          <Input
+            type="number"
+            className="h-8 text-sm w-full pr-12"
+            value={overrideLocal}
+            placeholder={computed != null ? String(Math.round(computed * 100) / 100) : "—"}
+            disabled={disabled}
+            onChange={(e) => setOverrideLocal(e.target.value)}
+            onBlur={handleOverrideBlur}
+          />
+          {current?.weekly_override != null && (
+            <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] font-medium text-teal-700 bg-teal-50 rounded px-1 py-0.5 pointer-events-none">
+              Manuel
+            </span>
+          )}
+        </div>
+      </td>
 
-      {/* Settings */}
-      <Button variant="ghost" size="icon" className="h-9 w-9" onClick={onOpenSettings}>
-        <Settings2 className="h-4 w-4" />
-      </Button>
-
-      {/* Reorder */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-9 w-9"
-        onClick={onMoveUp}
-        disabled={isFirst}
-      >
-        <ArrowUp className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-9 w-9"
-        onClick={onMoveDown}
-        disabled={isLast}
-      >
-        <ArrowDown className="h-4 w-4" />
-      </Button>
-
-      {/* Delete */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-9 w-9 text-destructive"
-        onClick={onDelete}
-      >
-        <Trash2 className="h-4 w-4" />
-      </Button>
-    </div>
+      <td className="py-2 px-3">
+        <div className="flex items-center justify-end gap-0.5">
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={onOpenSettings}>
+            <Settings2 className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onMoveUp} disabled={isFirst}>
+            <ArrowUp className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onMoveDown} disabled={isLast}>
+            <ArrowDown className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={onDelete}>
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </td>
+    </tr>
   );
+}
+
 }
 
 // ----- Settings dialog -----
