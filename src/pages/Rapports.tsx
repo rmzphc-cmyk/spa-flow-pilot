@@ -141,7 +141,15 @@ export default function Rapports() {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10);
   });
-  const [label, setLabel] = useState<string>("");
+  const [label, setLabel] = useState<string>(() =>
+    defaultLabel("monthly", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10))
+  );
+  const [labelEdited, setLabelEdited] = useState(false);
+
+  useEffect(() => {
+    if (!labelEdited) setLabel(defaultLabel(newType, periodStart));
+  }, [newType, periodStart, labelEdited]);
+
   const [blockedInfo, setBlockedInfo] = useState<{ type: ReportType; label: string; stateLabel: string; id: string } | null>(null);
 
   const reports = useMemo(() => rows.map(mapReportRowToRecord), [rows]);
@@ -165,7 +173,8 @@ export default function Rapports() {
         period_end: periodEnd,
       });
       setDialogOpen(false);
-      setLabel("");
+      setLabelEdited(false);
+      setLabel(defaultLabel(newType, periodStart));
       navigate(`/rapport/${created.id}`);
     } catch (e) {
       const message = e instanceof Error ? e.message : "";
@@ -202,7 +211,7 @@ export default function Rapports() {
         </Button>
       </div>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) setLabelEdited(false); setDialogOpen(open); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Nouveau rapport</DialogTitle>
@@ -223,7 +232,7 @@ export default function Rapports() {
               <Input
                 placeholder={defaultLabel(newType, periodStart)}
                 value={label}
-                onChange={(e) => setLabel(e.target.value)}
+                onChange={(e) => { setLabelEdited(true); setLabel(e.target.value); }}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
