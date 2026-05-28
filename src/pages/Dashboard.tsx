@@ -14,9 +14,16 @@ import {
   type ReportState,
 } from "@/lib/reportsStore";
 import { useReports, mapReportRowToRecord } from "@/hooks/useReports";
+import { useAuth } from "@/contexts/AuthContext";
+import { useTodos } from "@/hooks/useTodos";
+import { useObjectives, parseObjectiveDescription } from "@/hooks/useObjectives";
+import { useKpiEntries } from "@/hooks/useKpiEntries";
 
 type ReportStatus = ReportState;
 
+type OverdueTodo = { id: string; title: string; daysOverdue: number };
+type AiBriefItem = { icon: string; text: string };
+type RecentActivityItem = { id: string; label: string; date: string };
 
 const WEEKLY_SECTION_KEYS = ["kpi", "checkin", "ids"] as const;
 const MONTHLY_SECTION_KEYS = ["kpi", "checkin", "responsabilites", "todo", "objectifs", "ids", "cloture"] as const;
@@ -31,22 +38,6 @@ function computeCompletion(report: ReportRecord): { completed: number; total: nu
   const completed = keys.filter((k) => details[k] != null).length;
   return { completed, total: keys.length, percent: Math.round((completed / keys.length) * 100) };
 }
-
-const overdueTodos = [
-  { id: "t1", title: "Finaliser planning cabines semaine 13", daysOverdue: 3 },
-  { id: "t2", title: "Commander stocks produits soins visage", daysOverdue: 2 },
-  { id: "t3", title: "Entretien annuel — Sophie M.", daysOverdue: 1 },
-];
-
-const aiBriefItems = [
-  { icon: "📋", text: "2 to-do arrivent à deadline cette semaine" },
-  { icon: "📉", text: "Panier moyen en baisse depuis 2 cycles" },
-  { icon: "🎯", text: "Objectif « NPS > 8.5 » est à risque" },
-];
-
-const recentActivity = [
-  { id: "r3", label: "Monthly — Février 2026", date: "3 mars 2026" },
-];
 
 // --- Status config ---
 
