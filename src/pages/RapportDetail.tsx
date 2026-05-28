@@ -88,6 +88,26 @@ function PreparationMode({ report }: { report: ReportRecord }) {
     [setSectionStatuses],
   );
 
+  const onKpiStatusChange = useCallback(
+    (s: SectionStatus) => updateSectionStatus("kpi", s),
+    [updateSectionStatus],
+  );
+
+  const onCheckinStatusChange = useCallback(
+    (s: SectionStatus) => updateSectionStatus("checkin", s),
+    [updateSectionStatus],
+  );
+
+  const onResponsabilitesStatusChange = useCallback(
+    (s: SectionStatus) => updateSectionStatus("responsabilites", s),
+    [updateSectionStatus],
+  );
+
+  const onIdsStatusChange = useCallback(
+    (s: SectionStatus) => updateSectionStatus("ids", s),
+    [updateSectionStatus],
+  );
+
   const completedCount = useMemo(
     () => sections.filter((s) => sectionStatuses[s] === "complete").length,
     [sectionStatuses, sections],
