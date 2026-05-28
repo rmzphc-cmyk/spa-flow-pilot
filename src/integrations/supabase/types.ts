@@ -279,6 +279,7 @@ export type Database = {
           display_order: number
           id: string
           is_active: boolean
+          kpi_group: string
           name: string
           name_en: string | null
           name_es: string | null
@@ -299,6 +300,7 @@ export type Database = {
           display_order?: number
           id?: string
           is_active?: boolean
+          kpi_group?: string
           name: string
           name_en?: string | null
           name_es?: string | null
@@ -319,6 +321,7 @@ export type Database = {
           display_order?: number
           id?: string
           is_active?: boolean
+          kpi_group?: string
           name?: string
           name_en?: string | null
           name_es?: string | null
