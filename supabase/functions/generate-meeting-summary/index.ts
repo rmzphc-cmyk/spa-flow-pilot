@@ -138,7 +138,6 @@ Génère un JSON avec exactement ces clés: executive_summary (200-250 mots), kp
 
     return json({ data: summary }, 200);
   } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return json({ error: msg }, 500);
+    return internalError(e);
   }
 });
