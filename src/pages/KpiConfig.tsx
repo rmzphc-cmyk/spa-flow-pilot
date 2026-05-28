@@ -134,13 +134,22 @@ export default function KpiConfig() {
   const monthLabel = format(parseISO(`${yearMonth}-01`), "MMMM yyyy", { locale: fr });
   const monthLabelCap = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
 
-  const renderSection = (label: string, list: KpiDefinitionFull[], isFirst: boolean) => (
-    <div className={isFirst ? "" : "border-t border-border mt-4 pt-4"}>
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground py-2">
-        {label}
-      </h3>
+  const renderSectionRows = (label: string, list: KpiDefinitionFull[]) => (
+    <>
+      <tr className="bg-muted/30 border-t border-border">
+        <td
+          colSpan={9}
+          className="py-2 px-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground"
+        >
+          {label}
+        </td>
+      </tr>
       {list.length === 0 ? (
-        <div className="text-sm text-muted-foreground italic py-3">Aucun KPI dans ce groupe.</div>
+        <tr>
+          <td colSpan={9} className="py-3 px-3 text-sm text-muted-foreground italic">
+            Aucun KPI dans ce groupe.
+          </td>
+        </tr>
       ) : (
         list.map((k, idx) => (
           <UnifiedKpiRow
@@ -169,26 +178,17 @@ export default function KpiConfig() {
           />
         ))
       )}
-    </div>
+    </>
   );
 
   return (
     <div className="max-w-[1400px] mx-auto px-6 py-6 pb-20">
-      <header className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+      <header className="flex justify-between items-start gap-4 mb-4">
         <div>
           <h1 className="text-xl font-bold text-foreground">Configuration des KPI</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             Définir et planifier les KPI de votre spa
           </p>
-        </div>
-        <div className="flex items-center justify-center gap-2">
-          <Button variant="ghost" size="icon" onClick={handlePrevMonth}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-sm font-semibold min-w-[140px] text-center">{monthLabelCap}</span>
-          <Button variant="ghost" size="icon" onClick={handleNextMonth}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
         </div>
         <div className="flex items-center gap-2">
           {userRole === "admin" && (
@@ -216,6 +216,20 @@ export default function KpiConfig() {
         </div>
       </header>
 
+      <div className="bg-muted/40 border border-border rounded-lg py-2.5 px-5 flex items-center justify-between mb-4">
+        <span className="text-xs text-muted-foreground">Objectifs du mois</span>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={handlePrevMonth}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-sm font-semibold min-w-[160px] text-center">{monthLabelCap}</span>
+          <Button variant="ghost" size="icon" onClick={handleNextMonth}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+        <span className="text-xs text-muted-foreground italic">Sauvegarde automatique</span>
+      </div>
+
       {!spaId ? (
         <div className="border border-border rounded-xl p-12 text-center text-muted-foreground">
           Sélectionner un spa
@@ -224,14 +238,27 @@ export default function KpiConfig() {
         <div className="border border-border rounded-xl p-12 text-center text-muted-foreground">
           Chargement…
         </div>
-      ) : sortedItems.length === 0 ? (
-        <div className="border border-border rounded-xl p-12 text-center text-muted-foreground">
-          Aucun KPI configuré. Cliquez sur + Ajouter un KPI.
-        </div>
       ) : (
-        <div className="border border-border rounded-xl p-4 shadow-sm">
-          {renderSection("KPI Spa", spaKpis, true)}
-          {renderSection("KPI Manager", managerKpis, spaKpis.length === 0)}
+        <div className="border border-border rounded-xl overflow-hidden shadow-sm">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/60">
+              <tr>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "35%" }}>Nom</th>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "72px" }}>Unité</th>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "96px" }}>Groupe</th>
+                <th className="text-center py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "52px" }}>Actif</th>
+                <th className="p-0 bg-border" style={{ width: "1px" }} />
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "110px" }}>Mensuel</th>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "88px" }}>Mode</th>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "120px" }}>Hebdo</th>
+                <th className="text-right py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "116px" }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {renderSectionRows("KPI Spa", spaKpis)}
+              {renderSectionRows("KPI Manager", managerKpis)}
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -272,6 +299,7 @@ export default function KpiConfig() {
     </div>
   );
 }
+
 
 // ----- Unified row -----
 
