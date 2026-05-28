@@ -15,7 +15,6 @@ import {
 import {
   AlertDialog,
   AlertDialogAction,
-  AlertDialogCancel,
   AlertDialogContent,
   AlertDialogDescription,
   AlertDialogFooter,
@@ -142,7 +141,7 @@ export default function Rapports() {
     return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10);
   });
   const [label, setLabel] = useState<string>("");
-  const [blockedBy, setBlockedBy] = useState<ReportRecord | null>(null);
+  const [showBlockedDialog, setShowBlockedDialog] = useState(false);
 
   const reports = useMemo(() => rows.map(mapReportRowToRecord), [rows]);
 
@@ -170,10 +169,7 @@ export default function Rapports() {
     } catch (e) {
       const message = e instanceof Error ? e.message : "";
       if (message === "Un rapport actif existe déjà pour ce cycle.") {
-        const activeReport = reports.find(
-          (r) => r.type === newType && r.state !== "validated"
-        ) ?? null;
-        setBlockedBy(activeReport);
+        setShowBlockedDialog(true);
       } else {
         toast({
           title: "Erreur lors de la création",
@@ -238,24 +234,19 @@ export default function Rapports() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!blockedBy} onOpenChange={(open) => { if (!open) setBlockedBy(null); }}>
+      <AlertDialog open={showBlockedDialog} onOpenChange={setShowBlockedDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Un rapport est déjà en cours</AlertDialogTitle>
             <AlertDialogDescription>
-              {blockedBy
-                ? `Le rapport "${blockedBy.label}" est en cours (${blockedBy.state === "draft_preparation" ? "en préparation" : "en réunion"}). Vous devez le finaliser avant d'en créer un nouveau.`
-                : "Un rapport de ce type est déjà actif. Veuillez le finaliser avant d'en créer un nouveau."
-              }
+              Vous avez déjà un rapport de ce type en cours de préparation.
+              Finalisez-le avant d'en créer un nouveau.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Fermer</AlertDialogCancel>
-            {blockedBy && (
-              <AlertDialogAction onClick={() => { navigate(`/rapport/${blockedBy.id}`); setBlockedBy(null); }}>
-                Voir le rapport
-              </AlertDialogAction>
-            )}
+            <AlertDialogAction onClick={() => setShowBlockedDialog(false)}>
+              Compris
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
