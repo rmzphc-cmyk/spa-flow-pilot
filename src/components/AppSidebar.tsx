@@ -86,7 +86,7 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
   const navigate = useNavigate();
   const isInReport = location.pathname.startsWith("/rapport/");
   const isDirection = location.pathname.startsWith("/direction");
-  const { spaId, userRole } = useAuth();
+  const { spaId, userRole, user } = useAuth();
   const { data: directionSpas = [] } = useDirectionSpas();
 
   const { data: spaRow } = useQuery({
@@ -103,6 +103,22 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
     },
   });
   const spaName = userRole === "direction" ? "Vue Direction" : spaRow?.name ?? "Mon Spa";
+
+  const fullName = user?.user_metadata?.full_name as string | undefined;
+  const email = user?.email;
+  const initials = (() => {
+    if (fullName) {
+      const parts = fullName.trim().split(/\s+/);
+      if (parts.length >= 2 && parts[0][0] && parts[parts.length - 1][0]) {
+        return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+      }
+      return fullName.slice(0, 2).toUpperCase();
+    }
+    if (email) return email.slice(0, 2).toUpperCase();
+    return "—";
+  })();
+  const displayName = fullName ?? email ?? "—";
+  const displayRole = userRole === "manager" ? "Spa Manager" : userRole === "direction" ? "Direction" : userRole === "admin" ? "Admin" : "";
 
   const isWeekly = reportType === "weekly";
   const reportSections = isWeekly
@@ -315,17 +331,19 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
             ))}
           </nav>
 
-          <div className="p-3 border-t border-border">
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold shrink-0">
-                MD
-              </div>
-              <div className="lg:block hidden">
-                <p className="text-sm font-medium text-foreground leading-tight">Marie Dupont</p>
-                <p className="text-xs text-muted-foreground">Spa Manager</p>
+          {userRole !== null && (
+            <div className="p-3 border-t border-border">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-semibold shrink-0">
+                  {initials}
+                </div>
+                <div className="lg:block hidden">
+                  <p className="text-sm font-medium text-foreground leading-tight">{displayName}</p>
+                  <p className="text-xs text-muted-foreground">{displayRole}</p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </>
       )}
     </div>
