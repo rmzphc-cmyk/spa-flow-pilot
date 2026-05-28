@@ -141,7 +141,7 @@ export default function Rapports() {
     return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10);
   });
   const [label, setLabel] = useState<string>("");
-  const [showBlockedDialog, setShowBlockedDialog] = useState(false);
+  const [blockedInfo, setBlockedInfo] = useState<{ type: ReportType; label: string; stateLabel: string; id: string } | null>(null);
 
   const reports = useMemo(() => rows.map(mapReportRowToRecord), [rows]);
 
