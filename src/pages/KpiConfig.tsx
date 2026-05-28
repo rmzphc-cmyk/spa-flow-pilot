@@ -531,7 +531,7 @@ function UnifiedKpiRow({
   );
 }
 
-}
+
 
 // ----- Settings dialog -----
 
