@@ -108,6 +108,31 @@ function ReportCard({ report, mode }: { report: ReportRecord; mode: "prep" | "co
   );
 }
 
+function toISO(d: Date): string {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().slice(0, 10);
+}
+
+function computePeriod(type: ReportType, ref: Date = new Date()): { start: string; end: string } {
+  if (type === "monthly") {
+    const start = new Date(ref.getFullYear(), ref.getMonth(), 1);
+    const end = new Date(ref.getFullYear(), ref.getMonth() + 1, 0);
+    return { start: toISO(start), end: toISO(end) };
+  }
+  // Weekly — lundi → dimanche de la semaine contenant ref
+  const day = (ref.getDay() + 6) % 7; // 0 = lundi
+  const start = new Date(ref.getFullYear(), ref.getMonth(), ref.getDate() - day);
+  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + 6);
+  return { start: toISO(start), end: toISO(end) };
+}
+
+function computeEndFromStart(type: ReportType, startISO: string): string {
+  const d = new Date(startISO + "T12:00:00");
+  if (type === "monthly") {
+    return toISO(new Date(d.getFullYear(), d.getMonth() + 1, 0));
+  }
+  return toISO(new Date(d.getFullYear(), d.getMonth(), d.getDate() + 6));
+}
+
 function defaultLabel(type: ReportType, start: string): string {
   const d = new Date(start + "T12:00:00");
   if (type === "monthly") {
@@ -125,6 +150,7 @@ function defaultLabel(type: ReportType, start: string): string {
   return `Semaine ${weekNum} — ${d.getFullYear()}`;
 }
 
+
 export default function Rapports() {
   const navigate = useNavigate();
   const [tab, setTab] = useState<"prep" | "consult">("prep");
@@ -133,22 +159,23 @@ export default function Rapports() {
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newType, setNewType] = useState<ReportType>("monthly");
-  const [periodStart, setPeriodStart] = useState<string>(() => {
-    const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0, 10);
-  });
-  const [periodEnd, setPeriodEnd] = useState<string>(() => {
-    const d = new Date();
-    return new Date(d.getFullYear(), d.getMonth() + 1, 0).toISOString().slice(0, 10);
-  });
-  const [label, setLabel] = useState<string>(() =>
-    defaultLabel("monthly", new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10))
-  );
+  const initialPeriod = computePeriod("monthly");
+  const [periodStart, setPeriodStart] = useState<string>(initialPeriod.start);
+  const [periodEnd, setPeriodEnd] = useState<string>(initialPeriod.end);
+  const [label, setLabel] = useState<string>(() => defaultLabel("monthly", initialPeriod.start));
   const [labelEdited, setLabelEdited] = useState(false);
+
+  // Quand le type change → recalculer début + fin par défaut
+  useEffect(() => {
+    const { start, end } = computePeriod(newType);
+    setPeriodStart(start);
+    setPeriodEnd(end);
+  }, [newType]);
 
   useEffect(() => {
     if (!labelEdited) setLabel(defaultLabel(newType, periodStart));
   }, [newType, periodStart, labelEdited]);
+
 
   const [blockedInfo, setBlockedInfo] = useState<{ type: ReportType; label: string; stateLabel: string; id: string } | null>(null);
 
@@ -238,7 +265,15 @@ export default function Rapports() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <Label className="text-sm mb-1.5 block">Début</Label>
-                <Input type="date" value={periodStart} onChange={(e) => setPeriodStart(e.target.value)} />
+                <Input
+                  type="date"
+                  value={periodStart}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setPeriodStart(v);
+                    if (v) setPeriodEnd(computeEndFromStart(newType, v));
+                  }}
+                />
               </div>
               <div>
                 <Label className="text-sm mb-1.5 block">Fin</Label>
