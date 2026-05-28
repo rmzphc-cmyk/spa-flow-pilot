@@ -81,8 +81,12 @@ export function useCreateReport() {
           period_end: input.period_end,
         },
       });
-      if (error) throw error;
+      if (error) {
+        const serverMessage = data?.error;
+        throw new Error(serverMessage ?? error.message ?? "Impossible de créer le rapport.");
+      }
       if (data?.error) throw new Error(data.error);
+      if (!data?.data) throw new Error("Réponse inattendue du serveur.");
       return data.data as ReportRow;
     },
     onSuccess: () => {
