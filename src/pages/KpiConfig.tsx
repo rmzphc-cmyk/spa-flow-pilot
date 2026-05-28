@@ -134,13 +134,22 @@ export default function KpiConfig() {
   const monthLabel = format(parseISO(`${yearMonth}-01`), "MMMM yyyy", { locale: fr });
   const monthLabelCap = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
 
-  const renderSection = (label: string, list: KpiDefinitionFull[], isFirst: boolean) => (
-    <div className={isFirst ? "" : "border-t border-border mt-4 pt-4"}>
-      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground py-2">
-        {label}
-      </h3>
+  const renderSectionRows = (label: string, list: KpiDefinitionFull[]) => (
+    <>
+      <tr className="bg-muted/30 border-t border-border">
+        <td
+          colSpan={9}
+          className="py-2 px-3 text-xs font-semibold uppercase tracking-widest text-muted-foreground"
+        >
+          {label}
+        </td>
+      </tr>
       {list.length === 0 ? (
-        <div className="text-sm text-muted-foreground italic py-3">Aucun KPI dans ce groupe.</div>
+        <tr>
+          <td colSpan={9} className="py-3 px-3 text-sm text-muted-foreground italic">
+            Aucun KPI dans ce groupe.
+          </td>
+        </tr>
       ) : (
         list.map((k, idx) => (
           <UnifiedKpiRow
@@ -169,26 +178,17 @@ export default function KpiConfig() {
           />
         ))
       )}
-    </div>
+    </>
   );
 
   return (
     <div className="max-w-[1400px] mx-auto px-6 py-6 pb-20">
-      <header className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6">
+      <header className="flex justify-between items-start gap-4 mb-4">
         <div>
           <h1 className="text-xl font-bold text-foreground">Configuration des KPI</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
             Définir et planifier les KPI de votre spa
           </p>
-        </div>
-        <div className="flex items-center justify-center gap-2">
-          <Button variant="ghost" size="icon" onClick={handlePrevMonth}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <span className="text-sm font-semibold min-w-[140px] text-center">{monthLabelCap}</span>
-          <Button variant="ghost" size="icon" onClick={handleNextMonth}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
         </div>
         <div className="flex items-center gap-2">
           {userRole === "admin" && (
@@ -216,6 +216,20 @@ export default function KpiConfig() {
         </div>
       </header>
 
+      <div className="bg-muted/40 border border-border rounded-lg py-2.5 px-5 flex items-center justify-between mb-4">
+        <span className="text-xs text-muted-foreground">Objectifs du mois</span>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="icon" onClick={handlePrevMonth}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <span className="text-sm font-semibold min-w-[160px] text-center">{monthLabelCap}</span>
+          <Button variant="ghost" size="icon" onClick={handleNextMonth}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+        <span className="text-xs text-muted-foreground italic">Sauvegarde automatique</span>
+      </div>
+
       {!spaId ? (
         <div className="border border-border rounded-xl p-12 text-center text-muted-foreground">
           Sélectionner un spa
@@ -224,14 +238,27 @@ export default function KpiConfig() {
         <div className="border border-border rounded-xl p-12 text-center text-muted-foreground">
           Chargement…
         </div>
-      ) : sortedItems.length === 0 ? (
-        <div className="border border-border rounded-xl p-12 text-center text-muted-foreground">
-          Aucun KPI configuré. Cliquez sur + Ajouter un KPI.
-        </div>
       ) : (
-        <div className="border border-border rounded-xl p-4 shadow-sm">
-          {renderSection("KPI Spa", spaKpis, true)}
-          {renderSection("KPI Manager", managerKpis, spaKpis.length === 0)}
+        <div className="border border-border rounded-xl overflow-hidden shadow-sm">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/60">
+              <tr>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "35%" }}>Nom</th>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "72px" }}>Unité</th>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "96px" }}>Groupe</th>
+                <th className="text-center py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "52px" }}>Actif</th>
+                <th className="p-0 bg-border" style={{ width: "1px" }} />
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "110px" }}>Mensuel</th>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "88px" }}>Mode</th>
+                <th className="text-left py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "120px" }}>Hebdo</th>
+                <th className="text-right py-2.5 px-3 text-xs font-semibold text-muted-foreground" style={{ width: "116px" }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {renderSectionRows("KPI Spa", spaKpis)}
+              {renderSectionRows("KPI Manager", managerKpis)}
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -272,6 +299,7 @@ export default function KpiConfig() {
     </div>
   );
 }
+
 
 // ----- Unified row -----
 
@@ -376,143 +404,134 @@ function UnifiedKpiRow({
   const showPrevHint = !current && previous?.monthly_value != null;
 
   return (
-    <div
-      className={`flex flex-row items-start gap-3 py-2 border-b border-border last:border-0 ${
-        kpi.is_active ? "" : "opacity-50"
+    <tr
+      className={`border-b border-border last:border-0 transition-colors hover:bg-muted/20 ${
+        kpi.is_active ? "" : "opacity-40"
       }`}
     >
-      {/* Nom */}
-      <Input
-        value={name}
-        onChange={(e) => setName(e.target.value)}
-        onBlur={() => {
-          if (name !== kpi.name) onUpdate({ name });
-        }}
-        className="flex-1 min-w-[180px] h-9 text-sm"
-      />
+      <td className="py-2 px-3">
+        <Input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onBlur={() => {
+            if (name !== kpi.name) onUpdate({ name });
+          }}
+          className="h-8 text-sm w-full"
+        />
+      </td>
 
-      {/* Unité */}
-      <Select value={kpi.unit ?? ""} onValueChange={(v) => onUpdate({ unit: v })}>
-        <SelectTrigger className="w-[72px] h-9 text-sm">
-          <SelectValue placeholder="—" />
-        </SelectTrigger>
-        <SelectContent>
-          {UNIT_OPTIONS.map((u) => (
-            <SelectItem key={u} value={u}>
-              {u}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+      <td className="py-2 px-3">
+        <Select value={kpi.unit ?? ""} onValueChange={(v) => onUpdate({ unit: v })}>
+          <SelectTrigger className="h-8 text-sm w-full">
+            <SelectValue placeholder="—" />
+          </SelectTrigger>
+          <SelectContent>
+            {UNIT_OPTIONS.map((u) => (
+              <SelectItem key={u} value={u}>
+                {u}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </td>
 
-      {/* Groupe */}
-      <Select
-        value={(kpi.kpi_group ?? "spa") as KpiGroup}
-        onValueChange={(v) => onUpdate({ kpi_group: v as KpiGroup })}
-      >
-        <SelectTrigger className="w-[100px] h-9 text-sm">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="spa">Spa</SelectItem>
-          <SelectItem value="manager">Manager</SelectItem>
-        </SelectContent>
-      </Select>
+      <td className="py-2 px-3">
+        <Select
+          value={(kpi.kpi_group ?? "spa") as KpiGroup}
+          onValueChange={(v) => onUpdate({ kpi_group: v as KpiGroup })}
+        >
+          <SelectTrigger className="h-8 text-sm w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="spa">Spa</SelectItem>
+            <SelectItem value="manager">Manager</SelectItem>
+          </SelectContent>
+        </Select>
+      </td>
 
-      {/* Actif */}
-      <div className="flex items-center h-9">
+      <td className="py-2 px-3 text-center">
         <Switch checked={kpi.is_active} onCheckedChange={(v) => onUpdate({ is_active: v })} />
-      </div>
+      </td>
 
-      <div className="w-px bg-border self-stretch mx-1" />
+      <td className="p-0 bg-border" />
 
-      {/* Obj mensuel */}
-      <div className="w-28">
-        <Input
-          type="number"
-          className="h-9 text-sm w-28"
-          value={monthlyLocal}
-          placeholder={showPrevHint ? String(previous!.monthly_value) : "—"}
-          onChange={(e) => setMonthlyLocal(e.target.value)}
-          onBlur={handleMonthlyBlur}
-        />
-        {showPrevHint && (
-          <div className="text-[10px] text-muted-foreground italic mt-0.5">
-            M-1 : {previous!.monthly_value}
-          </div>
-        )}
-      </div>
+      <td className="py-2 px-3">
+        <div>
+          <Input
+            type="number"
+            className={`h-8 text-sm w-full ${
+              !current && !showPrevHint ? "border-dashed border-border/60 bg-muted/20" : ""
+            }`}
+            value={monthlyLocal}
+            placeholder={showPrevHint ? String(previous!.monthly_value) : "—"}
+            onChange={(e) => setMonthlyLocal(e.target.value)}
+            onBlur={handleMonthlyBlur}
+          />
+          {showPrevHint && (
+            <p className="text-[10px] text-muted-foreground italic mt-0.5">
+              M-1 : {previous!.monthly_value}
+            </p>
+          )}
+        </div>
+      </td>
 
-      {/* Mode */}
-      <Select
-        value={current?.weekly_mode ?? "divide"}
-        onValueChange={(v) => handleModeChange(v as WeeklyMode)}
-        disabled={disabled}
-      >
-        <SelectTrigger className="w-24 h-9 text-sm">
-          <SelectValue />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="divide">÷ 4</SelectItem>
-          <SelectItem value="fixed">Fixe</SelectItem>
-        </SelectContent>
-      </Select>
-
-      {/* Obj hebdo */}
-      <div className="w-28 flex items-center gap-1">
-        <Input
-          type="number"
-          className="h-9 text-sm w-28"
-          value={overrideLocal}
-          placeholder={computed !== null ? String(Math.round(computed * 100) / 100) : "—"}
+      <td className="py-2 px-3">
+        <Select
+          value={current?.weekly_mode ?? "divide"}
+          onValueChange={(v) => handleModeChange(v as WeeklyMode)}
           disabled={disabled}
-          onChange={(e) => setOverrideLocal(e.target.value)}
-          onBlur={handleOverrideBlur}
-        />
-        {current?.weekly_override != null && (
-          <span className="text-teal-600 text-xs ml-1">Manuel</span>
-        )}
-      </div>
+        >
+          <SelectTrigger className="h-8 text-sm w-full">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="divide">÷ 4</SelectItem>
+            <SelectItem value="fixed">Fixe</SelectItem>
+          </SelectContent>
+        </Select>
+      </td>
 
-      <div className="w-px bg-border self-stretch mx-1" />
+      <td className="py-2 px-3">
+        <div className="relative">
+          <Input
+            type="number"
+            className="h-8 text-sm w-full pr-12"
+            value={overrideLocal}
+            placeholder={computed != null ? String(Math.round(computed * 100) / 100) : "—"}
+            disabled={disabled}
+            onChange={(e) => setOverrideLocal(e.target.value)}
+            onBlur={handleOverrideBlur}
+          />
+          {current?.weekly_override != null && (
+            <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] font-medium text-teal-700 bg-teal-50 rounded px-1 py-0.5 pointer-events-none">
+              Manuel
+            </span>
+          )}
+        </div>
+      </td>
 
-      {/* Settings */}
-      <Button variant="ghost" size="icon" className="h-9 w-9" onClick={onOpenSettings}>
-        <Settings2 className="h-4 w-4" />
-      </Button>
-
-      {/* Reorder */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-9 w-9"
-        onClick={onMoveUp}
-        disabled={isFirst}
-      >
-        <ArrowUp className="h-4 w-4" />
-      </Button>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-9 w-9"
-        onClick={onMoveDown}
-        disabled={isLast}
-      >
-        <ArrowDown className="h-4 w-4" />
-      </Button>
-
-      {/* Delete */}
-      <Button
-        variant="ghost"
-        size="icon"
-        className="h-9 w-9 text-destructive"
-        onClick={onDelete}
-      >
-        <Trash2 className="h-4 w-4" />
-      </Button>
-    </div>
+      <td className="py-2 px-3">
+        <div className="flex items-center justify-end gap-0.5">
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground" onClick={onOpenSettings}>
+            <Settings2 className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onMoveUp} disabled={isFirst}>
+            <ArrowUp className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onMoveDown} disabled={isLast}>
+            <ArrowDown className="h-3.5 w-3.5" />
+          </Button>
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={onDelete}>
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </td>
+    </tr>
   );
 }
+
+
 
 // ----- Settings dialog -----
 
