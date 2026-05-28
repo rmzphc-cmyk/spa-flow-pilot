@@ -354,6 +354,7 @@ export type Database = {
           kpi_definition_id: string
           report_id: string
           status: Database["public"]["Enums"]["kpi_status"]
+          target_value: number | null
           updated_at: string
           value_current: number | null
           value_n1: number | null
@@ -366,6 +367,7 @@ export type Database = {
           kpi_definition_id: string
           report_id: string
           status?: Database["public"]["Enums"]["kpi_status"]
+          target_value?: number | null
           updated_at?: string
           value_current?: number | null
           value_n1?: number | null
@@ -378,6 +380,7 @@ export type Database = {
           kpi_definition_id?: string
           report_id?: string
           status?: Database["public"]["Enums"]["kpi_status"]
+          target_value?: number | null
           updated_at?: string
           value_current?: number | null
           value_n1?: number | null
@@ -395,6 +398,57 @@ export type Database = {
             columns: ["report_id"]
             isOneToOne: false
             referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      kpi_monthly_targets: {
+        Row: {
+          created_at: string
+          id: string
+          kpi_definition_id: string
+          monthly_value: number | null
+          spa_id: string
+          updated_at: string
+          weekly_mode: string
+          weekly_override: number | null
+          year_month: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kpi_definition_id: string
+          monthly_value?: number | null
+          spa_id: string
+          updated_at?: string
+          weekly_mode?: string
+          weekly_override?: number | null
+          year_month: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kpi_definition_id?: string
+          monthly_value?: number | null
+          spa_id?: string
+          updated_at?: string
+          weekly_mode?: string
+          weekly_override?: number | null
+          year_month?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kpi_monthly_targets_kpi_definition_id_fkey"
+            columns: ["kpi_definition_id"]
+            isOneToOne: false
+            referencedRelation: "kpi_definitions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kpi_monthly_targets_spa_id_fkey"
+            columns: ["spa_id"]
+            isOneToOne: false
+            referencedRelation: "spas"
             referencedColumns: ["id"]
           },
         ]
