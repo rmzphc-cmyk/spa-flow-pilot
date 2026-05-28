@@ -12,6 +12,7 @@ export interface KpiEntryRow {
   comment: string | null;
   comment_is_validated: boolean;
   status: KpiStatus;
+  target_value: number | null;
 }
 
 export function useKpiEntries(reportId: string | undefined) {
