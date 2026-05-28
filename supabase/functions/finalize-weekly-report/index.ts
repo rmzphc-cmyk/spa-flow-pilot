@@ -16,7 +16,7 @@ Deno.serve(async (req) => {
     const report = access.report;
 
     if (report.cycle_type !== "weekly") return json({ error: "Rapport non hebdomadaire." }, 409);
-    if (report.status !== "ready_for_review")
+    if (report.status !== "ready_for_review" && report.status !== "draft_preparation")
       return json({ error: "Le rapport n'est pas prêt pour finalisation." }, 409);
 
     const { data: entries, error: eErr } = await admin
