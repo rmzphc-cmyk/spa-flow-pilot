@@ -407,6 +407,7 @@ export type Database = {
       }
       kpi_monthly_targets: {
         Row: {
+          actual_monthly_value: number | null
           created_at: string
           id: string
           kpi_definition_id: string
@@ -418,6 +419,7 @@ export type Database = {
           year_month: string
         }
         Insert: {
+          actual_monthly_value?: number | null
           created_at?: string
           id?: string
           kpi_definition_id: string
@@ -429,6 +431,7 @@ export type Database = {
           year_month: string
         }
         Update: {
+          actual_monthly_value?: number | null
           created_at?: string
           id?: string
           kpi_definition_id?: string

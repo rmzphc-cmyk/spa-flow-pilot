@@ -12,6 +12,7 @@ export interface KpiMonthlyTarget {
   monthly_value: number | null;
   weekly_mode: WeeklyMode;
   weekly_override: number | null;
+  actual_monthly_value: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -23,6 +24,7 @@ export interface UpsertKpiMonthlyTargetInput {
   monthly_value: number | null;
   weekly_mode: WeeklyMode;
   weekly_override: number | null;
+  actual_monthly_value: number | null;
 }
 
 export function getWeeklyTarget(target: KpiMonthlyTarget | null | undefined): number | null {
