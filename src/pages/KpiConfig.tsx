@@ -1,7 +1,18 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
-import { Plus, Trash2, ArrowUp, ArrowDown, ArrowUpNarrowWide, ArrowDownNarrowWide } from "lucide-react";
+import {
+  Plus,
+  Trash2,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpNarrowWide,
+  ArrowDownNarrowWide,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { fr } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -19,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import {
@@ -30,6 +42,14 @@ import {
   type ComparisonDirection,
   type KpiDefinitionFull,
 } from "@/hooks/useKpiConfig";
+import {
+  useKpiMonthlyTargets,
+  useUpsertKpiMonthlyTarget,
+  getWeeklyTarget,
+  getPrevYearMonth,
+  type KpiMonthlyTarget,
+  type WeeklyMode,
+} from "@/hooks/useKpiMonthlyTargets";
 
 const UNIT_OPTIONS = ["€", "%", "nb", "/10", "j", "pts"] as const;
 const CATEGORY_LABELS: Record<KpiCategoryDb, string> = {
@@ -40,9 +60,17 @@ const CATEGORY_LABELS: Record<KpiCategoryDb, string> = {
   custom: "Autre",
 };
 
+const SPA_CATEGORIES: KpiCategoryDb[] = ["financial", "operational", "customer"];
+const MANAGER_CATEGORIES: KpiCategoryDb[] = ["hr", "custom"];
+
 export default function KpiConfig() {
   const { user, userRole, spaId: authSpaId } = useAuth();
   const [adminSpaId, setAdminSpaId] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState<"definitions" | "objectives">("definitions");
+  const [yearMonth, setYearMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
 
   const spaId = userRole === "admin" ? adminSpaId : authSpaId;
 
@@ -90,6 +118,12 @@ export default function KpiConfig() {
     updateMut.mutate({ id: b.id, spaId, display_order: a.display_order });
   };
 
+  const handlePrevMonth = () => setYearMonth(getPrevYearMonth(yearMonth));
+  const handleNextMonth = () => {
+    const [y, m] = yearMonth.split("-").map(Number);
+    setYearMonth(m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`);
+  };
+
   return (
     <div className="max-w-[1200px] mx-auto px-6 py-6 pb-20">
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -114,72 +148,94 @@ export default function KpiConfig() {
               </SelectContent>
             </Select>
           )}
-          <Button
-            size="sm"
-            className="gap-1.5 bg-teal-600 hover:bg-teal-700 text-white"
-            onClick={() => setAddOpen(true)}
-            disabled={!spaId}
-          >
-            <Plus className="h-4 w-4" /> Ajouter un KPI
-          </Button>
+          {activeTab === "definitions" && (
+            <Button
+              size="sm"
+              className="gap-1.5 bg-teal-600 hover:bg-teal-700 text-white"
+              onClick={() => setAddOpen(true)}
+              disabled={!spaId}
+            >
+              <Plus className="h-4 w-4" /> Ajouter un KPI
+            </Button>
+          )}
         </div>
       </header>
 
-      {!spaId ? (
-        <div className="border border-border rounded-xl p-12 text-center text-muted-foreground">
-          Sélectionner un spa pour configurer ses KPI
-        </div>
-      ) : isLoading ? (
-        <div className="border border-border rounded-xl p-12 text-center text-muted-foreground">
-          Chargement…
-        </div>
-      ) : (
-        <div className="border border-border rounded-xl overflow-hidden shadow-sm">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-muted">
-                <th className="text-left py-2.5 px-3 font-semibold">Nom</th>
-                <th className="text-left py-2.5 px-3 font-semibold w-24">Unité</th>
-                <th className="text-left py-2.5 px-3 font-semibold w-36">Catégorie</th>
-                <th className="text-left py-2.5 px-3 font-semibold w-28">Objectif</th>
-                <th className="text-left py-2.5 px-3 font-semibold w-28">Seuil rouge</th>
-                <th className="text-left py-2.5 px-3 font-semibold w-40">Direction</th>
-                <th className="text-left py-2.5 px-3 font-semibold w-16">Actif</th>
-                <th className="text-left py-2.5 px-3 font-semibold w-28">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedItems.map((k, idx) => (
-                <KpiRow
-                  key={k.id}
-                  kpi={k}
-                  isFirst={idx === 0}
-                  isLast={idx === sortedItems.length - 1}
-                  onUpdate={(fields, toastIt) => handleUpdate(k.id, fields, toastIt)}
-                  onMoveUp={() => handleSwap(idx, -1)}
-                  onMoveDown={() => handleSwap(idx, 1)}
-                  onDelete={() => {
-                    deleteMut.mutate(
-                      { id: k.id, spaId: spaId! },
-                      {
-                        onSuccess: () => toast.success("KPI désactivé"),
-                        onError: (e: any) => toast.error(e?.message ?? "Erreur"),
-                      },
-                    );
-                  }}
-                />
-              ))}
-              {sortedItems.length === 0 && (
-                <tr>
-                  <td colSpan={8} className="py-8 text-center text-muted-foreground">
-                    Aucun KPI configuré pour ce spa.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "definitions" | "objectives")}>
+        <TabsList className="mb-4">
+          <TabsTrigger value="definitions">Définitions</TabsTrigger>
+          <TabsTrigger value="objectives">Objectifs</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="definitions">
+          {!spaId ? (
+            <div className="border border-border rounded-xl p-12 text-center text-muted-foreground">
+              Sélectionner un spa pour configurer ses KPI
+            </div>
+          ) : isLoading ? (
+            <div className="border border-border rounded-xl p-12 text-center text-muted-foreground">
+              Chargement…
+            </div>
+          ) : (
+            <div className="border border-border rounded-xl overflow-hidden shadow-sm">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-muted">
+                    <th className="text-left py-2.5 px-3 font-semibold">Nom</th>
+                    <th className="text-left py-2.5 px-3 font-semibold w-24">Unité</th>
+                    <th className="text-left py-2.5 px-3 font-semibold w-36">Catégorie</th>
+                    <th className="text-left py-2.5 px-3 font-semibold w-28">Objectif</th>
+                    <th className="text-left py-2.5 px-3 font-semibold w-28">Seuil rouge</th>
+                    <th className="text-left py-2.5 px-3 font-semibold w-40">Direction</th>
+                    <th className="text-left py-2.5 px-3 font-semibold w-16">Actif</th>
+                    <th className="text-left py-2.5 px-3 font-semibold w-28">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {sortedItems.map((k, idx) => (
+                    <KpiRow
+                      key={k.id}
+                      kpi={k}
+                      isFirst={idx === 0}
+                      isLast={idx === sortedItems.length - 1}
+                      onUpdate={(fields, toastIt) => handleUpdate(k.id, fields, toastIt)}
+                      onMoveUp={() => handleSwap(idx, -1)}
+                      onMoveDown={() => handleSwap(idx, 1)}
+                      onDelete={() => {
+                        deleteMut.mutate(
+                          { id: k.id, spaId: spaId! },
+                          {
+                            onSuccess: () => toast.success("KPI désactivé"),
+                            onError: (e: any) => toast.error(e?.message ?? "Erreur"),
+                          },
+                        );
+                      }}
+                    />
+                  ))}
+                  {sortedItems.length === 0 && (
+                    <tr>
+                      <td colSpan={8} className="py-8 text-center text-muted-foreground">
+                        Aucun KPI configuré pour ce spa.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="objectives">
+          <ObjectivesTab
+            spaId={spaId}
+            yearMonth={yearMonth}
+            onPrev={handlePrevMonth}
+            onNext={handleNextMonth}
+            activeKpis={sortedItems.filter((k) => k.is_active)}
+            definitionsLoading={isLoading}
+          />
+        </TabsContent>
+      </Tabs>
 
       <AddKpiDialog
         open={addOpen}
@@ -203,6 +259,238 @@ export default function KpiConfig() {
           );
         }}
       />
+    </div>
+  );
+}
+
+// ----- Objectives Tab -----
+
+interface ObjectivesTabProps {
+  spaId: string | null;
+  yearMonth: string;
+  onPrev: () => void;
+  onNext: () => void;
+  activeKpis: KpiDefinitionFull[];
+  definitionsLoading: boolean;
+}
+
+function ObjectivesTab({
+  spaId,
+  yearMonth,
+  onPrev,
+  onNext,
+  activeKpis,
+  definitionsLoading,
+}: ObjectivesTabProps) {
+  const { currentMap, previousMap, isLoading } = useKpiMonthlyTargets(spaId, yearMonth);
+  const upsertMut = useUpsertKpiMonthlyTarget();
+
+  const monthLabel = format(parseISO(`${yearMonth}-01`), "MMMM yyyy", { locale: fr });
+  const monthLabelCap = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
+
+  const spaKpis = activeKpis.filter((k) => SPA_CATEGORIES.includes(k.category));
+  const managerKpis = activeKpis.filter((k) => MANAGER_CATEGORIES.includes(k.category));
+
+  const navigator = (
+    <div className="flex items-center justify-center gap-3 mb-6">
+      <Button variant="ghost" size="icon" onClick={onPrev}>
+        <ChevronLeft className="h-4 w-4" />
+      </Button>
+      <span className="text-sm font-semibold min-w-[140px] text-center">{monthLabelCap}</span>
+      <Button variant="ghost" size="icon" onClick={onNext}>
+        <ChevronRight className="h-4 w-4" />
+      </Button>
+    </div>
+  );
+
+  if (!spaId) {
+    return (
+      <div className="border border-border rounded-xl p-12 text-center text-muted-foreground">
+        Sélectionner un spa pour configurer ses objectifs
+      </div>
+    );
+  }
+
+  if (definitionsLoading || isLoading) {
+    return (
+      <>
+        {navigator}
+        <div className="border border-border rounded-xl p-12 text-center text-muted-foreground">
+          Chargement…
+        </div>
+      </>
+    );
+  }
+
+  if (activeKpis.length === 0) {
+    return (
+      <>
+        {navigator}
+        <div className="border border-border rounded-xl p-12 text-center text-muted-foreground">
+          Aucun KPI configuré. Ajouter des KPI dans l'onglet Définitions.
+        </div>
+      </>
+    );
+  }
+
+  const renderGroup = (label: string, kpis: KpiDefinitionFull[], isFirst: boolean) => {
+    if (kpis.length === 0) return null;
+    return (
+      <div key={label} className={isFirst ? "" : "border-t border-border pt-4 mt-2"}>
+        <h3 className="text-sm font-semibold text-muted-foreground mb-2">{label}</h3>
+        <div className="divide-y divide-border">
+          {kpis.map((k) => (
+            <ObjectiveRow
+              key={k.id}
+              kpi={k}
+              spaId={spaId}
+              yearMonth={yearMonth}
+              current={currentMap.get(k.id)}
+              previous={previousMap.get(k.id)}
+              upsertMut={upsertMut}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="border border-border rounded-xl p-6 shadow-sm">
+      {navigator}
+      {renderGroup("KPI Spa", spaKpis, true)}
+      {renderGroup("KPI Manager", managerKpis, spaKpis.length === 0)}
+    </div>
+  );
+}
+
+interface ObjectiveRowProps {
+  kpi: KpiDefinitionFull;
+  spaId: string;
+  yearMonth: string;
+  current: KpiMonthlyTarget | undefined;
+  previous: KpiMonthlyTarget | undefined;
+  upsertMut: ReturnType<typeof useUpsertKpiMonthlyTarget>;
+}
+
+function ObjectiveRow({ kpi, spaId, yearMonth, current, previous, upsertMut }: ObjectiveRowProps) {
+  const [monthlyLocal, setMonthlyLocal] = useState<string>(
+    current?.monthly_value != null ? String(current.monthly_value) : "",
+  );
+  const [overrideLocal, setOverrideLocal] = useState<string>(
+    current?.weekly_override != null ? String(current.weekly_override) : "",
+  );
+
+  useEffect(() => {
+    setMonthlyLocal(current?.monthly_value != null ? String(current.monthly_value) : "");
+    setOverrideLocal(current?.weekly_override != null ? String(current.weekly_override) : "");
+  }, [yearMonth, current?.monthly_value, current?.weekly_override]);
+
+  const disabled = current?.monthly_value == null;
+  const computed = getWeeklyTarget(current);
+
+  const onError = (e: any) => toast.error(e?.message ?? "Erreur de sauvegarde");
+
+  const handleMonthlyBlur = () => {
+    const newVal = monthlyLocal === "" ? null : Number(monthlyLocal);
+    if (newVal === (current?.monthly_value ?? null)) return;
+    upsertMut.mutate(
+      {
+        spa_id: spaId,
+        kpi_definition_id: kpi.id,
+        year_month: yearMonth,
+        monthly_value: newVal,
+        weekly_mode: current?.weekly_mode ?? "divide",
+        weekly_override: current?.weekly_override ?? null,
+      },
+      { onError },
+    );
+  };
+
+  const handleModeChange = (newMode: WeeklyMode) => {
+    upsertMut.mutate(
+      {
+        spa_id: spaId,
+        kpi_definition_id: kpi.id,
+        year_month: yearMonth,
+        monthly_value: current?.monthly_value ?? null,
+        weekly_mode: newMode,
+        weekly_override: null,
+      },
+      { onError },
+    );
+  };
+
+  const handleOverrideBlur = () => {
+    const val = Number(overrideLocal);
+    const isDefault = overrideLocal === "" || (computed !== null && val === computed);
+    const newOverride = isDefault ? null : val;
+    if (newOverride === (current?.weekly_override ?? null)) return;
+    upsertMut.mutate(
+      {
+        spa_id: spaId,
+        kpi_definition_id: kpi.id,
+        year_month: yearMonth,
+        monthly_value: current?.monthly_value ?? null,
+        weekly_mode: current?.weekly_mode ?? "divide",
+        weekly_override: newOverride,
+      },
+      { onError },
+    );
+  };
+
+  const showPrevHint = !current && previous?.monthly_value != null;
+
+  return (
+    <div className="flex flex-row items-center gap-4 py-2.5">
+      <div className="flex-1 min-w-0 text-sm">
+        {kpi.name}
+        {kpi.unit ? <span className="text-muted-foreground"> ({kpi.unit})</span> : null}
+      </div>
+      <div className="w-32">
+        <Input
+          type="number"
+          className="h-9 text-sm w-32"
+          value={monthlyLocal}
+          placeholder={showPrevHint ? String(previous!.monthly_value) : "—"}
+          onChange={(e) => setMonthlyLocal(e.target.value)}
+          onBlur={handleMonthlyBlur}
+        />
+        {showPrevHint && (
+          <div className="text-[10px] text-muted-foreground mt-0.5">
+            M-1 : {previous!.monthly_value}
+          </div>
+        )}
+      </div>
+      <div className="w-28">
+        <Select
+          value={current?.weekly_mode ?? "divide"}
+          onValueChange={(v) => handleModeChange(v as WeeklyMode)}
+          disabled={disabled}
+        >
+          <SelectTrigger className="h-9 text-sm w-28">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="divide">÷ 4</SelectItem>
+            <SelectItem value="fixed">Fixe</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+      <div className="w-32 flex items-center gap-1.5">
+        <Input
+          type="number"
+          className="h-9 text-sm w-32"
+          value={overrideLocal}
+          placeholder={computed !== null ? String(Math.round(computed * 100) / 100) : "—"}
+          disabled={disabled}
+          onChange={(e) => setOverrideLocal(e.target.value)}
+          onBlur={handleOverrideBlur}
+        />
+        {current?.weekly_override != null && (
+          <span className="text-teal-600 text-xs">Manuel</span>
+        )}
+      </div>
     </div>
   );
 }
