@@ -82,7 +82,24 @@ export function useCreateReport() {
         },
       });
       if (error) {
-        const serverMessage = data?.error;
+        // supabase-js sets data=null on non-2xx. Parse the response body for the server message.
+        let serverMessage: string | undefined = data?.error;
+        const ctx = (error as unknown as { context?: Response }).context;
+        if (!serverMessage && ctx && typeof ctx.text === "function") {
+          try {
+            const text = await ctx.clone().text();
+            if (text) {
+              try {
+                const parsed = JSON.parse(text);
+                serverMessage = parsed?.error ?? parsed?.message;
+              } catch {
+                serverMessage = text;
+              }
+            }
+          } catch {
+            /* ignore */
+          }
+        }
         throw new Error(serverMessage ?? error.message ?? "Impossible de créer le rapport.");
       }
       if (data?.error) throw new Error(data.error);
