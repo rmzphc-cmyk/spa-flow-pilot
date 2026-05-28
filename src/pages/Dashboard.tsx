@@ -68,7 +68,7 @@ function getCtaConfig(status: ReportStatus, type: "weekly" | "monthly") {
 
 // --- Components ---
 
-function OverdueAlert({ todos }: { todos: typeof overdueTodos }) {
+function OverdueAlert({ todos }: { todos: OverdueTodo[] }) {
   if (todos.length === 0) return null;
   return (
     <div className="rounded-xl p-5 mb-4" style={{ backgroundColor: "#FEE2E2" }}>
