@@ -10,8 +10,7 @@ Deno.serve(async (req) => {
 
     const openaiKey = Deno.env.get("OPENAI_API_KEY");
     if (!openaiKey) {
-      console.error("OPENAI_API_KEY missing");
-      return json({ error: "AI generation unavailable" }, 500);
+      console.warn("OPENAI_API_KEY missing — will use template fallback");
     }
 
     const { report_id } = (await req.json()) as { report_id?: string };
