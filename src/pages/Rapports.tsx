@@ -169,7 +169,19 @@ export default function Rapports() {
     } catch (e) {
       const message = e instanceof Error ? e.message : "";
       if (message === "Un rapport actif existe déjà pour ce cycle.") {
-        setShowBlockedDialog(true);
+        const existing = reports.find(
+          (r) => r.type === newType && isPreparationState(r.state),
+        );
+        if (existing) {
+          setBlockedInfo({
+            type: existing.type,
+            label: existing.label,
+            stateLabel: stateConfig[existing.state].label,
+            id: existing.id,
+          });
+        } else {
+          setBlockedInfo({ type: newType, label: "", stateLabel: "", id: "" });
+        }
       } else {
         toast({
           title: "Erreur lors de la création",
