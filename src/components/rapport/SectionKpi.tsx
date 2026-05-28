@@ -136,6 +136,7 @@ export function SectionKpi({ reportId, reportType, onStatusChange }: Props) {
 
   const handleChange = useCallback(
     (def: KpiDefinitionRow, cv: KpiCardValue) => {
+      userEditedRef.current.add(def.id);
       setLocal((p) => ({ ...p, [def.id]: cv }));
       const t = timersRef.current[def.id];
       if (t) clearTimeout(t);
