@@ -84,12 +84,42 @@ Deno.serve(async (req) => {
         prevEntries = pe ?? [];
       }
       const prevMap = new Map(prevEntries.map((e) => [e.kpi_definition_id, e.value_current]));
-      const rows = kpiDefs.map((d) => ({
-        report_id: newReportId,
-        kpi_definition_id: d.id,
-        value_n1: prevMap.get(d.id) ?? null,
-        status: "not_applicable",
-      }));
+      const yearMonth = body.period_start.slice(0, 7);
+
+      const { data: monthlyTargets } = await admin
+        .from("kpi_monthly_targets")
+        .select("kpi_definition_id, monthly_value, weekly_mode, weekly_override")
+        .eq("spa_id", body.spa_id)
+        .eq("year_month", yearMonth);
+
+      const targetMap = new Map(
+        (monthlyTargets ?? []).map((t) => [t.kpi_definition_id, t])
+      );
+
+      const rows = kpiDefs.map((d) => {
+        const t = targetMap.get(d.id);
+        let target_value: number | null = null;
+        if (t && t.monthly_value !== null) {
+          if (body.cycle_type === "monthly") {
+            target_value = t.monthly_value;
+          } else {
+            if (t.weekly_override !== null) {
+              target_value = t.weekly_override;
+            } else if (t.weekly_mode === "divide") {
+              target_value = t.monthly_value / 4;
+            } else {
+              target_value = t.monthly_value;
+            }
+          }
+        }
+        return {
+          report_id: newReportId,
+          kpi_definition_id: d.id,
+          value_n1: prevMap.get(d.id) ?? null,
+          status: "not_applicable",
+          target_value,
+        };
+      });
       const { error: kpiErr } = await admin.from("kpi_entries").insert(rows);
       if (kpiErr && kpiErr.code !== "23505") throw kpiErr;
     }
