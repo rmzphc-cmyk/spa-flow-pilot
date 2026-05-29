@@ -619,8 +619,6 @@ function SettingsDialog({
               )}
             </button>
           </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="text-xs font-medium text-teal-700">Excellent si ≥</label>
