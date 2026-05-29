@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 
-export type KpiStatus = "green" | "amber" | "red" | "not_applicable";
+export type KpiStatus = "green" | "amber" | "red" | "not_applicable" | "excellent";
 
 export interface KpiEntryRow {
   id: string;
