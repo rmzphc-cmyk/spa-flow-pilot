@@ -15,6 +15,7 @@ export interface KpiDefinitionFull {
   kpi_group: "spa" | "manager";
   display_order: number;
   is_active: boolean;
+  threshold_excellent: number | null;
   threshold_amber: number | null;
   threshold_red: number | null;
   comparison_direction: ComparisonDirection;
@@ -49,6 +50,7 @@ export interface AddKpiInput {
   unit: string | null;
   category: KpiCategoryDb;
   kpi_group?: "spa" | "manager";
+  threshold_excellent: number | null;
   threshold_amber: number | null;
   threshold_red: number | null;
   comparison_direction: ComparisonDirection;
@@ -68,6 +70,7 @@ export function useAddKpiDefinition() {
           unit: input.unit,
           category: input.category,
           kpi_group: input.kpi_group ?? "spa",
+          threshold_excellent: input.threshold_excellent,
           threshold_amber: input.threshold_amber,
           threshold_red: input.threshold_red,
           comparison_direction: input.comparison_direction,
@@ -91,6 +94,7 @@ export interface UpdateKpiInput {
   unit?: string | null;
   category?: KpiCategoryDb;
   kpi_group?: "spa" | "manager";
+  threshold_excellent?: number | null;
   threshold_amber?: number | null;
   threshold_red?: number | null;
   comparison_direction?: ComparisonDirection;
