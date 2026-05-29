@@ -101,13 +101,15 @@ export function KpiCardSaisie({ kpi, cardValue, onChange }: SaisieProps) {
       : null;
 
   const commentPlaceholder =
-    status === "green"
-      ? t("kpi.comment.placeholder.green")
-      : status === "amber"
-        ? t("kpi.comment.placeholder.amber")
-        : status === "red"
-          ? t("kpi.comment.placeholder.red")
-          : "";
+    status === "excellent"
+      ? "Partager les facteurs de succès"
+      : status === "green"
+        ? t("kpi.comment.placeholder.green")
+        : status === "amber"
+          ? t("kpi.comment.placeholder.amber")
+          : status === "red"
+            ? t("kpi.comment.placeholder.red")
+            : "";
 
   const commentBorder =
     isRequired && !cardValue.comment?.trim()
