@@ -239,7 +239,8 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {sortedDefs.map((def) => {
           const entry = entriesByDef.get(def.id);
-          const data = defToKpiData(def, entry);
+          const liveTarget = liveTargetMap.get(def.id);
+          const data = defToKpiData(def, entry, liveTarget, isWeekly);
           const cv = local[def.id] ?? entryToCardValue(entry);
           return isWeekly ? (
             <KpiCardSaisieWeekly
