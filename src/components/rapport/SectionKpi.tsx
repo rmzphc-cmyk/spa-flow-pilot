@@ -150,6 +150,7 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
           } else {
             status = computeKpiStatus(
               n,
+              def.threshold_excellent,
               def.threshold_amber,
               def.threshold_red,
               def.comparison_direction,
