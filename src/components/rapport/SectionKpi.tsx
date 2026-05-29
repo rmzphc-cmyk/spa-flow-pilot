@@ -30,12 +30,25 @@ function mapCategory(def: KpiDefinitionRow): "spa" | "manager" {
   return (def.kpi_group ?? "spa") === "manager" ? "manager" : "spa";
 }
 
-function defToKpiData(def: KpiDefinitionRow, entry: KpiEntryRow | undefined): KpiData {
+function defToKpiData(
+  def: KpiDefinitionRow,
+  entry: KpiEntryRow | undefined,
+  liveTarget: KpiMonthlyTarget | undefined,
+  isWeekly: boolean,
+): KpiData {
+  let target: number;
+  if (liveTarget) {
+    target = isWeekly
+      ? (getWeeklyTarget(liveTarget) ?? def.threshold_amber ?? 0)
+      : (liveTarget.monthly_value ?? def.threshold_amber ?? 0);
+  } else {
+    target = entry?.target_value ?? def.threshold_amber ?? 0;
+  }
   return {
     id: def.id,
     label: def.name,
     unit: def.unit ?? "",
-    target: entry?.target_value ?? def.threshold_amber ?? 0,
+    target,
     n1: entry?.value_n1 ?? 0,
     category: mapCategory(def),
   };
