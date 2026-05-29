@@ -12,11 +12,17 @@ import {
   type KpiEntryRow,
   type KpiStatus,
 } from "@/hooks/useKpiEntries";
+import {
+  useKpiMonthlyTargets,
+  getWeeklyTarget,
+  type KpiMonthlyTarget,
+} from "@/hooks/useKpiMonthlyTargets";
 
 interface Props {
   reportId: string;
   reportType: "monthly" | "weekly";
   period?: string;
+  yearMonth?: string;
   onStatusChange: (status: SectionStatus) => void;
 }
 
@@ -24,12 +30,25 @@ function mapCategory(def: KpiDefinitionRow): "spa" | "manager" {
   return (def.kpi_group ?? "spa") === "manager" ? "manager" : "spa";
 }
 
-function defToKpiData(def: KpiDefinitionRow, entry: KpiEntryRow | undefined): KpiData {
+function defToKpiData(
+  def: KpiDefinitionRow,
+  entry: KpiEntryRow | undefined,
+  liveTarget: KpiMonthlyTarget | undefined,
+  isWeekly: boolean,
+): KpiData {
+  let target: number;
+  if (liveTarget) {
+    target = isWeekly
+      ? (getWeeklyTarget(liveTarget) ?? def.threshold_amber ?? 0)
+      : (liveTarget.monthly_value ?? def.threshold_amber ?? 0);
+  } else {
+    target = entry?.target_value ?? def.threshold_amber ?? 0;
+  }
   return {
     id: def.id,
     label: def.name,
     unit: def.unit ?? "",
-    target: entry?.target_value ?? def.threshold_amber ?? 0,
+    target,
     n1: entry?.value_n1 ?? 0,
     category: mapCategory(def),
   };
@@ -47,13 +66,14 @@ function entryToCardValue(entry: KpiEntryRow | undefined): KpiCardValue {
   };
 }
 
-export function SectionKpi({ reportId, reportType, onStatusChange }: Props) {
+export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: Props) {
   const { t } = useTranslation();
   const { spaId } = useAuth();
   const isWeekly = reportType === "weekly";
 
   const { data: definitions = [] } = useKpiDefinitions(spaId);
   const { data: entries = [] } = useKpiEntries(reportId);
+  const { currentMap: liveTargetMap } = useKpiMonthlyTargets(spaId, yearMonth ?? "");
   const upsert = useUpsertKpiEntry();
 
   const entriesByDef = useMemo(() => {
@@ -113,10 +133,10 @@ export function SectionKpi({ reportId, reportType, onStatusChange }: Props) {
           value_current = n;
           if (isWeekly) {
             const entryData = entriesByDef.get(def.id);
-            const ref =
-              entryData?.target_value !== null && entryData?.target_value !== undefined
-                ? entryData.target_value
-                : (entryData?.value_n1 ?? 0);
+            const liveTarget = liveTargetMap.get(def.id);
+            const ref = liveTarget
+              ? (getWeeklyTarget(liveTarget) ?? entryData?.value_n1 ?? 0)
+              : (entryData?.target_value ?? entryData?.value_n1 ?? 0);
             if (ref === 0) {
               status = "green";
             } else {
@@ -125,6 +145,7 @@ export function SectionKpi({ reportId, reportType, onStatusChange }: Props) {
               else if (ratio >= 0.85) status = "amber";
               else status = "red";
             }
+
 
           } else {
             status = computeKpiStatus(
@@ -150,7 +171,7 @@ export function SectionKpi({ reportId, reportType, onStatusChange }: Props) {
         status,
       });
     },
-    [reportId, upsert, entriesByDef, isWeekly],
+    [reportId, upsert, entriesByDef, isWeekly, liveTargetMap],
   );
 
   const handleChange = useCallback(
@@ -182,13 +203,11 @@ export function SectionKpi({ reportId, reportType, onStatusChange }: Props) {
       }
       if (isWeekly) {
         const entryData = entriesByDef.get(def.id);
-        const ref =
-          entryData?.target_value !== null && entryData?.target_value !== undefined
-            ? entryData.target_value
-            : (entryData?.value_n1 ?? 0);
+        const liveTarget = liveTargetMap.get(def.id);
+        const ref = liveTarget
+          ? (getWeeklyTarget(liveTarget) ?? entryData?.value_n1 ?? 0)
+          : (entryData?.target_value ?? entryData?.value_n1 ?? 0);
         const ratio = ref > 0 ? Number(cv.value) / ref : 1;
-        if (ratio < 0.85 && !cv.comment.trim()) return false;
-
         if (ratio < 0.85 && !cv.comment.trim()) return false;
       } else {
         const status = computeKpiStatus(
@@ -201,7 +220,7 @@ export function SectionKpi({ reportId, reportType, onStatusChange }: Props) {
       }
     }
     return true;
-  }, [local, sortedDefs, isWeekly, entriesByDef]);
+  }, [local, sortedDefs, isWeekly, entriesByDef, liveTargetMap]);
 
   useEffect(() => {
     onStatusChange(isComplete ? "complete" : "incomplete");
@@ -220,7 +239,8 @@ export function SectionKpi({ reportId, reportType, onStatusChange }: Props) {
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {sortedDefs.map((def) => {
           const entry = entriesByDef.get(def.id);
-          const data = defToKpiData(def, entry);
+          const liveTarget = liveTargetMap.get(def.id);
+          const data = defToKpiData(def, entry, liveTarget, isWeekly);
           const cv = local[def.id] ?? entryToCardValue(entry);
           return isWeekly ? (
             <KpiCardSaisieWeekly
