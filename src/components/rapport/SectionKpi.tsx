@@ -83,8 +83,9 @@ export function SectionKpi({ reportId, reportType, onStatusChange }: Props) {
   const sortedDefs = useMemo(
     () =>
       [...definitions].sort((a, b) => {
-        const ca = mapCategory(a.category);
-        const cb = mapCategory(b.category);
+        const ca = mapCategory(a);
+        const cb = mapCategory(b);
+
         if (ca !== cb) return ca === "spa" ? -1 : 1;
         return a.display_order - b.display_order;
       }),
