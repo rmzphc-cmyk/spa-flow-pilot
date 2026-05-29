@@ -38,6 +38,7 @@ export function getKpiStatus(value: string, target: number): KpiStatus {
 
 const statusDotColors: Record<KpiStatus, string> = {
   none: "bg-muted-foreground/40",
+  excellent: "bg-emerald-600",
   green: "bg-emerald-500",
   amber: "bg-amber-500",
   red: "bg-red-500",
