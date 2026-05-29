@@ -209,7 +209,8 @@ export function SectionKpi({ reportId, reportType, onStatusChange }: Props) {
 
   return (
     <section className="mb-8">
-      <h2 className="text-lg font-semibold text-foreground">
+        {isWeekly ? "Comparaison vs objectif hebdomadaire planifié (Config KPI)" : t("kpi.subtitle")}
+
         {isWeekly ? "KPI de la semaine" : t("kpi.title")}
       </h2>
       <p className="text-sm text-muted-foreground mb-4">
