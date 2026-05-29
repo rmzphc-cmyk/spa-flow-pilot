@@ -15,6 +15,7 @@ export interface KpiDefinitionFull {
   kpi_group: "spa" | "manager";
   display_order: number;
   is_active: boolean;
+  threshold_excellent: number | null;
   threshold_amber: number | null;
   threshold_red: number | null;
   comparison_direction: ComparisonDirection;
