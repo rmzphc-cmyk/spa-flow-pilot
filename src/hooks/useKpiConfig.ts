@@ -50,6 +50,7 @@ export interface AddKpiInput {
   unit: string | null;
   category: KpiCategoryDb;
   kpi_group?: "spa" | "manager";
+  threshold_excellent: number | null;
   threshold_amber: number | null;
   threshold_red: number | null;
   comparison_direction: ComparisonDirection;
