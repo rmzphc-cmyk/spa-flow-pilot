@@ -278,7 +278,6 @@ export function KpiCardSaisieWeekly({ kpi, cardValue, onChange }: WeeklySaisiePr
   const trend = numValue !== null && !isNaN(numValue) ? getTrendArrow(numValue, kpi.n1) : null;
   const showComment = !cardValue.isNa && (status === "red" || status === "amber");
 
-  const showComment = !cardValue.isNa && status === "red";
 
   return (
     <div className="bg-card border border-border rounded-xl p-4 shadow-sm flex flex-col">
