@@ -1,1 +1,0 @@
-ALTER TYPE public.kpi_status ADD VALUE IF NOT EXISTS 'excellent';

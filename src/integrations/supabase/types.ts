@@ -1246,7 +1246,7 @@ export type Database = {
         | "deferred"
       ids_status: "captured" | "structured" | "converted" | "closed_no_action"
       kpi_category: "financial" | "operational" | "customer" | "hr" | "custom"
-      kpi_status: "green" | "amber" | "red" | "not_applicable" | "excellent"
+      kpi_status: "green" | "amber" | "red" | "not_applicable"
       language_code: "fr" | "en" | "es"
       memory_type:
         | "kpi_trend"
@@ -1411,7 +1411,7 @@ export const Constants = {
       ],
       ids_status: ["captured", "structured", "converted", "closed_no_action"],
       kpi_category: ["financial", "operational", "customer", "hr", "custom"],
-      kpi_status: ["green", "amber", "red", "not_applicable", "excellent"],
+      kpi_status: ["green", "amber", "red", "not_applicable"],
       language_code: ["fr", "en", "es"],
       memory_type: [
         "kpi_trend",
