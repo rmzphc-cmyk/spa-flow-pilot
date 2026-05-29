@@ -171,7 +171,7 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
         status,
       });
     },
-    [reportId, upsert, entriesByDef, isWeekly],
+    [reportId, upsert, entriesByDef, isWeekly, liveTargetMap],
   );
 
   const handleChange = useCallback(
