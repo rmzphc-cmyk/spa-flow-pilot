@@ -119,3 +119,54 @@ export function useUpdateObjectiveProgress() {
 
   return { ...mutation, debouncedUpdate, immediateUpdate };
 }
+
+export function useAddObjectiveFromIds() {
+  const qc = useQueryClient();
+  const { spaId, user } = useAuth();
+  return useMutation({
+    mutationFn: async (input: {
+      idsItemId: string;
+      reportId: string;
+      title: string;
+      targetDate: string | null;
+    }) => {
+      if (!spaId || !user) throw new Error("Not authenticated");
+      const { data: obj, error: e1 } = await supabase
+        .from("objectives")
+        .insert({
+          spa_id: spaId,
+          report_id_created: input.reportId,
+          created_by: user.id,
+          title: input.title,
+          status: "active",
+          source: "ids_conversion",
+          target_date: input.targetDate,
+          description: JSON.stringify({
+            metric: "",
+            target: 0,
+            unit: "",
+            current: 0,
+            status_ui: "on_track",
+            comment: "",
+          }),
+        })
+        .select()
+        .single();
+      if (e1) throw e1;
+      const { error: e2 } = await supabase
+        .from("ids_items")
+        .update({
+          converted_to_objective_id: obj.id,
+          status: "converted",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", input.idsItemId);
+      if (e2) throw e2;
+      return obj;
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["ids_items", vars.reportId] });
+      qc.invalidateQueries({ queryKey: ["objectives", spaId] });
+    },
+  });
+}
