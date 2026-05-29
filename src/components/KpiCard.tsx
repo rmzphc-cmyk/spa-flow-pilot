@@ -8,7 +8,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 
 // --- Types ---
 
-export type KpiStatus = "none" | "green" | "amber" | "red";
+export type KpiStatus = "none" | "green" | "amber" | "red" | "excellent";
 
 export interface KpiData {
   id: string;
