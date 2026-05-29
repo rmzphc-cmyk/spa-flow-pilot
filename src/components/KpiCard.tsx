@@ -140,13 +140,9 @@ export function KpiCardSaisie({ kpi, cardValue, onChange }: SaisieProps) {
           <span className="font-medium text-foreground text-sm">{kpi.label}</span>
           <span className="text-muted-foreground text-xs">{kpi.unit}</span>
         </div>
-        <div className="flex items-center gap-2">
-          <span
-            className={`text-xs px-1.5 py-0.5 rounded ${
-              kpi.category === "spa" ? "bg-blue-50 text-blue-700" : "bg-violet-50 text-violet-700"
-            }`}
-          >
-            {kpi.category === "spa" ? "Spa" : "Manager"}
+        <div className="flex items-center gap-1.5">
+          <span className={`text-xs font-medium ${statusTextColors[status] ?? "text-muted-foreground"}`}>
+            {status !== "none" && statusLabel[status]}
           </span>
           <div className={`w-3 h-3 rounded-full shrink-0 ${statusDotColors[status]}`} />
         </div>
@@ -313,6 +309,9 @@ export function KpiCardSaisieWeekly({ kpi, cardValue, onChange }: WeeklySaisiePr
             {kpi.category === "spa" ? "Spa" : "Manager"}
           </span>
           <div className="flex items-center gap-1">
+            <span className={`text-xs font-medium ${statusTextColors[status] ?? "text-muted-foreground"}`}>
+              {status !== "none" && statusLabel[status]}
+            </span>
             <div className={`w-3 h-3 rounded-full shrink-0 ${statusDotColors[status]}`} />
             {trend && (
               <span className={`text-sm font-bold ${trend.color}`}>{trend.arrow}</span>
@@ -440,6 +439,9 @@ export function KpiCardLecture({ kpi }: LectureProps) {
           <p className="text-xl font-bold text-foreground">
             {kpi.value.toLocaleString("fr-FR")}
             <span className="text-sm font-normal text-muted-foreground">{kpi.unit}</span>
+          </p>
+          <p className={`text-xs font-medium mt-0.5 ${statusTextColors[kpi.status] ?? ""}`}>
+            {statusLabel[kpi.status] ?? ""}
           </p>
           <p
             className={`text-xs font-medium mt-0.5 ${
