@@ -203,13 +203,11 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
       }
       if (isWeekly) {
         const entryData = entriesByDef.get(def.id);
-        const ref =
-          entryData?.target_value !== null && entryData?.target_value !== undefined
-            ? entryData.target_value
-            : (entryData?.value_n1 ?? 0);
+        const liveTarget = liveTargetMap.get(def.id);
+        const ref = liveTarget
+          ? (getWeeklyTarget(liveTarget) ?? entryData?.value_n1 ?? 0)
+          : (entryData?.target_value ?? entryData?.value_n1 ?? 0);
         const ratio = ref > 0 ? Number(cv.value) / ref : 1;
-        if (ratio < 0.85 && !cv.comment.trim()) return false;
-
         if (ratio < 0.85 && !cv.comment.trim()) return false;
       } else {
         const status = computeKpiStatus(
