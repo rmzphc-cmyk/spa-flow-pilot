@@ -376,7 +376,8 @@ export function KpiCardSaisieWeekly({ kpi, cardValue, onChange }: WeeklySaisiePr
               </label>
               <Textarea
                 className={`text-sm min-h-[60px] ${!cardValue.comment?.trim() ? "border-destructive" : ""}`}
-                placeholder="Que s'est-il passé cette semaine ?"
+                placeholder={status === "amber" ? "Objectif partiellement atteint — expliquer" : "Que s'est-il passé cette semaine ?"}
+
                 maxLength={200}
                 value={cardValue.comment}
                 onChange={(e) => onChange({ ...cardValue, comment: e.target.value })}
