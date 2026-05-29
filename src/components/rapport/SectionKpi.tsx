@@ -20,7 +20,6 @@ interface Props {
   onStatusChange: (status: SectionStatus) => void;
 }
 
-function mapCategory(cat: string): "spa" | "manager" {
 function mapCategory(def: KpiDefinitionRow): "spa" | "manager" {
   return (def.kpi_group ?? "spa") === "manager" ? "manager" : "spa";
 }
@@ -36,7 +35,6 @@ function defToKpiData(def: KpiDefinitionRow, entry: KpiEntryRow | undefined): Kp
   };
 }
 
-}
 
 function entryToCardValue(entry: KpiEntryRow | undefined): KpiCardValue {
   if (!entry) return { value: "", comment: "", isNa: false, naReason: "" };
