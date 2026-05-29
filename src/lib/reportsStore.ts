@@ -74,7 +74,7 @@ export interface ReportRecord {
   type: ReportType;
   label: string;
   period: string;
-  yearMonth: string;
+  yearMonth?: string;
   state: ReportState;
   updatedAt: string;
   meetingDate: string | null;
