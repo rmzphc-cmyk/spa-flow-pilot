@@ -220,7 +220,7 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
       }
     }
     return true;
-  }, [local, sortedDefs, isWeekly, entriesByDef]);
+  }, [local, sortedDefs, isWeekly, entriesByDef, liveTargetMap]);
 
   useEffect(() => {
     onStatusChange(isComplete ? "complete" : "incomplete");
