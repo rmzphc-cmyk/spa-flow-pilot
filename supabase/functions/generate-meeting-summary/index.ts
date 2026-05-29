@@ -58,7 +58,15 @@ Deno.serve(async (req) => {
           .eq("status", "active"),
       ]);
 
+    const kpisListPrompt = kpis ?? [];
+    const excellentKpisCount = kpisListPrompt.filter((k: any) => k.status === "excellent").length;
+    const greenKpisCount = kpisListPrompt.filter((k: any) => k.status === "green").length;
+    const amberKpisCount = kpisListPrompt.filter((k: any) => k.status === "amber").length;
+    const redKpisCount = kpisListPrompt.filter((k: any) => k.status === "red").length;
+
     const userPrompt = `Données du cycle "${report.cycle_label}" (période ${report.period_start} → ${report.period_end}).
+
+KPIs excellents : ${excellentKpisCount}, bons : ${greenKpisCount}, à surveiller : ${amberKpisCount}, insuffisants : ${redKpisCount}
 
 KPI:
 ${(kpis ?? []).map((k: any) => `- ${k.kpi_definitions?.name ?? "?"}: ${k.value_current ?? "n/a"}${k.kpi_definitions?.unit ?? ""} (N-1: ${k.value_n1 ?? "n/a"}, statut: ${k.status})${k.comment ? ` — ${k.comment}` : ""}`).join("\n") || "Aucun"}
