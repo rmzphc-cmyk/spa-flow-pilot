@@ -274,8 +274,10 @@ export function KpiCardSaisieWeekly({ kpi, cardValue, onChange }: WeeklySaisiePr
   const { t } = useTranslation();
 
   const numValue = cardValue.value ? Number(cardValue.value) : null;
-  const status = cardValue.isNa ? "none" : (numValue !== null && !isNaN(numValue) ? getWeeklyKpiStatus(numValue, kpi.n1) : "none");
+  const status = cardValue.isNa ? "none" : (numValue !== null && !isNaN(numValue) ? getWeeklyKpiStatus(numValue, kpi.target, kpi.n1) : "none");
   const trend = numValue !== null && !isNaN(numValue) ? getTrendArrow(numValue, kpi.n1) : null;
+  const showComment = !cardValue.isNa && (status === "red" || status === "amber");
+
   const showComment = !cardValue.isNa && status === "red";
 
   return (
