@@ -180,12 +180,15 @@ export function SectionKpi({ reportId, reportType, onStatusChange }: Props) {
         if (!cv.naReason.trim()) return false;
         continue;
       }
-      if (!cv.value || isNaN(Number(cv.value))) return false;
       if (isWeekly) {
-        // Weekly: "red" = same logic as KpiCardSaisieWeekly (compare vs N-1)
-        // If n1 = 0 (first report, no prior data), ratio = 1 → never red
-        const n1 = entriesByDef.get(def.id)?.value_n1 ?? 0;
-        const ratio = n1 > 0 ? Number(cv.value) / n1 : 1;
+        const entryData = entriesByDef.get(def.id);
+        const ref =
+          entryData?.target_value !== null && entryData?.target_value !== undefined
+            ? entryData.target_value
+            : (entryData?.value_n1 ?? 0);
+        const ratio = ref > 0 ? Number(cv.value) / ref : 1;
+        if (ratio < 0.85 && !cv.comment.trim()) return false;
+
         if (ratio < 0.85 && !cv.comment.trim()) return false;
       } else {
         const status = computeKpiStatus(
