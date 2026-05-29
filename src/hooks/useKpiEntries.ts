@@ -63,6 +63,7 @@ export function useUpsertKpiEntry() {
  */
 export function computeKpiStatus(
   value: number | null,
+  thresholdExcellent: number | null,
   thresholdAmber: number | null,
   thresholdRed: number | null,
   direction: "higher_is_better" | "lower_is_better",
@@ -70,10 +71,12 @@ export function computeKpiStatus(
   if (value === null || isNaN(value)) return "not_applicable";
   if (thresholdAmber === null && thresholdRed === null) return "green";
   if (direction === "higher_is_better") {
+    if (thresholdExcellent !== null && value >= thresholdExcellent) return "excellent";
     if (thresholdAmber !== null && value >= thresholdAmber) return "green";
     if (thresholdRed !== null && value >= thresholdRed) return "amber";
     return "red";
   } else {
+    if (thresholdExcellent !== null && value <= thresholdExcellent) return "excellent";
     if (thresholdAmber !== null && value <= thresholdAmber) return "green";
     if (thresholdRed !== null && value <= thresholdRed) return "amber";
     return "red";
