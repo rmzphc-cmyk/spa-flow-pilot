@@ -69,7 +69,7 @@ export function computeKpiStatus(
   direction: "higher_is_better" | "lower_is_better",
 ): KpiStatus {
   if (value === null || isNaN(value)) return "not_applicable";
-  if (thresholdAmber === null && thresholdRed === null && thresholdExcellent === null) return "green";
+  if (thresholdAmber === null && thresholdRed === null) return "green";
   if (direction === "higher_is_better") {
     if (thresholdExcellent !== null && value >= thresholdExcellent) return "excellent";
     if (thresholdAmber !== null && value >= thresholdAmber) return "green";

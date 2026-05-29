@@ -8,7 +8,7 @@ import { ChevronDown, ChevronUp } from "lucide-react";
 
 // --- Types ---
 
-export type KpiStatus = "none" | "green" | "amber" | "red";
+export type KpiStatus = "none" | "green" | "amber" | "red" | "excellent";
 
 export interface KpiData {
   id: string;
@@ -38,6 +38,7 @@ export function getKpiStatus(value: string, target: number): KpiStatus {
 
 const statusDotColors: Record<KpiStatus, string> = {
   none: "bg-muted-foreground/40",
+  excellent: "bg-emerald-600",
   green: "bg-emerald-500",
   amber: "bg-amber-500",
   red: "bg-red-500",
@@ -100,13 +101,15 @@ export function KpiCardSaisie({ kpi, cardValue, onChange }: SaisieProps) {
       : null;
 
   const commentPlaceholder =
-    status === "green"
-      ? t("kpi.comment.placeholder.green")
-      : status === "amber"
-        ? t("kpi.comment.placeholder.amber")
-        : status === "red"
-          ? t("kpi.comment.placeholder.red")
-          : "";
+    status === "excellent"
+      ? "Partager les facteurs de succès"
+      : status === "green"
+        ? t("kpi.comment.placeholder.green")
+        : status === "amber"
+          ? t("kpi.comment.placeholder.amber")
+          : status === "red"
+            ? t("kpi.comment.placeholder.red")
+            : "";
 
   const commentBorder =
     isRequired && !cardValue.comment?.trim()
@@ -403,7 +406,7 @@ interface LectureProps {
     unit: string;
     value: number;
     target: number;
-    status: "green" | "amber" | "red";
+    status: "green" | "amber" | "red" | "excellent";
     comment: string;
   };
 }

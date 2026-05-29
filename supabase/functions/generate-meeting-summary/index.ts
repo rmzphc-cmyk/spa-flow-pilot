@@ -58,7 +58,15 @@ Deno.serve(async (req) => {
           .eq("status", "active"),
       ]);
 
+    const kpisListPrompt = kpis ?? [];
+    const excellentKpisCount = kpisListPrompt.filter((k: any) => k.status === "excellent").length;
+    const greenKpisCount = kpisListPrompt.filter((k: any) => k.status === "green").length;
+    const amberKpisCount = kpisListPrompt.filter((k: any) => k.status === "amber").length;
+    const redKpisCount = kpisListPrompt.filter((k: any) => k.status === "red").length;
+
     const userPrompt = `Données du cycle "${report.cycle_label}" (période ${report.period_start} → ${report.period_end}).
+
+KPIs excellents : ${excellentKpisCount}, bons : ${greenKpisCount}, à surveiller : ${amberKpisCount}, insuffisants : ${redKpisCount}
 
 KPI:
 ${(kpis ?? []).map((k: any) => `- ${k.kpi_definitions?.name ?? "?"}: ${k.value_current ?? "n/a"}${k.kpi_definitions?.unit ?? ""} (N-1: ${k.value_n1 ?? "n/a"}, statut: ${k.status})${k.comment ? ` — ${k.comment}` : ""}`).join("\n") || "Aucun"}
@@ -86,6 +94,7 @@ Génère un JSON avec exactement ces clés: executive_summary (200-250 mots), kp
       const redKpis = kpisList.filter((k: any) => k.status === "red").length;
       const amberKpis = kpisList.filter((k: any) => k.status === "amber").length;
       const greenKpis = kpisList.filter((k: any) => k.status === "green").length;
+      const excellentKpis = kpisList.filter((k: any) => k.status === "excellent").length;
       const avgResp = respsList.length
         ? Math.round(respsList.reduce((s: number, r: any) => s + (r.completion_rate ?? 0), 0) / respsList.length)
         : 0;
@@ -93,7 +102,7 @@ Génère un JSON avec exactement ces clés: executive_summary (200-250 mots), kp
 
       const executive_summary =
         `Réunion ${report.cycle_label} (${report.period_start} → ${report.period_end}). ` +
-        `${kpisList.length} indicateurs suivis (${greenKpis} verts, ${amberKpis} ambre, ${redKpis} rouges). ` +
+        `${kpisList.length} indicateurs suivis (${excellentKpis} excellents, ${greenKpis} bons, ${amberKpis} à surveiller, ${redKpis} insuffisants). ` +
         `${checkin ? `Humeur équipe : ${checkin.mood_score}/5, focus ${checkin.focus_level}/5. ` : ""}` +
         `${respsList.length} responsabilités évaluées (moyenne ${avgResp}%). ` +
         `${idsList.length} problème(s) identifié(s)${idsOpen ? `, ${idsOpen} encore ouvert(s)` : ""}. ` +
