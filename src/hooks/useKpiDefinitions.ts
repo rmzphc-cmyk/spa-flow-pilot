@@ -8,6 +8,7 @@ export interface KpiDefinitionRow {
   name_es: string | null;
   unit: string | null;
   category: string;
+  kpi_group: "spa" | "manager";
   display_order: number;
   threshold_amber: number | null;
   threshold_red: number | null;
@@ -16,6 +17,7 @@ export interface KpiDefinitionRow {
   comment_guidance_en: string | null;
   comment_guidance_es: string | null;
 }
+
 
 export function useKpiDefinitions(spaId: string | null) {
   return useQuery({
