@@ -10,6 +10,7 @@ export interface KpiDefinitionRow {
   category: string;
   kpi_group: "spa" | "manager";
   display_order: number;
+  threshold_excellent: number | null;
   threshold_amber: number | null;
   threshold_red: number | null;
   comparison_direction: "higher_is_better" | "lower_is_better";
