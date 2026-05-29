@@ -246,13 +246,15 @@ export function KpiCardSaisie({ kpi, cardValue, onChange }: SaisieProps) {
 // MODE SAISIE WEEKLY (simplified)
 // ============================================
 
-function getWeeklyKpiStatus(value: number, n1: number): KpiStatus {
-  if (n1 === 0) return "green";
-  const ratio = value / n1;
+function getWeeklyKpiStatus(value: number, target: number, n1: number): KpiStatus {
+  const ref = target > 0 ? target : n1;
+  if (ref === 0) return "green";
+  const ratio = value / ref;
   if (ratio >= 1) return "green";
   if (ratio >= 0.85) return "amber";
   return "red";
 }
+
 
 function getTrendArrow(value: number, n1: number): { arrow: string; color: string } {
   if (n1 === 0) return { arrow: "→", color: "text-muted-foreground" };
@@ -272,9 +274,10 @@ export function KpiCardSaisieWeekly({ kpi, cardValue, onChange }: WeeklySaisiePr
   const { t } = useTranslation();
 
   const numValue = cardValue.value ? Number(cardValue.value) : null;
-  const status = cardValue.isNa ? "none" : (numValue !== null && !isNaN(numValue) ? getWeeklyKpiStatus(numValue, kpi.n1) : "none");
+  const status = cardValue.isNa ? "none" : (numValue !== null && !isNaN(numValue) ? getWeeklyKpiStatus(numValue, kpi.target, kpi.n1) : "none");
   const trend = numValue !== null && !isNaN(numValue) ? getTrendArrow(numValue, kpi.n1) : null;
-  const showComment = !cardValue.isNa && status === "red";
+  const showComment = !cardValue.isNa && (status === "red" || status === "amber");
+
 
   return (
     <div className="bg-card border border-border rounded-xl p-4 shadow-sm flex flex-col">
@@ -302,12 +305,28 @@ export function KpiCardSaisieWeekly({ kpi, cardValue, onChange }: WeeklySaisiePr
       </div>
 
       {/* N-1 (last week) */}
-      <p className="text-xs text-muted-foreground italic mb-3">
-        Semaine précédente :{" "}
-        <span className="font-medium">
-          {kpi.n1.toLocaleString("fr-FR")}{kpi.unit}
-        </span>
-      </p>
+      {/* Reference: weekly target (primary) + N-1 (secondary) */}
+      {kpi.target > 0 ? (
+        <p className="text-xs text-muted-foreground italic mb-1">
+          Objectif semaine :{" "}
+          <span className="font-medium">
+            {kpi.target.toLocaleString("fr-FR")}{kpi.unit}
+          </span>
+        </p>
+      ) : (
+        <p className="text-xs text-muted-foreground italic mb-1">
+          Semaine précédente :{" "}
+          <span className="font-medium">
+            {kpi.n1.toLocaleString("fr-FR")}{kpi.unit}
+          </span>
+        </p>
+      )}
+      {kpi.target > 0 && kpi.n1 !== 0 && (
+        <p className="text-[11px] text-muted-foreground/70 italic mb-3">
+          Semaine précédente : {kpi.n1.toLocaleString("fr-FR")}{kpi.unit}
+        </p>
+      )}
+      {(kpi.target === 0 || kpi.n1 === 0) && <div className="mb-2" />}
 
       {/* NA checkbox */}
       <div className="flex items-center gap-2 mb-3">
@@ -357,7 +376,8 @@ export function KpiCardSaisieWeekly({ kpi, cardValue, onChange }: WeeklySaisiePr
               </label>
               <Textarea
                 className={`text-sm min-h-[60px] ${!cardValue.comment?.trim() ? "border-destructive" : ""}`}
-                placeholder="Que s'est-il passé cette semaine ?"
+                placeholder={status === "amber" ? "Objectif partiellement atteint — expliquer" : "Que s'est-il passé cette semaine ?"}
+
                 maxLength={200}
                 value={cardValue.comment}
                 onChange={(e) => onChange({ ...cardValue, comment: e.target.value })}

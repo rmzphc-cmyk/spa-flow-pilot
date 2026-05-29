@@ -20,8 +20,8 @@ interface Props {
   onStatusChange: (status: SectionStatus) => void;
 }
 
-function mapCategory(cat: string): "spa" | "manager" {
-  return cat === "manager" || cat === "team" ? "manager" : "spa";
+function mapCategory(def: KpiDefinitionRow): "spa" | "manager" {
+  return (def.kpi_group ?? "spa") === "manager" ? "manager" : "spa";
 }
 
 function defToKpiData(def: KpiDefinitionRow, entry: KpiEntryRow | undefined): KpiData {
@@ -29,11 +29,12 @@ function defToKpiData(def: KpiDefinitionRow, entry: KpiEntryRow | undefined): Kp
     id: def.id,
     label: def.name,
     unit: def.unit ?? "",
-    target: def.threshold_amber ?? 0,
+    target: entry?.target_value ?? def.threshold_amber ?? 0,
     n1: entry?.value_n1 ?? 0,
-    category: mapCategory(def.category),
+    category: mapCategory(def),
   };
 }
+
 
 function entryToCardValue(entry: KpiEntryRow | undefined): KpiCardValue {
   if (!entry) return { value: "", comment: "", isNa: false, naReason: "" };
@@ -82,8 +83,9 @@ export function SectionKpi({ reportId, reportType, onStatusChange }: Props) {
   const sortedDefs = useMemo(
     () =>
       [...definitions].sort((a, b) => {
-        const ca = mapCategory(a.category);
-        const cb = mapCategory(b.category);
+        const ca = mapCategory(a);
+        const cb = mapCategory(b);
+
         if (ca !== cb) return ca === "spa" ? -1 : 1;
         return a.display_order - b.display_order;
       }),
@@ -110,15 +112,20 @@ export function SectionKpi({ reportId, reportType, onStatusChange }: Props) {
         } else {
           value_current = n;
           if (isWeekly) {
-            const n1Val = entriesByDef.get(def.id)?.value_n1 ?? 0;
-            if (n1Val === 0) {
+            const entryData = entriesByDef.get(def.id);
+            const ref =
+              entryData?.target_value !== null && entryData?.target_value !== undefined
+                ? entryData.target_value
+                : (entryData?.value_n1 ?? 0);
+            if (ref === 0) {
               status = "green";
             } else {
-              const ratio = n / n1Val;
+              const ratio = n / ref;
               if (ratio >= 1) status = "green";
               else if (ratio >= 0.85) status = "amber";
               else status = "red";
             }
+
           } else {
             status = computeKpiStatus(
               n,
@@ -173,12 +180,15 @@ export function SectionKpi({ reportId, reportType, onStatusChange }: Props) {
         if (!cv.naReason.trim()) return false;
         continue;
       }
-      if (!cv.value || isNaN(Number(cv.value))) return false;
       if (isWeekly) {
-        // Weekly: "red" = same logic as KpiCardSaisieWeekly (compare vs N-1)
-        // If n1 = 0 (first report, no prior data), ratio = 1 → never red
-        const n1 = entriesByDef.get(def.id)?.value_n1 ?? 0;
-        const ratio = n1 > 0 ? Number(cv.value) / n1 : 1;
+        const entryData = entriesByDef.get(def.id);
+        const ref =
+          entryData?.target_value !== null && entryData?.target_value !== undefined
+            ? entryData.target_value
+            : (entryData?.value_n1 ?? 0);
+        const ratio = ref > 0 ? Number(cv.value) / ref : 1;
+        if (ratio < 0.85 && !cv.comment.trim()) return false;
+
         if (ratio < 0.85 && !cv.comment.trim()) return false;
       } else {
         const status = computeKpiStatus(
@@ -203,8 +213,9 @@ export function SectionKpi({ reportId, reportType, onStatusChange }: Props) {
         {isWeekly ? "KPI de la semaine" : t("kpi.title")}
       </h2>
       <p className="text-sm text-muted-foreground mb-4">
-        {isWeekly ? "Objectifs hebdomadaires définis dans Config KPI" : t("kpi.subtitle")}
+        {isWeekly ? "Comparaison vs objectif hebdomadaire planifié (Config KPI)" : t("kpi.subtitle")}
       </p>
+
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {sortedDefs.map((def) => {
