@@ -621,14 +621,26 @@ function SettingsDialog({
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Seuil vert</label>
-              <Input type="number" value={amber} onChange={(e) => setAmber(e.target.value)} placeholder="—" />
+          <div className="grid grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs font-medium text-teal-700">Excellent si ≥</label>
+              <Input type="number" value={excellent} onChange={(e) => setExcellent(e.target.value)} placeholder="—" />
+              <p className="text-[10px] text-muted-foreground mt-1">Vert foncé • valeur la plus haute</p>
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Seuil rouge</label>
+              <label className="text-xs font-medium text-green-700">Bien si ≥</label>
+              <Input type="number" value={amber} onChange={(e) => setAmber(e.target.value)} placeholder="—" />
+              <p className="text-[10px] text-muted-foreground mt-1">Vert • objectif atteint</p>
+            </div>
+            <div>
+              <label className="text-xs font-medium text-orange-600">Correct si ≥</label>
               <Input type="number" value={red} onChange={(e) => setRed(e.target.value)} placeholder="—" />
+              <p className="text-[10px] text-muted-foreground mt-1">Orange • acceptable</p>
             </div>
           </div>
+          <p className="text-xs text-muted-foreground">
+            En dessous de "Correct" → <span className="text-red-500 font-medium">Insuffisant</span>
+          </p>
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Annuler</Button>
@@ -638,6 +650,7 @@ function SettingsDialog({
               onSave({
                 category,
                 comparison_direction: direction,
+                threshold_excellent: excellent === "" ? null : Number(excellent),
                 threshold_amber: amber === "" ? null : Number(amber),
                 threshold_red: red === "" ? null : Number(red),
               })
