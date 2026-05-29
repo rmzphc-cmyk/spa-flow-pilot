@@ -21,7 +21,8 @@ interface Props {
 }
 
 function mapCategory(cat: string): "spa" | "manager" {
-  return cat === "manager" || cat === "team" ? "manager" : "spa";
+function mapCategory(def: KpiDefinitionRow): "spa" | "manager" {
+  return (def.kpi_group ?? "spa") === "manager" ? "manager" : "spa";
 }
 
 function defToKpiData(def: KpiDefinitionRow, entry: KpiEntryRow | undefined): KpiData {
@@ -29,10 +30,12 @@ function defToKpiData(def: KpiDefinitionRow, entry: KpiEntryRow | undefined): Kp
     id: def.id,
     label: def.name,
     unit: def.unit ?? "",
-    target: def.threshold_amber ?? 0,
+    target: entry?.target_value ?? def.threshold_amber ?? 0,
     n1: entry?.value_n1 ?? 0,
-    category: mapCategory(def.category),
+    category: mapCategory(def),
   };
+}
+
 }
 
 function entryToCardValue(entry: KpiEntryRow | undefined): KpiCardValue {
