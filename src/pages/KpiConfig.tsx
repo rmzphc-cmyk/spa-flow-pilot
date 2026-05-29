@@ -574,6 +574,7 @@ function SettingsDialog({
   const [direction, setDirection] = useState<ComparisonDirection>("higher_is_better");
   const [amber, setAmber] = useState("");
   const [red, setRed] = useState("");
+  const [excellent, setExcellent] = useState("");
 
   useEffect(() => {
     if (kpi) {
@@ -581,6 +582,7 @@ function SettingsDialog({
       setDirection(kpi.comparison_direction);
       setAmber(kpi.threshold_amber != null ? String(kpi.threshold_amber) : "");
       setRed(kpi.threshold_red != null ? String(kpi.threshold_red) : "");
+      setExcellent(kpi.threshold_excellent != null ? String(kpi.threshold_excellent) : "");
     }
   }, [kpi]);
 
