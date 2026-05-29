@@ -305,12 +305,28 @@ export function KpiCardSaisieWeekly({ kpi, cardValue, onChange }: WeeklySaisiePr
       </div>
 
       {/* N-1 (last week) */}
-      <p className="text-xs text-muted-foreground italic mb-3">
-        Semaine précédente :{" "}
-        <span className="font-medium">
-          {kpi.n1.toLocaleString("fr-FR")}{kpi.unit}
-        </span>
-      </p>
+      {/* Reference: weekly target (primary) + N-1 (secondary) */}
+      {kpi.target > 0 ? (
+        <p className="text-xs text-muted-foreground italic mb-1">
+          Objectif semaine :{" "}
+          <span className="font-medium">
+            {kpi.target.toLocaleString("fr-FR")}{kpi.unit}
+          </span>
+        </p>
+      ) : (
+        <p className="text-xs text-muted-foreground italic mb-1">
+          Semaine précédente :{" "}
+          <span className="font-medium">
+            {kpi.n1.toLocaleString("fr-FR")}{kpi.unit}
+          </span>
+        </p>
+      )}
+      {kpi.target > 0 && kpi.n1 !== 0 && (
+        <p className="text-[11px] text-muted-foreground/70 italic mb-3">
+          Semaine précédente : {kpi.n1.toLocaleString("fr-FR")}{kpi.unit}
+        </p>
+      )}
+      {(kpi.target === 0 || kpi.n1 === 0) && <div className="mb-2" />}
 
       {/* NA checkbox */}
       <div className="flex items-center gap-2 mb-3">
