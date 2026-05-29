@@ -246,13 +246,15 @@ export function KpiCardSaisie({ kpi, cardValue, onChange }: SaisieProps) {
 // MODE SAISIE WEEKLY (simplified)
 // ============================================
 
-function getWeeklyKpiStatus(value: number, n1: number): KpiStatus {
-  if (n1 === 0) return "green";
-  const ratio = value / n1;
+function getWeeklyKpiStatus(value: number, target: number, n1: number): KpiStatus {
+  const ref = target > 0 ? target : n1;
+  if (ref === 0) return "green";
+  const ratio = value / ref;
   if (ratio >= 1) return "green";
   if (ratio >= 0.85) return "amber";
   return "red";
 }
+
 
 function getTrendArrow(value: number, n1: number): { arrow: string; color: string } {
   if (n1 === 0) return { arrow: "→", color: "text-muted-foreground" };
