@@ -28,7 +28,7 @@ export function useKpiDefinitions(spaId: string | null) {
       const { data, error } = await supabase
         .from("kpi_definitions")
         .select(
-          "id, name, name_en, name_es, unit, category, kpi_group, display_order, threshold_amber, threshold_red, comparison_direction, comment_guidance_fr, comment_guidance_en, comment_guidance_es",
+          "id, name, name_en, name_es, unit, category, kpi_group, display_order, threshold_excellent, threshold_amber, threshold_red, comparison_direction, comment_guidance_fr, comment_guidance_en, comment_guidance_es",
         )
 
         .eq("spa_id", spaId!)
