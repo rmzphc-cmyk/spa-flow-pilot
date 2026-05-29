@@ -133,10 +133,10 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
           value_current = n;
           if (isWeekly) {
             const entryData = entriesByDef.get(def.id);
-            const ref =
-              entryData?.target_value !== null && entryData?.target_value !== undefined
-                ? entryData.target_value
-                : (entryData?.value_n1 ?? 0);
+            const liveTarget = liveTargetMap.get(def.id);
+            const ref = liveTarget
+              ? (getWeeklyTarget(liveTarget) ?? entryData?.value_n1 ?? 0)
+              : (entryData?.target_value ?? entryData?.value_n1 ?? 0);
             if (ref === 0) {
               status = "green";
             } else {
@@ -145,6 +145,7 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
               else if (ratio >= 0.85) status = "amber";
               else status = "red";
             }
+
 
           } else {
             status = computeKpiStatus(
