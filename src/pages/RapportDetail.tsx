@@ -227,7 +227,7 @@ function PreparationMode({ report }: { report: ReportRecord }) {
 
 
       {activeSection === "kpi" && (
-        <SectionKpi reportId={report.id} reportType={report.type} period={report.period} onStatusChange={onKpiStatusChange} />
+        <SectionKpi reportId={report.id} reportType={report.type} period={report.period} yearMonth={report.yearMonth} onStatusChange={onKpiStatusChange} />
       )}
       {activeSection === "checkin" && !isWeekly && (
         <SectionCheckin reportId={report.id} onStatusChange={onCheckinStatusChange} />
