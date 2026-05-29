@@ -112,15 +112,20 @@ export function SectionKpi({ reportId, reportType, onStatusChange }: Props) {
         } else {
           value_current = n;
           if (isWeekly) {
-            const n1Val = entriesByDef.get(def.id)?.value_n1 ?? 0;
-            if (n1Val === 0) {
+            const entryData = entriesByDef.get(def.id);
+            const ref =
+              entryData?.target_value !== null && entryData?.target_value !== undefined
+                ? entryData.target_value
+                : (entryData?.value_n1 ?? 0);
+            if (ref === 0) {
               status = "green";
             } else {
-              const ratio = n / n1Val;
+              const ratio = n / ref;
               if (ratio >= 1) status = "green";
               else if (ratio >= 0.85) status = "amber";
               else status = "red";
             }
+
           } else {
             status = computeKpiStatus(
               n,
