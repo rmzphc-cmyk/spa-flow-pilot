@@ -102,7 +102,7 @@ Génère un JSON avec exactement ces clés: executive_summary (200-250 mots), kp
 
       const executive_summary =
         `Réunion ${report.cycle_label} (${report.period_start} → ${report.period_end}). ` +
-        `${kpisList.length} indicateurs suivis (${greenKpis} verts, ${amberKpis} ambre, ${redKpis} rouges). ` +
+        `${kpisList.length} indicateurs suivis (${excellentKpis} excellents, ${greenKpis} bons, ${amberKpis} à surveiller, ${redKpis} insuffisants). ` +
         `${checkin ? `Humeur équipe : ${checkin.mood_score}/5, focus ${checkin.focus_level}/5. ` : ""}` +
         `${respsList.length} responsabilités évaluées (moyenne ${avgResp}%). ` +
         `${idsList.length} problème(s) identifié(s)${idsOpen ? `, ${idsOpen} encore ouvert(s)` : ""}. ` +
