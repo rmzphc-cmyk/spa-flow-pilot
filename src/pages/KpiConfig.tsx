@@ -95,6 +95,7 @@ export default function KpiConfig() {
   );
   const upsertMut = useUpsertKpiMonthlyTarget();
 
+  const [showInactive, setShowInactive] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [settingsKpi, setSettingsKpi] = useState<KpiDefinitionFull | null>(null);
 
@@ -103,8 +104,9 @@ export default function KpiConfig() {
     [items],
   );
 
-  const spaKpis = sortedItems.filter((k) => (k.kpi_group ?? "spa") === "spa");
-  const managerKpis = sortedItems.filter((k) => (k.kpi_group ?? "spa") === "manager");
+  const inactiveCount = useMemo(() => sortedItems.filter((k) => !k.is_active).length, [sortedItems]);
+  const spaKpis = sortedItems.filter((k) => (k.kpi_group ?? "spa") === "spa" && (showInactive || k.is_active));
+  const managerKpis = sortedItems.filter((k) => (k.kpi_group ?? "spa") === "manager" && (showInactive || k.is_active));
 
   const handleUpdate = (id: string, fields: Partial<KpiDefinitionFull>, toastIt = true) => {
     if (!spaId) return;
@@ -202,6 +204,14 @@ export default function KpiConfig() {
           </Button>
         </div>
         <div className="flex items-center gap-2">
+          {inactiveCount > 0 && (
+            <button
+              onClick={() => setShowInactive((v) => !v)}
+              className="text-xs text-muted-foreground underline cursor-pointer"
+            >
+              {showInactive ? "Masquer les désactivés" : `Afficher les désactivés (${inactiveCount})`}
+            </button>
+          )}
           {userRole === "admin" && (
             <Select value={adminSpaId ?? ""} onValueChange={(v) => setAdminSpaId(v || null)}>
               <SelectTrigger className="w-56 h-9">
@@ -354,9 +364,6 @@ function UnifiedKpiRow({
   const [overrideLocal, setOverrideLocal] = useState<string>(
     current?.weekly_override != null ? String(current.weekly_override) : "",
   );
-  const [actualLocal, setActualLocal] = useState<string>(
-    current?.actual_monthly_value != null ? String(current.actual_monthly_value) : "",
-  );
 
   useEffect(() => setName(kpi.name), [kpi.name]);
 
@@ -365,9 +372,6 @@ function UnifiedKpiRow({
     setOverrideLocal(current?.weekly_override != null ? String(current.weekly_override) : "");
   }, [yearMonth, current?.monthly_value, current?.weekly_override]);
 
-  useEffect(() => {
-    setActualLocal(current?.actual_monthly_value != null ? String(current.actual_monthly_value) : "");
-  }, [yearMonth, current?.actual_monthly_value]);
 
   const disabled = current?.monthly_value == null;
   const computed = getWeeklyTarget(current);
@@ -424,36 +428,9 @@ function UnifiedKpiRow({
     );
   };
 
-  const handleActualBlur = () => {
-    const newVal = actualLocal === "" ? null : Number(actualLocal);
-    if (newVal === (current?.actual_monthly_value ?? null)) return;
-    upsertMut.mutate(
-      {
-        spa_id: spaId,
-        kpi_definition_id: kpi.id,
-        year_month: yearMonth,
-        monthly_value: current?.monthly_value ?? null,
-        weekly_mode: current?.weekly_mode ?? "divide",
-        weekly_override: current?.weekly_override ?? null,
-        actual_monthly_value: newVal,
-      },
-      { onError },
-    );
-  };
 
   const showPrevHint = !current && previous?.monthly_value != null;
 
-  const actual = current?.actual_monthly_value;
-  const target = current?.monthly_value;
-  let dotColor = "";
-  if (actual != null && target != null && target !== 0) {
-    const ratio = kpi.comparison_direction === "lower_is_better"
-      ? target / actual
-      : actual / target;
-    dotColor = ratio >= 1 ? "text-emerald-500"
-             : ratio >= 0.85 ? "text-amber-500"
-             : "text-red-500";
-  }
 
   return (
     <tr
