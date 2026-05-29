@@ -406,7 +406,7 @@ interface LectureProps {
     unit: string;
     value: number;
     target: number;
-    status: "green" | "amber" | "red";
+    status: "green" | "amber" | "red" | "excellent";
     comment: string;
   };
 }
