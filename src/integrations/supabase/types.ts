@@ -285,6 +285,7 @@ export type Database = {
           name_es: string | null
           spa_id: string
           threshold_amber: number | null
+          threshold_excellent: number | null
           threshold_red: number | null
           unit: string | null
           updated_at: string
@@ -306,6 +307,7 @@ export type Database = {
           name_es?: string | null
           spa_id: string
           threshold_amber?: number | null
+          threshold_excellent?: number | null
           threshold_red?: number | null
           unit?: string | null
           updated_at?: string
@@ -327,6 +329,7 @@ export type Database = {
           name_es?: string | null
           spa_id?: string
           threshold_amber?: number | null
+          threshold_excellent?: number | null
           threshold_red?: number | null
           unit?: string | null
           updated_at?: string
