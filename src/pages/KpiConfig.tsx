@@ -295,6 +295,7 @@ export default function KpiConfig() {
               spaId,
               created_by: user.id,
               display_order: sortedItems.length,
+              threshold_excellent: null,
               threshold_amber: null,
               threshold_red: null,
               ...payload,
