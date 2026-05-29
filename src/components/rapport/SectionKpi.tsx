@@ -66,13 +66,14 @@ function entryToCardValue(entry: KpiEntryRow | undefined): KpiCardValue {
   };
 }
 
-export function SectionKpi({ reportId, reportType, onStatusChange }: Props) {
+export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: Props) {
   const { t } = useTranslation();
   const { spaId } = useAuth();
   const isWeekly = reportType === "weekly";
 
   const { data: definitions = [] } = useKpiDefinitions(spaId);
   const { data: entries = [] } = useKpiEntries(reportId);
+  const { currentMap: liveTargetMap } = useKpiMonthlyTargets(spaId, yearMonth ?? "");
   const upsert = useUpsertKpiEntry();
 
   const entriesByDef = useMemo(() => {
