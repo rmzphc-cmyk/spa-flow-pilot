@@ -44,6 +44,20 @@ const statusDotColors: Record<KpiStatus, string> = {
   red: "bg-red-500",
 };
 
+const statusLabel: Partial<Record<KpiStatus, string>> = {
+  excellent: "Excellent",
+  green: "Bien",
+  amber: "Correct",
+  red: "Insuffisant",
+};
+
+const statusTextColors: Partial<Record<KpiStatus, string>> = {
+  excellent: "text-emerald-600",
+  green: "text-emerald-500",
+  amber: "text-amber-600",
+  red: "text-red-500",
+};
+
 // --- Sparkline ---
 
 function Sparkline({ data, className = "" }: { data: number[]; className?: string }) {
