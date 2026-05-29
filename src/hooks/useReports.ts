@@ -17,6 +17,7 @@ export function mapReportRowToRecord(row: ReportRow): ReportRecord {
     type: row.cycle_type as ReportType,
     label: row.cycle_label,
     period: `${FR_DATE.format(start)} → ${FR_DATE.format(end)}`,
+    yearMonth: row.period_start.slice(0, 7),
     state: row.status as ReportState,
     updatedAt: row.updated_at,
     meetingDate: row.meeting_started_at
