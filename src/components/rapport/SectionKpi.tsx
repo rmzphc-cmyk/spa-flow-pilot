@@ -209,13 +209,13 @@ export function SectionKpi({ reportId, reportType, onStatusChange }: Props) {
 
   return (
     <section className="mb-8">
-        {isWeekly ? "Comparaison vs objectif hebdomadaire planifié (Config KPI)" : t("kpi.subtitle")}
-
+      <h2 className="text-lg font-semibold text-foreground">
         {isWeekly ? "KPI de la semaine" : t("kpi.title")}
       </h2>
       <p className="text-sm text-muted-foreground mb-4">
-        {isWeekly ? "Objectifs hebdomadaires définis dans Config KPI" : t("kpi.subtitle")}
+        {isWeekly ? "Comparaison vs objectif hebdomadaire planifié (Config KPI)" : t("kpi.subtitle")}
       </p>
+
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
         {sortedDefs.map((def) => {
