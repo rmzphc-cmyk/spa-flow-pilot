@@ -94,6 +94,7 @@ Génère un JSON avec exactement ces clés: executive_summary (200-250 mots), kp
       const redKpis = kpisList.filter((k: any) => k.status === "red").length;
       const amberKpis = kpisList.filter((k: any) => k.status === "amber").length;
       const greenKpis = kpisList.filter((k: any) => k.status === "green").length;
+      const excellentKpis = kpisList.filter((k: any) => k.status === "excellent").length;
       const avgResp = respsList.length
         ? Math.round(respsList.reduce((s: number, r: any) => s + (r.completion_rate ?? 0), 0) / respsList.length)
         : 0;
