@@ -12,11 +12,17 @@ import {
   type KpiEntryRow,
   type KpiStatus,
 } from "@/hooks/useKpiEntries";
+import {
+  useKpiMonthlyTargets,
+  getWeeklyTarget,
+  type KpiMonthlyTarget,
+} from "@/hooks/useKpiMonthlyTargets";
 
 interface Props {
   reportId: string;
   reportType: "monthly" | "weekly";
   period?: string;
+  yearMonth?: string;
   onStatusChange: (status: SectionStatus) => void;
 }
 
