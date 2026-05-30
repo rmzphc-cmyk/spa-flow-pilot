@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
-import { Loader2, Sparkles, PenLine } from "lucide-react";
+import { PenLine } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import { useCheckin, useUpsertCheckin, parseKeyContext } from "@/hooks/useCheckin";
 import { VoiceRecordButton } from "@/components/VoiceRecordButton";
-import { useStructureVoiceNote } from "@/hooks/useStructureVoiceNote";
-import { toast } from "@/hooks/use-toast";
 import type { SectionStatus } from "@/pages/RapportDetail";
+
 
 interface Props {
   reportId: string;
