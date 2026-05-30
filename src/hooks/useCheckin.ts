@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "@/hooks/use-toast";
 
 export interface CheckinRow {
   id: string;
@@ -78,6 +79,13 @@ export function useUpsertCheckin() {
     },
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["checkins", vars.report_id] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Échec de l'enregistrement",
+        description: (error as Error).message,
+        variant: "destructive",
+      });
     },
   });
 
