@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -25,7 +25,7 @@ interface Props {
   onStatusChange: (status: SectionStatus) => void;
 }
 
-export function SectionIdsWeekly({ reportId }: Props) {
+export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
   const { user, spaId } = useAuth();
   const { data: issues = [], isLoading } = useIdsItems(reportId);
   const addMutation = useAddIdsItem(reportId, "weekly");
@@ -49,6 +49,10 @@ export function SectionIdsWeekly({ reportId }: Props) {
   });
   const [objectifTitle, setObjectifTitle] = useState("");
   const [objectifTargetDate, setObjectifTargetDate] = useState("");
+
+  useEffect(() => {
+    if (!isLoading) onStatusChange("complete");
+  }, [isLoading, onStatusChange]);
 
   const addIssue = () => {
     if (!newIssue.trim() || !user || !spaId) return;
