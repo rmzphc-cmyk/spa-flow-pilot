@@ -227,6 +227,8 @@ function PreparationMode({ report }: { report: ReportRecord }) {
         completedSections={completedCount}
         totalSections={sections.length}
         activeSection={activeSection}
+        reportId={report.id}
+        reportState={report.state}
       />
 
       {isValidated && (
