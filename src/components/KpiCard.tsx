@@ -266,14 +266,37 @@ export function KpiCardSaisie({ kpi, cardValue, onChange }: SaisieProps) {
 // MODE SAISIE WEEKLY (simplified)
 // ============================================
 
-function getWeeklyKpiStatus(value: number, target: number, n1: number): KpiStatus {
+function getWeeklyKpiStatus(
+  value: number,
+  target: number,
+  n1: number,
+  kpi?: KpiData,
+): KpiStatus {
+  const divisor = kpi?.weeklyDivisor ?? 1;
+  const tExcellent = kpi?.thresholdExcellent != null ? kpi.thresholdExcellent / divisor : null;
+  const tAmber = kpi?.thresholdAmber != null ? kpi.thresholdAmber / divisor : null;
+  const tRed = kpi?.thresholdRed != null ? kpi.thresholdRed / divisor : null;
+
+  if (tAmber !== null || tRed !== null) {
+    const s = computeKpiStatus(
+      value,
+      tExcellent,
+      tAmber,
+      tRed,
+      kpi?.comparisonDirection ?? "higher_is_better",
+    );
+    return s === "not_applicable" ? "none" : s;
+  }
+
   const ref = target > 0 ? target : n1;
   if (ref === 0) return "green";
   const ratio = value / ref;
+  if (ratio >= 1.15) return "excellent";
   if (ratio >= 1) return "green";
   if (ratio >= 0.85) return "amber";
   return "red";
 }
+
 
 
 function getTrendArrow(value: number, n1: number): { arrow: string; color: string } {
