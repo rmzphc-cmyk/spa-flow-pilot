@@ -22,12 +22,31 @@ export interface WeeklyPdfIds {
   convertedToObjectif: boolean;
 }
 
-export interface WeeklyPdfTodo {
+export interface WeeklyPdfTodoDone {
   title: string;
   deadline: string;
-  priority: string;
-  source: string;
   responsible: string;
+  source: string;
+}
+
+export interface WeeklyPdfTodoActive {
+  title: string;
+  deadline: string;
+  responsible: string;
+  source: string;
+  status: string;
+  reason: string;
+  isOverdue: boolean;
+}
+
+export interface WeeklyPdfTodoDeferred {
+  title: string;
+  newDeadline: string;
+  originalDeadline: string;
+  responsible: string;
+  source: string;
+  deferredCount: number;
+  reason: string;
 }
 
 export interface WeeklyPdfData {
@@ -42,7 +61,9 @@ export interface WeeklyPdfData {
   moodScore: number;
   teamNote: string;
   ids: WeeklyPdfIds[];
-  todos: WeeklyPdfTodo[];
+  todosDone: WeeklyPdfTodoDone[];
+  todosActive: WeeklyPdfTodoActive[];
+  todosDeferred: WeeklyPdfTodoDeferred[];
   freeNote: string;
 }
 
