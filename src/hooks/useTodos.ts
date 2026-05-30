@@ -181,6 +181,38 @@ export function useUpdateTodoStatus(reportId: string) {
   });
 }
 
+export function useUpdateTodoStatusWithComment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      id: string;
+      status: DbTodoStatus;
+      comment: string;
+      currentDescription: string | null;
+    }) => {
+      const meta = parseTodoDescription(input.currentDescription);
+      const newDesc = JSON.stringify({
+        ...meta,
+        followUp: input.comment || meta.followUp,
+      });
+      const patch: {
+        status: DbTodoStatus;
+        description: string;
+        updated_at: string;
+        completed_at: string | null;
+      } = {
+        status: input.status,
+        description: newDesc,
+        updated_at: new Date().toISOString(),
+        completed_at: input.status === "done" ? new Date().toISOString() : null,
+      };
+      const { error } = await supabase.from("todos").update(patch).eq("id", input.id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["todos"] }),
+  });
+}
+
 export function useUpdateFollowUp(reportId: string) {
   const qc = useQueryClient();
   return useMutation({
