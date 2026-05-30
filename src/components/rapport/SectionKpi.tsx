@@ -44,6 +44,14 @@ function defToKpiData(
   } else {
     target = entry?.target_value ?? def.threshold_amber ?? 0;
   }
+
+  const weeklyDivisor =
+    isWeekly &&
+    liveTarget?.weekly_mode === "divide" &&
+    liveTarget?.weekly_override === null
+      ? 4
+      : 1;
+
   return {
     id: def.id,
     label: def.name,
@@ -51,8 +59,14 @@ function defToKpiData(
     target,
     n1: entry?.value_n1 ?? 0,
     category: mapCategory(def),
+    thresholdExcellent: def.threshold_excellent ?? null,
+    thresholdAmber: def.threshold_amber ?? null,
+    thresholdRed: def.threshold_red ?? null,
+    comparisonDirection: def.comparison_direction,
+    weeklyDivisor,
   };
 }
+
 
 
 function entryToCardValue(entry: KpiEntryRow | undefined): KpiCardValue {
@@ -134,20 +148,30 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
           if (isWeekly) {
             const entryData = entriesByDef.get(def.id);
             const liveTarget = liveTargetMap.get(def.id);
-            const ref = liveTarget
-              ? (getWeeklyTarget(liveTarget) ?? entryData?.value_n1 ?? 0)
-              : (entryData?.target_value ?? entryData?.value_n1 ?? 0);
-            if (ref === 0) {
-              status = "green";
+            const divisor =
+              liveTarget?.weekly_mode === "divide" && liveTarget?.weekly_override === null ? 4 : 1;
+            const tExcellent = def.threshold_excellent != null ? def.threshold_excellent / divisor : null;
+            const tAmber = def.threshold_amber != null ? def.threshold_amber / divisor : null;
+            const tRed = def.threshold_red != null ? def.threshold_red / divisor : null;
+
+            if (tAmber !== null || tRed !== null) {
+              status = computeKpiStatus(n, tExcellent, tAmber, tRed, def.comparison_direction);
             } else {
-              const ratio = n / ref;
-              if (ratio >= 1) status = "green";
-              else if (ratio >= 0.85) status = "amber";
-              else status = "red";
+              const ref = liveTarget
+                ? (getWeeklyTarget(liveTarget) ?? entryData?.value_n1 ?? 0)
+                : (entryData?.target_value ?? entryData?.value_n1 ?? 0);
+              if (ref === 0) {
+                status = "green";
+              } else {
+                const ratio = n / ref;
+                if (ratio >= 1.15) status = "excellent";
+                else if (ratio >= 1) status = "green";
+                else if (ratio >= 0.85) status = "amber";
+                else status = "red";
+              }
             }
-
-
           } else {
+
             status = computeKpiStatus(
               n,
               def.threshold_excellent,
@@ -205,11 +229,30 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
       if (isWeekly) {
         const entryData = entriesByDef.get(def.id);
         const liveTarget = liveTargetMap.get(def.id);
-        const ref = liveTarget
-          ? (getWeeklyTarget(liveTarget) ?? entryData?.value_n1 ?? 0)
-          : (entryData?.target_value ?? entryData?.value_n1 ?? 0);
-        const ratio = ref > 0 ? Number(cv.value) / ref : 1;
-        if (ratio < 0.85 && !cv.comment.trim()) return false;
+        const divisor =
+          liveTarget?.weekly_mode === "divide" && liveTarget?.weekly_override === null ? 4 : 1;
+        const tExcellent = def.threshold_excellent != null ? def.threshold_excellent / divisor : null;
+        const tAmber = def.threshold_amber != null ? def.threshold_amber / divisor : null;
+        const tRed = def.threshold_red != null ? def.threshold_red / divisor : null;
+        const n = Number(cv.value);
+        let wStatus: ReturnType<typeof computeKpiStatus> | "excellent" | "green" | "amber" | "red";
+        if (tAmber !== null || tRed !== null) {
+          wStatus = computeKpiStatus(n, tExcellent, tAmber, tRed, def.comparison_direction);
+        } else {
+          const ref = liveTarget
+            ? (getWeeklyTarget(liveTarget) ?? entryData?.value_n1 ?? 0)
+            : (entryData?.target_value ?? entryData?.value_n1 ?? 0);
+          if (ref === 0) wStatus = "green";
+          else {
+            const ratio = n / ref;
+            if (ratio >= 1.15) wStatus = "excellent";
+            else if (ratio >= 1) wStatus = "green";
+            else if (ratio >= 0.85) wStatus = "amber";
+            else wStatus = "red";
+          }
+        }
+        if ((wStatus === "amber" || wStatus === "red") && !cv.comment.trim()) return false;
+
       } else {
         const status = computeKpiStatus(
           Number(cv.value),

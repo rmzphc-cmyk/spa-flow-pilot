@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { computeKpiStatus } from "@/hooks/useKpiEntries";
 
 // --- Types ---
 
@@ -19,7 +20,13 @@ export interface KpiData {
   category: "spa" | "manager";
   /** History values for sparkline (most recent last) */
   history?: number[];
+  thresholdExcellent?: number | null;
+  thresholdAmber?: number | null;
+  thresholdRed?: number | null;
+  comparisonDirection?: "higher_is_better" | "lower_is_better";
+  weeklyDivisor?: number;
 }
+
 
 export interface KpiCardValue {
   value: string;
@@ -259,14 +266,37 @@ export function KpiCardSaisie({ kpi, cardValue, onChange }: SaisieProps) {
 // MODE SAISIE WEEKLY (simplified)
 // ============================================
 
-function getWeeklyKpiStatus(value: number, target: number, n1: number): KpiStatus {
+function getWeeklyKpiStatus(
+  value: number,
+  target: number,
+  n1: number,
+  kpi?: KpiData,
+): KpiStatus {
+  const divisor = kpi?.weeklyDivisor ?? 1;
+  const tExcellent = kpi?.thresholdExcellent != null ? kpi.thresholdExcellent / divisor : null;
+  const tAmber = kpi?.thresholdAmber != null ? kpi.thresholdAmber / divisor : null;
+  const tRed = kpi?.thresholdRed != null ? kpi.thresholdRed / divisor : null;
+
+  if (tAmber !== null || tRed !== null) {
+    const s = computeKpiStatus(
+      value,
+      tExcellent,
+      tAmber,
+      tRed,
+      kpi?.comparisonDirection ?? "higher_is_better",
+    );
+    return s === "not_applicable" ? "none" : s;
+  }
+
   const ref = target > 0 ? target : n1;
   if (ref === 0) return "green";
   const ratio = value / ref;
+  if (ratio >= 1.15) return "excellent";
   if (ratio >= 1) return "green";
   if (ratio >= 0.85) return "amber";
   return "red";
 }
+
 
 
 function getTrendArrow(value: number, n1: number): { arrow: string; color: string } {
@@ -287,7 +317,7 @@ export function KpiCardSaisieWeekly({ kpi, cardValue, onChange }: WeeklySaisiePr
   const { t } = useTranslation();
 
   const numValue = cardValue.value ? Number(cardValue.value) : null;
-  const status = cardValue.isNa ? "none" : (numValue !== null && !isNaN(numValue) ? getWeeklyKpiStatus(numValue, kpi.target, kpi.n1) : "none");
+  const status = cardValue.isNa ? "none" : (numValue !== null && !isNaN(numValue) ? getWeeklyKpiStatus(numValue, kpi.target, kpi.n1, kpi) : "none");
   const trend = numValue !== null && !isNaN(numValue) ? getTrendArrow(numValue, kpi.n1) : null;
   const showComment = !cardValue.isNa && (status === "red" || status === "amber");
 
