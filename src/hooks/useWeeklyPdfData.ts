@@ -95,6 +95,8 @@ export function useWeeklyPdfData(
   reportId: string,
   reportLabel: string,
   reportPeriod: string,
+  periodStart: string,
+  periodEnd: string,
 ): { data: WeeklyPdfData | null; isLoading: boolean } {
   const { spaId, user } = useAuth();
 
