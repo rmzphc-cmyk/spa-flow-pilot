@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import { Sparkles, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { SectionStatus } from "@/pages/RapportDetail";
 import { EmojiScore } from "./EmojiScore";
 import { useCheckin, useUpsertCheckin, parseKeyContext } from "@/hooks/useCheckin";
 import { VoiceRecordButton } from "@/components/VoiceRecordButton";
+import { useStructureVoiceNote } from "@/hooks/useStructureVoiceNote";
 
 
 interface Props {
@@ -14,7 +17,9 @@ interface Props {
 export function SectionCheckinWeekly({ reportId, onStatusChange }: Props) {
   const { data: row } = useCheckin(reportId);
   const { debouncedUpsert } = useUpsertCheckin();
+  const structureMutation = useStructureVoiceNote();
 
+  const MAX_LENGTH = 1000;
 
   const [meteoScore, setMeteoScore] = useState(0);
   const [note, setNote] = useState("");
@@ -54,6 +59,17 @@ export function SectionCheckinWeekly({ reportId, onStatusChange }: Props) {
     onStatusChange(isComplete ? "complete" : "incomplete");
   }, [isComplete, onStatusChange]);
 
+  const handleStructure = () => {
+    if (!note.trim()) return;
+    structureMutation.mutate(
+      { text: note, context: "check_in" },
+      {
+        onSuccess: (structured) => {
+          if (structured) setNote(structured.slice(0, MAX_LENGTH));
+        },
+      }
+    );
+  };
 
   return (
     <section className="mb-8">
@@ -83,9 +99,29 @@ export function SectionCheckinWeekly({ reportId, onStatusChange }: Props) {
           <VoiceRecordButton
             context="check_in"
             onTranscript={(transcript) =>
-              setNote((prev) => (prev ? (prev + " " + transcript).slice(0, 1000) : transcript.slice(0, 1000)))
+              setNote((prev) => (prev ? (prev + " " + transcript).slice(0, MAX_LENGTH) : transcript.slice(0, MAX_LENGTH)))
             }
           />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs"
+            disabled={!note.trim() || structureMutation.isPending}
+            onClick={handleStructure}
+          >
+            {structureMutation.isPending ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Structuration…
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-3.5 w-3.5 text-violet-500" />
+                Structurer avec l'IA
+              </>
+            )}
+          </Button>
         </div>
 
 
