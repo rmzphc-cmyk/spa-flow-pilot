@@ -229,6 +229,8 @@ function PreparationMode({ report, periodStart, periodEnd }: { report: ReportRec
         activeSection={activeSection}
         reportId={report.id}
         reportState={report.state}
+        periodStart={periodStart}
+        periodEnd={periodEnd}
       />
 
       {isValidated && (
