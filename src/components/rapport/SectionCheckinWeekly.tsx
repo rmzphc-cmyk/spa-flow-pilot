@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
+import { Loader2, Sparkles } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 import type { SectionStatus } from "@/pages/RapportDetail";
 import { EmojiScore } from "./EmojiScore";
 import { useCheckin, useUpsertCheckin, parseKeyContext } from "@/hooks/useCheckin";
+import { VoiceRecordButton } from "@/components/VoiceRecordButton";
+import { useStructureVoiceNote } from "@/hooks/useStructureVoiceNote";
+import { toast } from "@/hooks/use-toast";
 
 interface Props {
   reportId: string;
@@ -12,6 +17,7 @@ interface Props {
 export function SectionCheckinWeekly({ reportId, onStatusChange }: Props) {
   const { data: row } = useCheckin(reportId);
   const { debouncedUpsert } = useUpsertCheckin();
+  const structureMutation = useStructureVoiceNote();
 
   const [meteoScore, setMeteoScore] = useState(0);
   const [note, setNote] = useState("");
@@ -51,6 +57,25 @@ export function SectionCheckinWeekly({ reportId, onStatusChange }: Props) {
     onStatusChange(isComplete ? "complete" : "incomplete");
   }, [isComplete, onStatusChange]);
 
+  const handleStructure = () => {
+    if (!note.trim()) return;
+    structureMutation.mutate(
+      { text: note, context: "check_in" },
+      {
+        onSuccess: (structured) => {
+          if (structured) setNote(structured.slice(0, 1000));
+        },
+        onError: (e: any) => {
+          toast({
+            title: "Structuration impossible",
+            description: e?.message ?? "Erreur inconnue",
+            variant: "destructive",
+          });
+        },
+      },
+    );
+  };
+
   return (
     <section className="mb-8">
       <h2 className="text-lg font-semibold text-foreground">Check-in rapide</h2>
@@ -64,22 +89,53 @@ export function SectionCheckinWeekly({ reportId, onStatusChange }: Props) {
 
       <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
         <div className="flex items-center justify-between mb-1">
-          <label className="font-medium text-foreground text-sm">Un mot sur cette semaine</label>
+          <label className="font-medium text-foreground text-sm">Contexte équipe</label>
           {needsComment ? (
             <span className="text-xs text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">Requis</span>
           ) : (
             <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Optionnel</span>
           )}
         </div>
-        <p className="text-xs text-muted-foreground mb-3">Une chose notable de cette semaine</p>
+        <p className="text-xs text-muted-foreground mb-3">
+          Météo, ambiance, retour bref sur chaque collaborateur…
+        </p>
+
+        <div className="flex flex-row gap-2 mb-2">
+          <VoiceRecordButton
+            onTranscript={(transcript) =>
+              setNote((prev) => (prev ? (prev + " " + transcript).slice(0, 1000) : transcript.slice(0, 1000)))
+            }
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs"
+            disabled={!note.trim() || structureMutation.isPending}
+            onClick={handleStructure}
+          >
+            {structureMutation.isPending ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Structuration…
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-3.5 w-3.5 text-violet-500" />
+                Structurer avec l'IA
+              </>
+            )}
+          </Button>
+        </div>
+
         <Textarea
-          className={`text-sm min-h-[60px] ${missing ? "border-destructive" : ""}`}
-          placeholder="Une chose notable de cette semaine..."
-          maxLength={200}
+          className={`text-sm min-h-[100px] ${missing ? "border-destructive" : ""}`}
+          placeholder="Ex : Bonne semaine globalement. Marie très engagée sur les soins duo. Thomas en retrait — à surveiller. Julie a géré l'incident piscine avec calme. Moral général positif malgré la charge."
+          maxLength={1000}
           value={note}
           onChange={(e) => setNote(e.target.value)}
         />
-        <div className="text-xs text-muted-foreground text-right mt-0.5">{note.length}/200</div>
+        <div className="text-xs text-muted-foreground text-right mt-0.5">{note.length}/1000</div>
       </div>
     </section>
   );
