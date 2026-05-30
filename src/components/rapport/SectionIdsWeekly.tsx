@@ -50,6 +50,10 @@ export function SectionIdsWeekly({ reportId }: Props) {
   const [objectifTitle, setObjectifTitle] = useState("");
   const [objectifTargetDate, setObjectifTargetDate] = useState("");
 
+  useEffect(() => {
+    if (!isLoading) onStatusChange("complete");
+  }, [isLoading, onStatusChange]);
+
   const addIssue = () => {
     if (!newIssue.trim() || !user || !spaId) return;
     addMutation.mutate(newIssue.trim(), {
