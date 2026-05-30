@@ -8,6 +8,7 @@ const sectionLabels: Record<SectionId, string> = {
   todo: "To-do",
   objectifs: "Objectifs",
   ids: "IDS",
+  notes: "Notes libres",
   cloture: "Clôture",
 };
 
