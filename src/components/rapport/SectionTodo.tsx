@@ -185,12 +185,22 @@ export function SectionTodo({ reportId }: Props) {
 
   const confirmChange = (t: Todo) => {
     if (!pendingChange) return;
-    updateWithComment.mutate({
-      id: t.id,
-      status: pendingChange.status,
-      comment: pendingChange.comment,
-      currentDescription: t._description,
-    });
+    if (pendingChange.status === "deferred") {
+      deferMutation.mutate({
+        id: t.id,
+        reason: pendingChange.comment,
+        newDueDate: pendingChange.newDueDate!,
+        currentTodo: t._raw,
+        currentDescription: t._description,
+      });
+    } else {
+      updateWithComment.mutate({
+        id: t.id,
+        status: pendingChange.status,
+        comment: pendingChange.comment,
+        currentDescription: t._description,
+      });
+    }
     setPendingChange(null);
   };
 
