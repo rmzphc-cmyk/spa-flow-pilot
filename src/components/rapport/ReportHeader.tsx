@@ -25,6 +25,8 @@ interface Props {
   activeSection: SectionId;
   reportId?: string;
   reportState?: string;
+  periodStart?: string;
+  periodEnd?: string;
 }
 
 const segmentColors = (completed: number, total: number) =>
@@ -38,12 +40,16 @@ export function ReportHeader({
   totalSections,
   activeSection,
   reportId,
+  periodStart = "",
+  periodEnd = "",
 }: Props) {
   const isWeekly = type === "weekly";
   const { data: pdfData, isLoading: pdfLoading } = useWeeklyPdfData(
     isWeekly && reportId ? reportId : "",
     label,
     period,
+    periodStart,
+    periodEnd,
   );
 
   return (
