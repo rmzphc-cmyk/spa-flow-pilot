@@ -6,6 +6,7 @@ import { SectionCheckin } from "@/components/rapport/SectionCheckin";
 import { SectionCheckinWeekly } from "@/components/rapport/SectionCheckinWeekly";
 import { SectionResponsabilites } from "@/components/rapport/SectionResponsabilites";
 import { SectionTodo } from "@/components/rapport/SectionTodo";
+import { SectionTodoWeekly } from "@/components/rapport/SectionTodoWeekly";
 import { SectionObjectifs } from "@/components/rapport/SectionObjectifs";
 import { SectionIds } from "@/components/rapport/SectionIds";
 import { SectionIdsWeekly } from "@/components/rapport/SectionIdsWeekly";
@@ -33,7 +34,7 @@ interface OutletContext {
   reportType: ReportType;
 }
 
-const weeklySections: SectionId[] = ["kpi", "checkin", "ids", "notes"];
+const weeklySections: SectionId[] = ["kpi", "checkin", "todo", "ids", "notes"];
 const monthlySections: SectionId[] = ["kpi", "checkin", "responsabilites", "todo", "objectifs", "ids", "cloture"];
 
 export default function RapportDetail() {
@@ -111,6 +112,11 @@ function PreparationMode({ report }: { report: ReportRecord }) {
 
   const onNotesStatusChange = useCallback(
     (s: SectionStatus) => updateSectionStatus("notes", s),
+    [updateSectionStatus],
+  );
+
+  const onTodoWeeklyStatusChange = useCallback(
+    (s: SectionStatus) => updateSectionStatus("todo", s),
     [updateSectionStatus],
   );
 
@@ -245,6 +251,9 @@ function PreparationMode({ report }: { report: ReportRecord }) {
         <SectionResponsabilites reportId={report.id} reportType={report.type} onStatusChange={onResponsabilitesStatusChange} />
       )}
       {activeSection === "todo" && !isWeekly && <SectionTodo reportId={report.id} />}
+      {activeSection === "todo" && isWeekly && (
+        <SectionTodoWeekly reportId={report.id} onStatusChange={onTodoWeeklyStatusChange} />
+      )}
       {activeSection === "objectifs" && !isWeekly && <SectionObjectifs reportId={report.id} reportType={report.type} />}
       {activeSection === "ids" && !isWeekly && <SectionIds reportId={report.id} reportType={report.type} />}
       {activeSection === "ids" && isWeekly && (
