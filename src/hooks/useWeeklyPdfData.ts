@@ -161,16 +161,55 @@ export function useWeeklyPdfData(
     convertedToObjectif: i.converted_to_objective_id !== null,
   }));
 
-  const todos: WeeklyPdfTodo[] = (todosQ.data ?? [])
-    .filter((t) => t.status !== "done")
+  const weekStart = periodStart ? new Date(periodStart) : null;
+  const weekEnd = periodEnd ? new Date(periodEnd) : null;
+  if (weekEnd) weekEnd.setHours(23, 59, 59, 999);
+  const today = new Date();
+  const allTodos = todosQ.data ?? [];
+  const inWeek = (iso: string | null) => {
+    if (!iso || !weekStart || !weekEnd) return false;
+    const d = new Date(iso);
+    return d >= weekStart && d <= weekEnd;
+  };
+
+  const todosDone: WeeklyPdfTodoDone[] = allTodos
+    .filter((t) => t.status === "done" && inWeek(t.due_date))
+    .map((t) => ({
+      title: t.title,
+      deadline: formatDateFr(t.due_date),
+      responsible: parseTodoDescription(t.description).responsible || "—",
+      source: t.source,
+    }));
+
+  const todosActive: WeeklyPdfTodoActive[] = allTodos
+    .filter(
+      (t) => t.status !== "done" && t.status !== "deferred" && inWeek(t.due_date),
+    )
     .map((t) => {
-      const meta = parseTodoDescription(t.description);
+      const m = parseTodoDescription(t.description);
       return {
         title: t.title,
         deadline: formatDateFr(t.due_date),
-        priority: t.priority,
+        responsible: m.responsible || "—",
         source: t.source,
-        responsible: meta.responsible || "—",
+        status: t.status,
+        reason: m.followUp || "",
+        isOverdue: !!t.due_date && new Date(t.due_date) < today,
+      };
+    });
+
+  const todosDeferred: WeeklyPdfTodoDeferred[] = allTodos
+    .filter((t) => t.status === "deferred")
+    .map((t) => {
+      const m = parseTodoDescription(t.description);
+      return {
+        title: t.title,
+        newDeadline: formatDateFr(t.due_date),
+        originalDeadline: formatDateFr(t.deferred_from_date),
+        responsible: m.responsible || "—",
+        source: t.source,
+        deferredCount: t.deferred_count ?? 0,
+        reason: m.followUp || "",
       };
     });
 
@@ -190,7 +229,9 @@ export function useWeeklyPdfData(
     moodScore: checkinQ.data?.mood_score ?? 0,
     teamNote: kc.note ?? "",
     ids,
-    todos,
+    todosDone,
+    todosActive,
+    todosDeferred,
     freeNote: kc.free_note ?? "",
   };
 
