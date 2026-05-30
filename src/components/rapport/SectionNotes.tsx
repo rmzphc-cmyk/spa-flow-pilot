@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
-import { PenLine } from "lucide-react";
+import { PenLine, Sparkles, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useCheckin, useUpsertCheckin, parseKeyContext } from "@/hooks/useCheckin";
 import { VoiceRecordButton } from "@/components/VoiceRecordButton";
+import { useStructureVoiceNote } from "@/hooks/useStructureVoiceNote";
 import type { SectionStatus } from "@/pages/RapportDetail";
 
 
