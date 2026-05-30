@@ -14,7 +14,7 @@ interface Props {
 export function SectionNotes({ reportId, onStatusChange }: Props) {
   const { data: row } = useCheckin(reportId);
   const { debouncedUpsert } = useUpsertCheckin();
-  const structureMutation = useStructureVoiceNote();
+  
 
   const [note, setNote] = useState("");
   const [hydrated, setHydrated] = useState(false);
