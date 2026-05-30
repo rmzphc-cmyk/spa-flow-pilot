@@ -14,7 +14,7 @@ interface Props {
 export function SectionCheckinWeekly({ reportId, onStatusChange }: Props) {
   const { data: row } = useCheckin(reportId);
   const { debouncedUpsert } = useUpsertCheckin();
-  const structureMutation = useStructureVoiceNote();
+
 
   const [meteoScore, setMeteoScore] = useState(0);
   const [note, setNote] = useState("");
