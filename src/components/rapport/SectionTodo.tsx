@@ -273,38 +273,48 @@ export function SectionTodo({ reportId }: Props) {
           })}
         </div>
         {isPending && pendingChange && (
-          <div className="flex gap-2">
-            <Input
-              autoFocus
-              placeholder={PLACEHOLDERS[pendingChange.status]}
-              value={pendingChange.comment}
-              onChange={(e) =>
-                setPendingChange({ ...pendingChange, comment: e.target.value })
-              }
-              className="text-sm h-8"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && (!commentRequired || pendingChange.comment.trim())) {
-                  confirmChange(t);
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <Input
+                autoFocus
+                placeholder={PLACEHOLDERS[pendingChange.status]}
+                value={pendingChange.comment}
+                onChange={(e) =>
+                  setPendingChange({ ...pendingChange, comment: e.target.value })
                 }
-              }}
-            />
-            <Button
-              size="sm"
-              className="h-8"
-              disabled={commentRequired && !pendingChange.comment.trim()}
-              onClick={() => confirmChange(t)}
-            >
-              Confirmer
-            </Button>
-            {pendingChange.status === "in_progress" && (
+                className="text-sm h-8"
+              />
               <Button
                 size="sm"
-                variant="outline"
                 className="h-8"
-                onClick={() => skipChange(t)}
+                disabled={
+                  (commentRequired && !pendingChange.comment.trim()) ||
+                  (pendingChange.status === "deferred" && !pendingChange.newDueDate)
+                }
+                onClick={() => confirmChange(t)}
               >
-                Passer
+                Confirmer
               </Button>
+              {pendingChange.status === "in_progress" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8"
+                  onClick={() => skipChange(t)}
+                >
+                  Passer
+                </Button>
+              )}
+            </div>
+            {pendingChange.status === "deferred" && (
+              <Input
+                type="date"
+                value={pendingChange.newDueDate ?? ""}
+                onChange={(e) =>
+                  setPendingChange((p) => (p ? { ...p, newDueDate: e.target.value } : null))
+                }
+                className="text-sm h-8"
+              />
             )}
           </div>
         )}
