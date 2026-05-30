@@ -5,6 +5,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { computeKpiStatus } from "@/hooks/useKpiEntries";
 
 // --- Types ---
 
@@ -19,7 +20,13 @@ export interface KpiData {
   category: "spa" | "manager";
   /** History values for sparkline (most recent last) */
   history?: number[];
+  thresholdExcellent?: number | null;
+  thresholdAmber?: number | null;
+  thresholdRed?: number | null;
+  comparisonDirection?: "higher_is_better" | "lower_is_better";
+  weeklyDivisor?: number;
 }
+
 
 export interface KpiCardValue {
   value: string;
