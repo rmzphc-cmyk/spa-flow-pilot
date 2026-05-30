@@ -44,6 +44,14 @@ function defToKpiData(
   } else {
     target = entry?.target_value ?? def.threshold_amber ?? 0;
   }
+
+  const weeklyDivisor =
+    isWeekly &&
+    liveTarget?.weekly_mode === "divide" &&
+    liveTarget?.weekly_override === null
+      ? 4
+      : 1;
+
   return {
     id: def.id,
     label: def.name,
@@ -51,8 +59,14 @@ function defToKpiData(
     target,
     n1: entry?.value_n1 ?? 0,
     category: mapCategory(def),
+    thresholdExcellent: def.threshold_excellent ?? null,
+    thresholdAmber: def.threshold_amber ?? null,
+    thresholdRed: def.threshold_red ?? null,
+    comparisonDirection: def.comparison_direction,
+    weeklyDivisor,
   };
 }
+
 
 
 function entryToCardValue(entry: KpiEntryRow | undefined): KpiCardValue {
