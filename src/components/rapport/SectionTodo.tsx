@@ -51,6 +51,7 @@ interface Todo {
   originCycle?: string;
   followUp?: string;
   _description: string | null;
+  _raw: DbTodo;
 }
 
 const priorityIcons: Record<string, string> = {
