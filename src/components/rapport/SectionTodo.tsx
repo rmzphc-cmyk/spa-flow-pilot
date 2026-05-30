@@ -121,6 +121,7 @@ function mapDbToTodo(db: DbTodo, currentReportId: string): Todo {
     originCycle: meta.originCycle,
     followUp: meta.followUp,
     _description: db.description,
+    _raw: db,
   };
 }
 
