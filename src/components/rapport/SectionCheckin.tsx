@@ -69,7 +69,8 @@ export function SectionCheckin({ reportId, onStatusChange }: Props) {
   // Hydrate from DB once
   useEffect(() => {
     if (hydrated) return;
-    if (row) {
+    if (row === undefined) return;
+    if (row !== null) {
       const ctx = parseKeyContext(row.key_context);
       setEquipeScore(row.mood_score ?? 0);
       setManagerScore(row.focus_level ?? 0);

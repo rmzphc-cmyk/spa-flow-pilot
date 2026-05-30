@@ -25,7 +25,8 @@ export function SectionNotes({ reportId, onStatusChange }: Props) {
 
   useEffect(() => {
     if (hydrated) return;
-    if (row) setNote(parseKeyContext(row.key_context).free_note ?? "");
+    if (row === undefined) return;
+    if (row !== null) setNote(parseKeyContext(row.key_context).free_note ?? "");
     setHydrated(true);
   }, [row, hydrated]);
 
