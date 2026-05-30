@@ -16,7 +16,9 @@ interface Props {
 export function SectionNotes({ reportId, onStatusChange }: Props) {
   const { data: row } = useCheckin(reportId);
   const { debouncedUpsert } = useUpsertCheckin();
-  
+  const structureMutation = useStructureVoiceNote();
+
+  const MAX_LENGTH = 3000;
 
   const [note, setNote] = useState("");
   const [hydrated, setHydrated] = useState(false);
@@ -44,6 +46,17 @@ export function SectionNotes({ reportId, onStatusChange }: Props) {
     });
   }, [note, hydrated, reportId, row, debouncedUpsert]);
 
+  const handleStructure = () => {
+    if (!note.trim()) return;
+    structureMutation.mutate(
+      { text: note, context: "free_note" },
+      {
+        onSuccess: (structured) => {
+          if (structured) setNote(structured.slice(0, MAX_LENGTH));
+        },
+      }
+    );
+  };
 
   return (
     <section className="mb-8">
