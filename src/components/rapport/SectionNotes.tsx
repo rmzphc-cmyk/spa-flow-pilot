@@ -42,24 +42,6 @@ export function SectionNotes({ reportId, onStatusChange }: Props) {
     });
   }, [note, hydrated, reportId, row, debouncedUpsert]);
 
-  const handleStructure = () => {
-    if (!note.trim()) return;
-    structureMutation.mutate(
-      { text: note, context: "free_note" },
-      {
-        onSuccess: (s) => {
-          if (s) setNote(s.slice(0, 3000));
-        },
-        onError: (e: any) => {
-          toast({
-            title: "Structuration impossible",
-            description: e?.message ?? "Erreur inconnue",
-            variant: "destructive",
-          });
-        },
-      },
-    );
-  };
 
   return (
     <section className="mb-8">
