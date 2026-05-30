@@ -357,34 +357,114 @@ export function WeeklyReportPdf({ data }: Props) {
             </View>
           )}
 
-          {/* ACTIONS EN COURS */}
-          {data.todos.length > 0 && (
-            <View style={styles.todoBox}>
-              <View
-                style={[
-                  styles.sectionHeader,
-                  { backgroundColor: MINT_BG, marginBottom: 0, padding: 0 },
-                ]}
-              >
-                <Text style={[styles.sectionHeaderText, { color: MINT_TEXT }]}>
-                  ACTIONS EN COURS
-                </Text>
+          {/* SUIVI DES ACTIONS */}
+          {(data.todosDone.length > 0 || data.todosActive.length > 0 || data.todosDeferred.length > 0) && (
+            <View style={styles.sectionWrap}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionHeaderText}>SUIVI DES ACTIONS</Text>
               </View>
-              {data.todos.map((t, i) => (
-                <View key={i} style={styles.todoItem}>
-                  <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Text style={styles.todoTitle}>{"[ ] " + t.title}</Text>
-                    {t.source === "ids_conversion" && (
-                      <View style={[styles.pill, { backgroundColor: PURPLE_BG }]}>
-                        <Text style={[styles.pillText, { color: PURPLE_TEXT }]}>IDS</Text>
-                      </View>
-                    )}
+
+              {data.todosDone.length > 0 && (
+                <View style={[styles.actionsWrap, { backgroundColor: MINT_BG }]}>
+                  <View style={[styles.actionsGroupHeader, { backgroundColor: "#BBF7D0" }]}>
+                    <Text style={[styles.actionsGroupTitle, { color: MINT_TEXT }]}>
+                      {"[OK] Fait cette semaine (" + data.todosDone.length + ")"}
+                    </Text>
                   </View>
-                  <Text style={styles.todoMeta}>
-                    {t.responsible} {t.deadline ? " - " + t.deadline : ""}
-                  </Text>
+                  {data.todosDone.map((t: WeeklyPdfTodoDone, i: number) => (
+                    <View key={i} style={[styles.actionItem, { backgroundColor: i % 2 === 0 ? MINT_BG : WHITE }]}>
+                      <View style={{ flexDirection: "row", alignItems: "center" }}>
+                        <Text style={styles.actionTitle}>{t.title}</Text>
+                        {t.source === "ids_conversion" && (
+                          <View style={[styles.actionBadge, { backgroundColor: PURPLE_BG }]}>
+                            <Text style={[styles.actionBadgeText, { color: PURPLE_TEXT }]}>IDS</Text>
+                          </View>
+                        )}
+                        {t.source === "ai_suggestion" && (
+                          <View style={[styles.actionBadge, { backgroundColor: BLUE_BG }]}>
+                            <Text style={[styles.actionBadgeText, { color: BLUE_TEXT }]}>IA</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={styles.actionMeta}>
+                        {t.responsible}
+                        {t.deadline ? " - " + t.deadline : ""}
+                      </Text>
+                    </View>
+                  ))}
                 </View>
-              ))}
+              )}
+
+              {data.todosActive.length > 0 && (
+                <View style={[styles.actionsWrap, { backgroundColor: WHITE, marginTop: 4, borderWidth: 1, borderColor: "#E5E7EB" }]}>
+                  <View style={[styles.actionsGroupHeader, { backgroundColor: "#F3F4F6" }]}>
+                    <Text style={[styles.actionsGroupTitle, { color: TEXT_DARK }]}>
+                      {"[.] En cours / A traiter (" + data.todosActive.length + ")"}
+                    </Text>
+                  </View>
+                  {data.todosActive.map((t: WeeklyPdfTodoActive, i: number) => (
+                    <View key={i} style={[styles.actionItem, { backgroundColor: i % 2 === 0 ? WHITE : "#FAFAFA" }]}>
+                      <View style={{ flexDirection: "row", alignItems: "center" }}>
+                        <Text style={[styles.actionTitle, t.isOverdue ? { color: INSUFFISANT } : {}]}>
+                          {(t.status === "in_progress" ? "[>] " : "[ ] ") + t.title}
+                        </Text>
+                        {t.isOverdue && (
+                          <View style={[styles.actionBadge, { backgroundColor: "#FEE2E2" }]}>
+                            <Text style={[styles.actionBadgeText, { color: INSUFFISANT }]}>En retard</Text>
+                          </View>
+                        )}
+                        {t.source === "ids_conversion" && (
+                          <View style={[styles.actionBadge, { backgroundColor: PURPLE_BG }]}>
+                            <Text style={[styles.actionBadgeText, { color: PURPLE_TEXT }]}>IDS</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={styles.actionMeta}>
+                        {t.responsible}
+                        {t.deadline ? " - Echeance : " + t.deadline : ""}
+                      </Text>
+                      {t.reason && t.reason.trim().length > 0 && (
+                        <Text style={styles.actionReason}>{"Motif : " + t.reason}</Text>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              )}
+
+              {data.todosDeferred.length > 0 && (
+                <View style={[styles.actionsWrap, { backgroundColor: AMBER_BG, marginTop: 4 }]}>
+                  <View style={[styles.actionsGroupHeader, { backgroundColor: "#FED7AA" }]}>
+                    <Text style={[styles.actionsGroupTitle, { color: AMBER_TEXT }]}>
+                      {"[->] Actions reportees (" + data.todosDeferred.length + ")"}
+                    </Text>
+                  </View>
+                  {data.todosDeferred.map((t: WeeklyPdfTodoDeferred, i: number) => (
+                    <View key={i} style={[styles.actionItem, { backgroundColor: i % 2 === 0 ? AMBER_BG : WHITE }]}>
+                      <View style={{ flexDirection: "row", alignItems: "center" }}>
+                        <Text style={styles.actionTitle}>{t.title}</Text>
+                        <View style={[styles.actionBadge, { backgroundColor: "#FED7AA" }]}>
+                          <Text style={[styles.actionBadgeText, { color: AMBER_TEXT }]}>
+                            {"Reporte " + t.deferredCount + "x"}
+                          </Text>
+                        </View>
+                        {t.source === "ids_conversion" && (
+                          <View style={[styles.actionBadge, { backgroundColor: PURPLE_BG }]}>
+                            <Text style={[styles.actionBadgeText, { color: PURPLE_TEXT }]}>IDS</Text>
+                          </View>
+                        )}
+                      </View>
+                      <Text style={styles.actionMeta}>
+                        {t.responsible}
+                        {t.originalDeadline ? " - Prevu le " + t.originalDeadline : ""}
+                        {t.newDeadline ? " -> Reporte au " + t.newDeadline : ""}
+                      </Text>
+                      {t.reason && t.reason.trim().length > 0 && (
+                        <Text style={styles.actionReason}>{"Raison : " + t.reason}</Text>
+                      )}
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
           )}
 
