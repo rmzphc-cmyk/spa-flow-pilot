@@ -1,12 +1,10 @@
 import { useEffect, useState } from "react";
-import { Loader2, Sparkles, PenLine } from "lucide-react";
+import { PenLine } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import { useCheckin, useUpsertCheckin, parseKeyContext } from "@/hooks/useCheckin";
 import { VoiceRecordButton } from "@/components/VoiceRecordButton";
-import { useStructureVoiceNote } from "@/hooks/useStructureVoiceNote";
-import { toast } from "@/hooks/use-toast";
 import type { SectionStatus } from "@/pages/RapportDetail";
+
 
 interface Props {
   reportId: string;
@@ -16,7 +14,7 @@ interface Props {
 export function SectionNotes({ reportId, onStatusChange }: Props) {
   const { data: row } = useCheckin(reportId);
   const { debouncedUpsert } = useUpsertCheckin();
-  const structureMutation = useStructureVoiceNote();
+  
 
   const [note, setNote] = useState("");
   const [hydrated, setHydrated] = useState(false);
@@ -44,24 +42,6 @@ export function SectionNotes({ reportId, onStatusChange }: Props) {
     });
   }, [note, hydrated, reportId, row, debouncedUpsert]);
 
-  const handleStructure = () => {
-    if (!note.trim()) return;
-    structureMutation.mutate(
-      { text: note, context: "free_note" },
-      {
-        onSuccess: (s) => {
-          if (s) setNote(s.slice(0, 3000));
-        },
-        onError: (e: any) => {
-          toast({
-            title: "Structuration impossible",
-            description: e?.message ?? "Erreur inconnue",
-            variant: "destructive",
-          });
-        },
-      },
-    );
-  };
 
   return (
     <section className="mb-8">
@@ -79,31 +59,13 @@ export function SectionNotes({ reportId, onStatusChange }: Props) {
 
         <div className="flex flex-row gap-2 mb-2">
           <VoiceRecordButton
+            context="free_note"
             onTranscript={(t) =>
               setNote((prev) => (prev ? (prev + " " + t).slice(0, 3000) : t.slice(0, 3000)))
             }
           />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="gap-1.5 text-xs"
-            disabled={!note.trim() || structureMutation.isPending}
-            onClick={handleStructure}
-          >
-            {structureMutation.isPending ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Structuration…
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-3.5 w-3.5 text-violet-500" />
-                Structurer avec l'IA
-              </>
-            )}
-          </Button>
         </div>
+
 
         <Textarea
           className="text-sm min-h-[140px]"

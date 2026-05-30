@@ -1,13 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Sparkles } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import type { SectionStatus } from "@/pages/RapportDetail";
 import { EmojiScore } from "./EmojiScore";
 import { useCheckin, useUpsertCheckin, parseKeyContext } from "@/hooks/useCheckin";
 import { VoiceRecordButton } from "@/components/VoiceRecordButton";
-import { useStructureVoiceNote } from "@/hooks/useStructureVoiceNote";
-import { toast } from "@/hooks/use-toast";
+
 
 interface Props {
   reportId: string;
@@ -17,7 +14,7 @@ interface Props {
 export function SectionCheckinWeekly({ reportId, onStatusChange }: Props) {
   const { data: row } = useCheckin(reportId);
   const { debouncedUpsert } = useUpsertCheckin();
-  const structureMutation = useStructureVoiceNote();
+
 
   const [meteoScore, setMeteoScore] = useState(0);
   const [note, setNote] = useState("");
@@ -57,24 +54,6 @@ export function SectionCheckinWeekly({ reportId, onStatusChange }: Props) {
     onStatusChange(isComplete ? "complete" : "incomplete");
   }, [isComplete, onStatusChange]);
 
-  const handleStructure = () => {
-    if (!note.trim()) return;
-    structureMutation.mutate(
-      { text: note, context: "check_in" },
-      {
-        onSuccess: (structured) => {
-          if (structured) setNote(structured.slice(0, 1000));
-        },
-        onError: (e: any) => {
-          toast({
-            title: "Structuration impossible",
-            description: e?.message ?? "Erreur inconnue",
-            variant: "destructive",
-          });
-        },
-      },
-    );
-  };
 
   return (
     <section className="mb-8">
@@ -102,31 +81,13 @@ export function SectionCheckinWeekly({ reportId, onStatusChange }: Props) {
 
         <div className="flex flex-row gap-2 mb-2">
           <VoiceRecordButton
+            context="check_in"
             onTranscript={(transcript) =>
               setNote((prev) => (prev ? (prev + " " + transcript).slice(0, 1000) : transcript.slice(0, 1000)))
             }
           />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="gap-1.5 text-xs"
-            disabled={!note.trim() || structureMutation.isPending}
-            onClick={handleStructure}
-          >
-            {structureMutation.isPending ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Structuration…
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-3.5 w-3.5 text-violet-500" />
-                Structurer avec l'IA
-              </>
-            )}
-          </Button>
         </div>
+
 
         <Textarea
           className={`text-sm min-h-[100px] ${missing ? "border-destructive" : ""}`}
