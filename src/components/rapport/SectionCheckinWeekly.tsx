@@ -54,24 +54,6 @@ export function SectionCheckinWeekly({ reportId, onStatusChange }: Props) {
     onStatusChange(isComplete ? "complete" : "incomplete");
   }, [isComplete, onStatusChange]);
 
-  const handleStructure = () => {
-    if (!note.trim()) return;
-    structureMutation.mutate(
-      { text: note, context: "check_in" },
-      {
-        onSuccess: (structured) => {
-          if (structured) setNote(structured.slice(0, 1000));
-        },
-        onError: (e: any) => {
-          toast({
-            title: "Structuration impossible",
-            description: e?.message ?? "Erreur inconnue",
-            variant: "destructive",
-          });
-        },
-      },
-    );
-  };
 
   return (
     <section className="mb-8">
