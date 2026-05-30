@@ -9,6 +9,7 @@ import { SectionTodo } from "@/components/rapport/SectionTodo";
 import { SectionObjectifs } from "@/components/rapport/SectionObjectifs";
 import { SectionIds } from "@/components/rapport/SectionIds";
 import { SectionIdsWeekly } from "@/components/rapport/SectionIdsWeekly";
+import { SectionNotes } from "@/components/rapport/SectionNotes";
 import { SectionCloture } from "@/components/rapport/SectionCloture";
 import { AutosaveIndicator } from "@/components/rapport/AutosaveIndicator";
 import { MeetingView } from "@/components/rapport/MeetingView";
@@ -21,7 +22,7 @@ import { Save, CheckCircle2, Play, Send } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 export type ReportType = "monthly" | "weekly";
-export type SectionId = "kpi" | "checkin" | "responsabilites" | "todo" | "objectifs" | "ids" | "cloture";
+export type SectionId = "kpi" | "checkin" | "responsabilites" | "todo" | "objectifs" | "ids" | "cloture" | "notes";
 export type SectionStatus = "complete" | "incomplete" | "warning";
 
 interface OutletContext {
@@ -32,7 +33,7 @@ interface OutletContext {
   reportType: ReportType;
 }
 
-const weeklySections: SectionId[] = ["kpi", "checkin", "ids"];
+const weeklySections: SectionId[] = ["kpi", "checkin", "ids", "notes"];
 const monthlySections: SectionId[] = ["kpi", "checkin", "responsabilites", "todo", "objectifs", "ids", "cloture"];
 
 export default function RapportDetail() {
@@ -105,6 +106,11 @@ function PreparationMode({ report }: { report: ReportRecord }) {
 
   const onIdsStatusChange = useCallback(
     (s: SectionStatus) => updateSectionStatus("ids", s),
+    [updateSectionStatus],
+  );
+
+  const onNotesStatusChange = useCallback(
+    (s: SectionStatus) => updateSectionStatus("notes", s),
     [updateSectionStatus],
   );
 
@@ -243,6 +249,9 @@ function PreparationMode({ report }: { report: ReportRecord }) {
       {activeSection === "ids" && !isWeekly && <SectionIds reportId={report.id} reportType={report.type} />}
       {activeSection === "ids" && isWeekly && (
         <SectionIdsWeekly reportId={report.id} onStatusChange={onIdsStatusChange} />
+      )}
+      {activeSection === "notes" && isWeekly && (
+        <SectionNotes reportId={report.id} onStatusChange={onNotesStatusChange} />
       )}
       {activeSection === "cloture" && !isWeekly && <SectionCloture reportId={report.id} reportType={report.type} />}
 
