@@ -19,6 +19,8 @@ const INSUFFISANT = "#EF4444";
 const TEXT_DARK = "#111827";
 const TEXT_MUTED = "#6B7280";
 const WHITE = "#FFFFFF";
+const AMBER_BG = "#FFF7ED";
+const AMBER_TEXT = "#C2410C";
 
 const styles = StyleSheet.create({
   page: {
