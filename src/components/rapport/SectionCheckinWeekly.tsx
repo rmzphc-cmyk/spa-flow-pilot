@@ -81,31 +81,13 @@ export function SectionCheckinWeekly({ reportId, onStatusChange }: Props) {
 
         <div className="flex flex-row gap-2 mb-2">
           <VoiceRecordButton
+            context="check_in"
             onTranscript={(transcript) =>
               setNote((prev) => (prev ? (prev + " " + transcript).slice(0, 1000) : transcript.slice(0, 1000)))
             }
           />
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="gap-1.5 text-xs"
-            disabled={!note.trim() || structureMutation.isPending}
-            onClick={handleStructure}
-          >
-            {structureMutation.isPending ? (
-              <>
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Structuration…
-              </>
-            ) : (
-              <>
-                <Sparkles className="h-3.5 w-3.5 text-violet-500" />
-                Structurer avec l'IA
-              </>
-            )}
-          </Button>
         </div>
+
 
         <Textarea
           className={`text-sm min-h-[100px] ${missing ? "border-destructive" : ""}`}
