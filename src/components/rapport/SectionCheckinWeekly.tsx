@@ -15,7 +15,7 @@ interface Props {
 }
 
 export function SectionCheckinWeekly({ reportId, onStatusChange }: Props) {
-  const { data: row } = useCheckin(reportId);
+  const { data: row, isFetching } = useCheckin(reportId);
   const { debouncedUpsert } = useUpsertCheckin();
   const structureMutation = useStructureVoiceNote();
 
@@ -27,14 +27,14 @@ export function SectionCheckinWeekly({ reportId, onStatusChange }: Props) {
 
   useEffect(() => {
     if (hydrated) return;
-    if (row === undefined) return;
+    if (isFetching) return;
     if (row !== null) {
       const ctx = parseKeyContext(row.key_context);
       setMeteoScore(row.mood_score ?? 0);
       setNote(ctx.note ?? ctx.situation ?? "");
     }
     setHydrated(true);
-  }, [row, hydrated]);
+  }, [row, hydrated, isFetching]);
 
   useEffect(() => {
     if (!hydrated || !reportId) return;

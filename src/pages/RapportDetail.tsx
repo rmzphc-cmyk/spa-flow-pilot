@@ -1,4 +1,5 @@
 import { useMemo, useCallback, useEffect } from "react";
+import { useIsMutating } from "@tanstack/react-query";
 import { useParams, useOutletContext, useNavigate } from "react-router-dom";
 import { ReportHeader } from "@/components/rapport/ReportHeader";
 import { SectionKpi } from "@/components/rapport/SectionKpi";
@@ -12,14 +13,14 @@ import { SectionIds } from "@/components/rapport/SectionIds";
 import { SectionIdsWeekly } from "@/components/rapport/SectionIdsWeekly";
 import { SectionNotes } from "@/components/rapport/SectionNotes";
 import { SectionCloture } from "@/components/rapport/SectionCloture";
-import { AutosaveIndicator } from "@/components/rapport/AutosaveIndicator";
+
 import { MeetingView } from "@/components/rapport/MeetingView";
 import { type ReportRecord } from "@/lib/reportsStore";
 import { useReport, mapReportRowToRecord, useUpdateReportStatus, useStartMeeting, useFinalizeWeekly } from "@/hooks/useReports";
 import { Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { Save, CheckCircle2, Play, Send } from "lucide-react";
+import { CheckCircle2, Play, Send } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 export type ReportType = "monthly" | "weekly";
@@ -81,6 +82,7 @@ export default function RapportDetail() {
 function PreparationMode({ report, periodStart, periodEnd }: { report: ReportRecord; periodStart: string; periodEnd: string }) {
   const { activeSection, sectionStatuses, setSectionStatuses } = useOutletContext<OutletContext>();
   const isWeekly = report.type === "weekly";
+  const mutatingCount = useIsMutating();
   const sections = isWeekly ? weeklySections : monthlySections;
 
   const updateSectionStatus = useCallback(
@@ -273,14 +275,20 @@ function PreparationMode({ report, periodStart, periodEnd }: { report: ReportRec
       )}
       {activeSection === "cloture" && !isWeekly && <SectionCloture reportId={report.id} reportType={report.type} />}
 
-      {/* STICKY BOTTOM BAR — Preparation mode */}
+      {/* STICKY BOTTOM BAR */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-[0_-2px_8px_rgba(0,0,0,0.06)] px-6 py-3 flex items-center justify-between z-50">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" className="gap-1.5">
-            <Save className="h-4 w-4" />
-            Enregistrer
-          </Button>
-          <AutosaveIndicator />
+          {mutatingCount > 0 ? (
+            <span className="flex items-center gap-1.5 text-xs text-amber-600">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Enregistrement…
+            </span>
+          ) : (
+            <span className="flex items-center gap-1.5 text-xs text-emerald-600">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Sauvegardé
+            </span>
+          )}
         </div>
         {renderActionButton()}
       </div>
