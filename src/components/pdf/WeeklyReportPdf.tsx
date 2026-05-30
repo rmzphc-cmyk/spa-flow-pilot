@@ -150,6 +150,43 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   footerText: { color: WHITE, fontSize: 7 },
+  actionsWrap: {
+    marginTop: 8,
+    borderRadius: 6,
+    overflow: "hidden",
+  },
+  actionsGroupHeader: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  actionsGroupTitle: {
+    fontSize: 8,
+    fontFamily: "Helvetica-Bold",
+    marginLeft: 4,
+  },
+  actionItem: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F3F4F6",
+  },
+  actionTitle: { fontSize: 8, color: TEXT_DARK },
+  actionMeta: { fontSize: 7, color: TEXT_MUTED, marginTop: 1 },
+  actionReason: {
+    fontSize: 7,
+    color: AMBER_TEXT,
+    fontFamily: "Helvetica-Oblique",
+    marginTop: 1,
+  },
+  actionBadge: {
+    paddingVertical: 1,
+    paddingHorizontal: 4,
+    borderRadius: 8,
+    marginLeft: 4,
+  },
+  actionBadgeText: { fontSize: 6.5, fontFamily: "Helvetica-Bold" },
 });
 
 function statusBadgeColor(status: string): { bg: string; label: string } {
