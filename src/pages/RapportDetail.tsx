@@ -254,7 +254,12 @@ function PreparationMode({ report }: { report: ReportRecord }) {
       )}
       {activeSection === "todo" && !isWeekly && <SectionTodo reportId={report.id} />}
       {activeSection === "todo" && isWeekly && (
-        <SectionTodoWeekly reportId={report.id} onStatusChange={onTodoWeeklyStatusChange} />
+        <SectionTodoWeekly
+          reportId={report.id}
+          periodStart={row.period_start}
+          periodEnd={row.period_end}
+          onStatusChange={onTodoWeeklyStatusChange}
+        />
       )}
       {activeSection === "objectifs" && !isWeekly && <SectionObjectifs reportId={report.id} reportType={report.type} />}
       {activeSection === "ids" && !isWeekly && <SectionIds reportId={report.id} reportType={report.type} />}
