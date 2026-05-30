@@ -17,6 +17,7 @@ export interface DbTodo {
   source: DbTodoSource;
   due_date: string | null;
   deferred_count: number;
+  deferred_from_date: string | null;
   created_by: string;
   completed_at: string | null;
   created_at: string;
@@ -226,5 +227,34 @@ export function useUpdateFollowUp(reportId: string) {
       if (error) throw error;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ["todos", reportId] }),
+  });
+}
+
+export function useDeferTodo() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      id: string;
+      reason: string;
+      newDueDate: string;
+      currentTodo: DbTodo;
+      currentDescription: string | null;
+    }) => {
+      const meta = parseTodoDescription(input.currentDescription);
+      const newDesc = JSON.stringify({ ...meta, followUp: input.reason });
+      const { error } = await supabase
+        .from("todos")
+        .update({
+          status: "deferred" as DbTodoStatus,
+          description: newDesc,
+          deferred_count: (input.currentTodo.deferred_count ?? 0) + 1,
+          deferred_from_date: input.currentTodo.due_date,
+          due_date: input.newDueDate,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", input.id);
+      if (error) throw error;
+    },
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["todos"] }),
   });
 }

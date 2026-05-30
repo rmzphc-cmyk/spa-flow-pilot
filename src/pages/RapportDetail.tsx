@@ -74,11 +74,11 @@ export default function RapportDetail() {
   }
 
   // PREPARATION MODE (incl. validated read-only) — keep existing editable layout
-  return <PreparationMode report={report} />;
+  return <PreparationMode report={report} periodStart={row.period_start} periodEnd={row.period_end} />;
 }
 
 
-function PreparationMode({ report }: { report: ReportRecord }) {
+function PreparationMode({ report, periodStart, periodEnd }: { report: ReportRecord; periodStart: string; periodEnd: string }) {
   const { activeSection, sectionStatuses, setSectionStatuses } = useOutletContext<OutletContext>();
   const isWeekly = report.type === "weekly";
   const sections = isWeekly ? weeklySections : monthlySections;
@@ -254,7 +254,12 @@ function PreparationMode({ report }: { report: ReportRecord }) {
       )}
       {activeSection === "todo" && !isWeekly && <SectionTodo reportId={report.id} />}
       {activeSection === "todo" && isWeekly && (
-        <SectionTodoWeekly reportId={report.id} onStatusChange={onTodoWeeklyStatusChange} />
+        <SectionTodoWeekly
+          reportId={report.id}
+          periodStart={periodStart}
+          periodEnd={periodEnd}
+          onStatusChange={onTodoWeeklyStatusChange}
+        />
       )}
       {activeSection === "objectifs" && !isWeekly && <SectionObjectifs reportId={report.id} reportType={report.type} />}
       {activeSection === "ids" && !isWeekly && <SectionIds reportId={report.id} reportType={report.type} />}

@@ -31,6 +31,7 @@ import {
   useAddTodo,
   useUpdateTodoStatusWithComment,
   useUpdateFollowUp,
+  useDeferTodo,
   parseTodoDescription,
   priorityDbToUi,
   sourceDbToUi,
@@ -50,6 +51,7 @@ interface Todo {
   originCycle?: string;
   followUp?: string;
   _description: string | null;
+  _raw: DbTodo;
 }
 
 const priorityIcons: Record<string, string> = {
@@ -119,6 +121,7 @@ function mapDbToTodo(db: DbTodo, currentReportId: string): Todo {
     originCycle: meta.originCycle,
     followUp: meta.followUp,
     _description: db.description,
+    _raw: db,
   };
 }
 
@@ -129,6 +132,7 @@ export function SectionTodo({ reportId }: Props) {
   const { data: dbTodos = [] } = useTodos(reportId, spaId);
   const addTodo = useAddTodo(reportId);
   const updateWithComment = useUpdateTodoStatusWithComment();
+  const deferMutation = useDeferTodo();
   const updateFollowUp = useUpdateFollowUp(reportId);
 
   const todos = useMemo(
@@ -147,6 +151,7 @@ export function SectionTodo({ reportId }: Props) {
     id: string;
     status: DbTodoStatus;
     comment: string;
+    newDueDate?: string;
   } | null>(null);
 
   const inherited = todos.filter((t) => t.source === "previous");
@@ -180,12 +185,22 @@ export function SectionTodo({ reportId }: Props) {
 
   const confirmChange = (t: Todo) => {
     if (!pendingChange) return;
-    updateWithComment.mutate({
-      id: t.id,
-      status: pendingChange.status,
-      comment: pendingChange.comment,
-      currentDescription: t._description,
-    });
+    if (pendingChange.status === "deferred") {
+      deferMutation.mutate({
+        id: t.id,
+        reason: pendingChange.comment,
+        newDueDate: pendingChange.newDueDate!,
+        currentTodo: t._raw,
+        currentDescription: t._description,
+      });
+    } else {
+      updateWithComment.mutate({
+        id: t.id,
+        status: pendingChange.status,
+        comment: pendingChange.comment,
+        currentDescription: t._description,
+      });
+    }
     setPendingChange(null);
   };
 
@@ -258,38 +273,48 @@ export function SectionTodo({ reportId }: Props) {
           })}
         </div>
         {isPending && pendingChange && (
-          <div className="flex gap-2">
-            <Input
-              autoFocus
-              placeholder={PLACEHOLDERS[pendingChange.status]}
-              value={pendingChange.comment}
-              onChange={(e) =>
-                setPendingChange({ ...pendingChange, comment: e.target.value })
-              }
-              className="text-sm h-8"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && (!commentRequired || pendingChange.comment.trim())) {
-                  confirmChange(t);
+          <div className="space-y-2">
+            <div className="flex gap-2">
+              <Input
+                autoFocus
+                placeholder={PLACEHOLDERS[pendingChange.status]}
+                value={pendingChange.comment}
+                onChange={(e) =>
+                  setPendingChange({ ...pendingChange, comment: e.target.value })
                 }
-              }}
-            />
-            <Button
-              size="sm"
-              className="h-8"
-              disabled={commentRequired && !pendingChange.comment.trim()}
-              onClick={() => confirmChange(t)}
-            >
-              Confirmer
-            </Button>
-            {pendingChange.status === "in_progress" && (
+                className="text-sm h-8"
+              />
               <Button
                 size="sm"
-                variant="outline"
                 className="h-8"
-                onClick={() => skipChange(t)}
+                disabled={
+                  (commentRequired && !pendingChange.comment.trim()) ||
+                  (pendingChange.status === "deferred" && !pendingChange.newDueDate)
+                }
+                onClick={() => confirmChange(t)}
               >
-                Passer
+                Confirmer
               </Button>
+              {pendingChange.status === "in_progress" && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-8"
+                  onClick={() => skipChange(t)}
+                >
+                  Passer
+                </Button>
+              )}
+            </div>
+            {pendingChange.status === "deferred" && (
+              <Input
+                type="date"
+                value={pendingChange.newDueDate ?? ""}
+                onChange={(e) =>
+                  setPendingChange((p) => (p ? { ...p, newDueDate: e.target.value } : null))
+                }
+                className="text-sm h-8"
+              />
             )}
           </div>
         )}
@@ -350,6 +375,11 @@ export function SectionTodo({ reportId }: Props) {
           <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
             <span>{t.responsible || "—"}</span>
             <span>{t.deadline}</span>
+            {t._raw.deferred_count > 0 && (
+              <span className="text-xs px-1.5 py-0.5 rounded font-medium bg-amber-100 text-amber-800">
+                ↩ {t._raw.deferred_count}×
+              </span>
+            )}
           </div>
         </div>
         <span className="text-sm shrink-0">{priorityIcons[t.priority]}</span>
