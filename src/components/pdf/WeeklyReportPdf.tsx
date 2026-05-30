@@ -1,5 +1,5 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
-import type { WeeklyPdfData } from "@/hooks/useWeeklyPdfData";
+import type { WeeklyPdfData, WeeklyPdfTodoDone, WeeklyPdfTodoActive, WeeklyPdfTodoDeferred } from "@/hooks/useWeeklyPdfData";
 
 const TEAL_DARK = "#006B6B";
 const TEAL_LIGHT = "#E0F4F4";
