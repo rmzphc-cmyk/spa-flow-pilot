@@ -14,7 +14,7 @@ interface Props {
 }
 
 export function SectionNotes({ reportId, onStatusChange }: Props) {
-  const { data: row } = useCheckin(reportId);
+  const { data: row, isFetching } = useCheckin(reportId);
   const { debouncedUpsert } = useUpsertCheckin();
   const structureMutation = useStructureVoiceNote();
 
@@ -25,10 +25,10 @@ export function SectionNotes({ reportId, onStatusChange }: Props) {
 
   useEffect(() => {
     if (hydrated) return;
-    if (row === undefined) return;
+    if (isFetching) return;
     if (row !== null) setNote(parseKeyContext(row.key_context).free_note ?? "");
     setHydrated(true);
-  }, [row, hydrated]);
+  }, [row, hydrated, isFetching]);
 
   useEffect(() => {
     onStatusChange("complete");

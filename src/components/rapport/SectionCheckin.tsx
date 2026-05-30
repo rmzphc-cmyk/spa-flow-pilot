@@ -56,7 +56,7 @@ function Field({
 }
 
 export function SectionCheckin({ reportId, onStatusChange }: Props) {
-  const { data: row } = useCheckin(reportId);
+  const { data: row, isFetching } = useCheckin(reportId);
   const { debouncedUpsert } = useUpsertCheckin();
 
   const [equipeScore, setEquipeScore] = useState(0);
@@ -69,7 +69,7 @@ export function SectionCheckin({ reportId, onStatusChange }: Props) {
   // Hydrate from DB once
   useEffect(() => {
     if (hydrated) return;
-    if (row === undefined) return;
+    if (isFetching) return;
     if (row !== null) {
       const ctx = parseKeyContext(row.key_context);
       setEquipeScore(row.mood_score ?? 0);
@@ -79,7 +79,7 @@ export function SectionCheckin({ reportId, onStatusChange }: Props) {
       setSituation(ctx.situation ?? "");
     }
     setHydrated(true);
-  }, [row, hydrated]);
+  }, [row, hydrated, isFetching]);
 
   // Autosave (debounced) on any change once hydrated
   useEffect(() => {
