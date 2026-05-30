@@ -27,7 +27,8 @@ export function SectionCheckinWeekly({ reportId, onStatusChange }: Props) {
 
   useEffect(() => {
     if (hydrated) return;
-    if (row) {
+    if (row === undefined) return;
+    if (row !== null) {
       const ctx = parseKeyContext(row.key_context);
       setMeteoScore(row.mood_score ?? 0);
       setNote(ctx.note ?? ctx.situation ?? "");
@@ -42,7 +43,7 @@ export function SectionCheckinWeekly({ reportId, onStatusChange }: Props) {
       report_id: reportId,
       mood_score: meteoScore,
       focus_level: 0,
-      key_context: { note },
+      key_context: { ...parseKeyContext(row?.key_context ?? null), note },
     });
   }, [hydrated, reportId, meteoScore, note, debouncedUpsert]);
 
