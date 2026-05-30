@@ -132,6 +132,7 @@ export function SectionTodo({ reportId }: Props) {
   const { data: dbTodos = [] } = useTodos(reportId, spaId);
   const addTodo = useAddTodo(reportId);
   const updateWithComment = useUpdateTodoStatusWithComment();
+  const deferMutation = useDeferTodo();
   const updateFollowUp = useUpdateFollowUp(reportId);
 
   const todos = useMemo(
