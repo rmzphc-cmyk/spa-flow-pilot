@@ -17,6 +17,7 @@ export interface DbTodo {
   source: DbTodoSource;
   due_date: string | null;
   deferred_count: number;
+  deferred_from_date: string | null;
   created_by: string;
   completed_at: string | null;
   created_at: string;
