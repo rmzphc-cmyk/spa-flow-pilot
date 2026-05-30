@@ -1,13 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
-import { Loader2, Sparkles } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
-import { Button } from "@/components/ui/button";
 import type { SectionStatus } from "@/pages/RapportDetail";
 import { EmojiScore } from "./EmojiScore";
 import { useCheckin, useUpsertCheckin, parseKeyContext } from "@/hooks/useCheckin";
 import { VoiceRecordButton } from "@/components/VoiceRecordButton";
-import { useStructureVoiceNote } from "@/hooks/useStructureVoiceNote";
-import { toast } from "@/hooks/use-toast";
+
 
 interface Props {
   reportId: string;
