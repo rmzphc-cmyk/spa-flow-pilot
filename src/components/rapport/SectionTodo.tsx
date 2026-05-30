@@ -375,6 +375,11 @@ export function SectionTodo({ reportId }: Props) {
           <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
             <span>{t.responsible || "—"}</span>
             <span>{t.deadline}</span>
+            {t._raw.deferred_count > 0 && (
+              <span className="text-xs px-1.5 py-0.5 rounded font-medium bg-amber-100 text-amber-800">
+                ↩ {t._raw.deferred_count}×
+              </span>
+            )}
           </div>
         </div>
         <span className="text-sm shrink-0">{priorityIcons[t.priority]}</span>
