@@ -256,8 +256,8 @@ function PreparationMode({ report, periodStart, periodEnd }: { report: ReportRec
       {activeSection === "todo" && isWeekly && (
         <SectionTodoWeekly
           reportId={report.id}
-          periodStart={row.period_start}
-          periodEnd={row.period_end}
+          periodStart={periodStart}
+          periodEnd={periodEnd}
           onStatusChange={onTodoWeeklyStatusChange}
         />
       )}
