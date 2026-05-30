@@ -25,7 +25,7 @@ interface Props {
   onStatusChange: (status: SectionStatus) => void;
 }
 
-export function SectionIdsWeekly({ reportId }: Props) {
+export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
   const { user, spaId } = useAuth();
   const { data: issues = [], isLoading } = useIdsItems(reportId);
   const addMutation = useAddIdsItem(reportId, "weekly");
