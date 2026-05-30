@@ -76,9 +76,29 @@ export function SectionNotes({ reportId, onStatusChange }: Props) {
           <VoiceRecordButton
             context="free_note"
             onTranscript={(t) =>
-              setNote((prev) => (prev ? (prev + " " + t).slice(0, 3000) : t.slice(0, 3000)))
+              setNote((prev) => (prev ? (prev + " " + t).slice(0, MAX_LENGTH) : t.slice(0, MAX_LENGTH)))
             }
           />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs"
+            disabled={!note.trim() || structureMutation.isPending}
+            onClick={handleStructure}
+          >
+            {structureMutation.isPending ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Structuration…
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-3.5 w-3.5 text-violet-500" />
+                Structurer avec l'IA
+              </>
+            )}
+          </Button>
         </div>
 
 
