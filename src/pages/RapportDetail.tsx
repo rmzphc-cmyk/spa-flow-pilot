@@ -74,11 +74,11 @@ export default function RapportDetail() {
   }
 
   // PREPARATION MODE (incl. validated read-only) — keep existing editable layout
-  return <PreparationMode report={report} />;
+  return <PreparationMode report={report} periodStart={row.period_start} periodEnd={row.period_end} />;
 }
 
 
-function PreparationMode({ report }: { report: ReportRecord }) {
+function PreparationMode({ report, periodStart, periodEnd }: { report: ReportRecord; periodStart: string; periodEnd: string }) {
   const { activeSection, sectionStatuses, setSectionStatuses } = useOutletContext<OutletContext>();
   const isWeekly = report.type === "weekly";
   const sections = isWeekly ? weeklySections : monthlySections;
