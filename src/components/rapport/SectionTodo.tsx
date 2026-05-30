@@ -151,6 +151,7 @@ export function SectionTodo({ reportId }: Props) {
     id: string;
     status: DbTodoStatus;
     comment: string;
+    newDueDate?: string;
   } | null>(null);
 
   const inherited = todos.filter((t) => t.source === "previous");
