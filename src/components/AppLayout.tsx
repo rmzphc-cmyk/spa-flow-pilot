@@ -21,6 +21,7 @@ export function AppLayout() {
     todo: "incomplete",
     objectifs: "incomplete",
     ids: "incomplete",
+    notes: "complete",
     cloture: "incomplete",
   });
 

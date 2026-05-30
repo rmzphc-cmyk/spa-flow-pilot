@@ -15,13 +15,19 @@ export interface CheckinKeyContext {
   managerComment?: string;
   situation?: string;
   note?: string;
+  free_note?: string;
 }
 
 export function parseKeyContext(raw: string | null | undefined): CheckinKeyContext {
   if (!raw) return {};
   try {
     const parsed = JSON.parse(raw);
-    return typeof parsed === "object" && parsed !== null ? parsed : {};
+    if (typeof parsed !== "object" || parsed === null) return {};
+    const p = parsed as Record<string, unknown>;
+    return {
+      ...p,
+      free_note: typeof p.free_note === "string" ? p.free_note : undefined,
+    } as CheckinKeyContext;
   } catch {
     return {};
   }

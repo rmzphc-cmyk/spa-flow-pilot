@@ -16,6 +16,7 @@ import {
   Send,
   Eye,
   ArrowLeft,
+  PenLine,
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -42,10 +43,11 @@ const allReportSections: ReportSection[] = [
   { id: "todo", labelKey: "sections.todo", icon: CheckSquare, overdue: 3 },
   { id: "objectifs", labelKey: "sections.objectifs", icon: Target },
   { id: "ids", labelKey: "sections.ids", icon: Lightbulb },
+  { id: "notes", labelKey: "sections.notes", icon: PenLine },
   { id: "cloture", labelKey: "sections.cloture", icon: Lock },
 ];
 
-const weeklySectionIds: SectionId[] = ["kpi", "checkin", "ids"];
+const weeklySectionIds: SectionId[] = ["kpi", "checkin", "ids", "notes"];
 
 const weeklyLabelOverrides: Partial<Record<SectionId, string>> = {
   checkin: "Check-in rapide",
