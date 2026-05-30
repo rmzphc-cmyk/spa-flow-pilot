@@ -1,16 +1,25 @@
 import { useEffect, useState } from "react";
-import { AlertTriangle, Check, MessageSquare } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  CheckCircle2,
+  MessageSquare,
+  Play,
+  RotateCcw,
+  Square,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   useTodos,
-  useUpdateTodoStatus,
+  useUpdateTodoStatusWithComment,
   useUpdateFollowUp,
   parseTodoDescription,
   priorityDbToUi,
   sourceDbToUi,
   type DbTodo,
+  type DbTodoStatus,
 } from "@/hooks/useTodos";
 import type { SectionStatus } from "@/pages/RapportDetail";
 
@@ -30,6 +39,25 @@ const sourceStyles: Record<string, { label: string; classes: string }> = {
   ia: { label: "IA", classes: "bg-emerald-50 text-emerald-700" },
 };
 
+const STATUS_OPTIONS: {
+  value: DbTodoStatus;
+  label: string;
+  icon: typeof Square;
+  color: string;
+}[] = [
+  { value: "pending", label: "À faire", icon: Square, color: "#6B7280" },
+  { value: "in_progress", label: "En cours", icon: Play, color: "#3B82F6" },
+  { value: "done", label: "Fait", icon: CheckCircle2, color: "#10B981" },
+  { value: "deferred", label: "Reporter", icon: RotateCcw, color: "#F59E0B" },
+];
+
+const PLACEHOLDERS: Record<DbTodoStatus, string> = {
+  pending: "",
+  in_progress: "Avancement actuel, prochaine étape… (optionnel)",
+  done: "Décrivez comment c'est fait, résultat obtenu…",
+  deferred: "Raison du report, nouvelle échéance…",
+};
+
 function formatDeadline(due: string | null): string {
   if (!due) return "Sans échéance";
   try {
@@ -47,9 +75,14 @@ function isOverdue(due: string | null): boolean {
 export function SectionTodoWeekly({ reportId, onStatusChange }: Props) {
   const { spaId } = useAuth();
   const { data: dbTodos = [], isLoading } = useTodos(reportId, spaId);
-  const updateStatus = useUpdateTodoStatus(reportId);
+  const updateWithComment = useUpdateTodoStatusWithComment();
   const updateFollowUp = useUpdateFollowUp(reportId);
 
+  const [pendingChange, setPendingChange] = useState<{
+    id: string;
+    status: DbTodoStatus;
+    comment: string;
+  } | null>(null);
   const [editingFollowUp, setEditingFollowUp] = useState<string | null>(null);
   const [followUpDraft, setFollowUpDraft] = useState("");
 
@@ -60,7 +93,42 @@ export function SectionTodoWeekly({ reportId, onStatusChange }: Props) {
   const overdue = pending.filter((t) => isOverdue(t.due_date));
   const active = pending.filter((t) => !isOverdue(t.due_date));
 
-  const markDone = (id: string) => updateStatus.mutate({ id, status: "done" });
+  const handleStatusClick = (todo: DbTodo, status: DbTodoStatus) => {
+    if (todo.status === status) return;
+    if (status === "pending") {
+      updateWithComment.mutate({
+        id: todo.id,
+        status,
+        comment: "",
+        currentDescription: todo.description,
+      });
+      setPendingChange(null);
+      return;
+    }
+    setPendingChange({ id: todo.id, status, comment: "" });
+  };
+
+  const confirmChange = (todo: DbTodo) => {
+    if (!pendingChange) return;
+    updateWithComment.mutate({
+      id: todo.id,
+      status: pendingChange.status,
+      comment: pendingChange.comment,
+      currentDescription: todo.description,
+    });
+    setPendingChange(null);
+  };
+
+  const skipChange = (todo: DbTodo) => {
+    if (!pendingChange) return;
+    updateWithComment.mutate({
+      id: todo.id,
+      status: "in_progress",
+      comment: "",
+      currentDescription: todo.description,
+    });
+    setPendingChange(null);
+  };
 
   const saveFollowUp = (id: string) => {
     const todo = dbTodos.find((t) => t.id === id);
@@ -73,6 +141,74 @@ export function SectionTodoWeekly({ reportId, onStatusChange }: Props) {
     setFollowUpDraft("");
   };
 
+  const renderStatusBar = (t: DbTodo) => {
+    const isPending = pendingChange?.id === t.id;
+    const commentRequired =
+      pendingChange?.status === "done" || pendingChange?.status === "deferred";
+    return (
+      <div className="space-y-2">
+        <div className="flex flex-wrap gap-1.5">
+          {STATUS_OPTIONS.map((s) => {
+            const isActive = t.status === s.value;
+            const Icon = s.icon;
+            return (
+              <Button
+                key={s.value}
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs gap-1"
+                style={
+                  isActive
+                    ? { backgroundColor: s.color, borderColor: s.color, color: "white" }
+                    : { color: s.color, borderColor: s.color }
+                }
+                onClick={() => handleStatusClick(t, s.value)}
+              >
+                <Icon className="h-3 w-3" /> {s.label}
+              </Button>
+            );
+          })}
+        </div>
+        {isPending && pendingChange && (
+          <div className="flex gap-2">
+            <Input
+              autoFocus
+              placeholder={PLACEHOLDERS[pendingChange.status]}
+              value={pendingChange.comment}
+              onChange={(e) =>
+                setPendingChange({ ...pendingChange, comment: e.target.value })
+              }
+              className="text-sm h-8"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (!commentRequired || pendingChange.comment.trim())) {
+                  confirmChange(t);
+                }
+              }}
+            />
+            <Button
+              size="sm"
+              className="h-8"
+              disabled={commentRequired && !pendingChange.comment.trim()}
+              onClick={() => confirmChange(t)}
+            >
+              Confirmer
+            </Button>
+            {pendingChange.status === "in_progress" && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8"
+                onClick={() => skipChange(t)}
+              >
+                Passer
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const renderCard = (t: DbTodo, overdueCard: boolean) => {
     const meta = parseTodoDescription(t.description);
     const source = sourceDbToUi(t.source);
@@ -81,15 +217,8 @@ export function SectionTodoWeekly({ reportId, onStatusChange }: Props) {
     const editing = editingFollowUp === t.id;
 
     return (
-      <div key={t.id} className="bg-card border border-border rounded-xl p-4 shadow-sm">
+      <div key={t.id} className="bg-card border border-border rounded-xl p-4 shadow-sm space-y-3">
         <div className="flex items-start gap-3">
-          <button
-            onClick={() => markDone(t.id)}
-            aria-label="Marquer comme fait"
-            className="h-5 w-5 mt-0.5 rounded-full border-2 border-border shrink-0 flex items-center justify-center hover:bg-muted hover:border-primary transition-colors"
-          >
-            <Check className="h-3 w-3 text-transparent hover:text-primary" />
-          </button>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <span className="text-sm font-medium text-foreground">{t.title}</span>
@@ -107,8 +236,10 @@ export function SectionTodoWeekly({ reportId, onStatusChange }: Props) {
           <span className="text-sm shrink-0">{priorityIcons[priority]}</span>
         </div>
 
+        {renderStatusBar(t)}
+
         {editing ? (
-          <div className="mt-2 flex gap-2">
+          <div className="flex gap-2">
             <Input
               autoFocus
               placeholder="Ex: Avancement, blocage, prochaine étape…"
@@ -122,7 +253,7 @@ export function SectionTodoWeekly({ reportId, onStatusChange }: Props) {
         ) : (
           <button
             onClick={() => { setEditingFollowUp(t.id); setFollowUpDraft(meta.followUp || ""); }}
-            className={`mt-2 w-full text-left text-xs flex items-start gap-1.5 px-2 py-1.5 rounded transition-colors ${
+            className={`w-full text-left text-xs flex items-start gap-1.5 px-2 py-1.5 rounded transition-colors ${
               meta.followUp
                 ? "text-foreground bg-muted/50 hover:bg-muted"
                 : "text-muted-foreground bg-muted/30 hover:bg-muted italic"
