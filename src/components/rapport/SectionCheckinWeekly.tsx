@@ -1,9 +1,12 @@
 import { useEffect, useMemo, useState } from "react";
+import { Sparkles, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import type { SectionStatus } from "@/pages/RapportDetail";
 import { EmojiScore } from "./EmojiScore";
 import { useCheckin, useUpsertCheckin, parseKeyContext } from "@/hooks/useCheckin";
 import { VoiceRecordButton } from "@/components/VoiceRecordButton";
+import { useStructureVoiceNote } from "@/hooks/useStructureVoiceNote";
 
 
 interface Props {
