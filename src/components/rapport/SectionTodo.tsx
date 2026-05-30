@@ -1,8 +1,16 @@
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { AlertTriangle, Plus, Check, Clock, History, MessageSquare } from "lucide-react";
+import {
+  AlertTriangle,
+  Plus,
+  History,
+  MessageSquare,
+  Square,
+  Play,
+  CheckCircle2,
+  RotateCcw,
+} from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -21,13 +29,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import {
   useTodos,
   useAddTodo,
-  useUpdateTodoStatus,
+  useUpdateTodoStatusWithComment,
   useUpdateFollowUp,
   parseTodoDescription,
   priorityDbToUi,
-  statusDbToUi,
   sourceDbToUi,
   type DbTodo,
+  type DbTodoStatus,
 } from "@/hooks/useTodos";
 
 interface Todo {
@@ -36,7 +44,7 @@ interface Todo {
   responsible: string;
   deadline: string;
   priority: "critical" | "high" | "normal";
-  status: "pending" | "done" | "postponed";
+  dbStatus: DbTodoStatus;
   overdueDays?: number;
   source?: "ids" | "ia" | "previous";
   originCycle?: string;
@@ -54,6 +62,25 @@ const sourceStyles: Record<string, { label: string; classes: string }> = {
   ids: { label: "IDS", classes: "bg-violet-100 text-violet-800" },
   ia: { label: "IA", classes: "bg-accent text-accent-foreground" },
   previous: { label: "Cycle N-1", classes: "bg-blue-100 text-blue-800" },
+};
+
+const STATUS_OPTIONS: {
+  value: DbTodoStatus;
+  label: string;
+  icon: typeof Square;
+  color: string;
+}[] = [
+  { value: "pending", label: "À faire", icon: Square, color: "#6B7280" },
+  { value: "in_progress", label: "En cours", icon: Play, color: "#3B82F6" },
+  { value: "done", label: "Fait", icon: CheckCircle2, color: "#10B981" },
+  { value: "deferred", label: "Reporter", icon: RotateCcw, color: "#F59E0B" },
+];
+
+const PLACEHOLDERS: Record<DbTodoStatus, string> = {
+  pending: "",
+  in_progress: "Avancement actuel, prochaine étape… (optionnel)",
+  done: "Décrivez comment c'est fait, résultat obtenu…",
+  deferred: "Raison du report, nouvelle échéance…",
 };
 
 function formatDeadline(due: string | null): string {
@@ -86,7 +113,7 @@ function mapDbToTodo(db: DbTodo, currentReportId: string): Todo {
     responsible: meta.responsible,
     deadline: formatDeadline(db.due_date),
     priority: priorityDbToUi(db.priority),
-    status: statusDbToUi(db.status),
+    dbStatus: db.status,
     overdueDays: computeOverdueDays(db.due_date),
     source: isPrevious ? "previous" : baseSource,
     originCycle: meta.originCycle,
@@ -101,7 +128,7 @@ export function SectionTodo({ reportId }: Props) {
   const { spaId } = useAuth();
   const { data: dbTodos = [] } = useTodos(reportId, spaId);
   const addTodo = useAddTodo(reportId);
-  const updateStatus = useUpdateTodoStatus(reportId);
+  const updateWithComment = useUpdateTodoStatusWithComment();
   const updateFollowUp = useUpdateFollowUp(reportId);
 
   const todos = useMemo(
@@ -114,26 +141,63 @@ export function SectionTodo({ reportId }: Props) {
   const [newResponsible, setNewResponsible] = useState("");
   const [newDeadline, setNewDeadline] = useState("next_meeting");
   const [newPriority, setNewPriority] = useState("normal");
-  const [reportComment, setReportComment] = useState("");
-  const [reportingId, setReportingId] = useState<string | null>(null);
   const [editingFollowUp, setEditingFollowUp] = useState<string | null>(null);
   const [followUpDraft, setFollowUpDraft] = useState("");
+  const [pendingChange, setPendingChange] = useState<{
+    id: string;
+    status: DbTodoStatus;
+    comment: string;
+  } | null>(null);
 
   const inherited = todos.filter((t) => t.source === "previous");
-  const inheritedPending = inherited.filter((t) => t.status !== "done");
-  const inheritedDoneCount = inherited.filter((t) => t.status === "done").length;
+  const inheritedPending = inherited.filter((t) => t.dbStatus !== "done");
+  const inheritedDoneCount = inherited.filter((t) => t.dbStatus === "done").length;
   const inheritedMissingFollowUp = inheritedPending.filter((t) => !t.followUp?.trim()).length;
 
   const current = todos.filter((t) => t.source !== "previous");
-  const overdue = current.filter((t) => t.overdueDays && t.overdueDays > 0 && t.status !== "done");
+  const overdue = current.filter((t) => t.overdueDays && t.overdueDays > 0 && t.dbStatus !== "done");
   const active = current
-    .filter((t) => !t.overdueDays && t.status !== "done")
+    .filter((t) => !t.overdueDays && t.dbStatus !== "done")
     .sort((a, b) => {
       const prio = { critical: 0, high: 1, normal: 2 };
       return prio[a.priority] - prio[b.priority];
     });
 
-  const markDone = (id: string) => updateStatus.mutate({ id, status: "done" });
+  const handleStatusClick = (t: Todo, status: DbTodoStatus) => {
+    if (t.dbStatus === status) return;
+    if (status === "pending") {
+      updateWithComment.mutate({
+        id: t.id,
+        status,
+        comment: "",
+        currentDescription: t._description,
+      });
+      setPendingChange(null);
+      return;
+    }
+    setPendingChange({ id: t.id, status, comment: "" });
+  };
+
+  const confirmChange = (t: Todo) => {
+    if (!pendingChange) return;
+    updateWithComment.mutate({
+      id: t.id,
+      status: pendingChange.status,
+      comment: pendingChange.comment,
+      currentDescription: t._description,
+    });
+    setPendingChange(null);
+  };
+
+  const skipChange = (t: Todo) => {
+    updateWithComment.mutate({
+      id: t.id,
+      status: "in_progress",
+      comment: "",
+      currentDescription: t._description,
+    });
+    setPendingChange(null);
+  };
 
   const saveFollowUp = (id: string) => {
     const todo = todos.find((t) => t.id === id);
@@ -148,7 +212,6 @@ export function SectionTodo({ reportId }: Props) {
 
   const handleCreate = () => {
     if (!newTitle.trim()) return;
-    // "next_meeting" → ~28 du mois courant ; sinon null
     let due: string | null = null;
     if (newDeadline === "next_meeting") {
       const d = new Date();
@@ -165,6 +228,136 @@ export function SectionTodo({ reportId }: Props) {
     setNewResponsible("");
     setNewOpen(false);
   };
+
+  const renderStatusBar = (t: Todo) => {
+    const isPending = pendingChange?.id === t.id;
+    const commentRequired =
+      pendingChange?.status === "done" || pendingChange?.status === "deferred";
+    return (
+      <div className="space-y-2">
+        <div className="flex flex-wrap gap-1.5">
+          {STATUS_OPTIONS.map((s) => {
+            const isActive = t.dbStatus === s.value;
+            const Icon = s.icon;
+            return (
+              <Button
+                key={s.value}
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs gap-1"
+                style={
+                  isActive
+                    ? { backgroundColor: s.color, borderColor: s.color, color: "white" }
+                    : { color: s.color, borderColor: s.color }
+                }
+                onClick={() => handleStatusClick(t, s.value)}
+              >
+                <Icon className="h-3 w-3" /> {s.label}
+              </Button>
+            );
+          })}
+        </div>
+        {isPending && pendingChange && (
+          <div className="flex gap-2">
+            <Input
+              autoFocus
+              placeholder={PLACEHOLDERS[pendingChange.status]}
+              value={pendingChange.comment}
+              onChange={(e) =>
+                setPendingChange({ ...pendingChange, comment: e.target.value })
+              }
+              className="text-sm h-8"
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (!commentRequired || pendingChange.comment.trim())) {
+                  confirmChange(t);
+                }
+              }}
+            />
+            <Button
+              size="sm"
+              className="h-8"
+              disabled={commentRequired && !pendingChange.comment.trim()}
+              onClick={() => confirmChange(t)}
+            >
+              Confirmer
+            </Button>
+            {pendingChange.status === "in_progress" && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8"
+                onClick={() => skipChange(t)}
+              >
+                Passer
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const renderFollowUp = (t: Todo, warnIfMissing = false) => {
+    if (editingFollowUp === t.id) {
+      return (
+        <div className="flex gap-2">
+          <Input
+            autoFocus
+            placeholder="Ex: Retours positifs / Repoussé pour congé / Fait avec ajustement…"
+            value={followUpDraft}
+            onChange={(e) => setFollowUpDraft(e.target.value)}
+            className="text-sm h-8"
+            onKeyDown={(e) => { if (e.key === "Enter") saveFollowUp(t.id); }}
+          />
+          <Button size="sm" className="h-8" onClick={() => saveFollowUp(t.id)}>OK</Button>
+        </div>
+      );
+    }
+    return (
+      <button
+        onClick={() => { setEditingFollowUp(t.id); setFollowUpDraft(t.followUp || ""); }}
+        className={`w-full text-left text-xs flex items-start gap-1.5 px-2 py-1.5 rounded transition-colors ${
+          t.followUp
+            ? "text-foreground bg-muted/50 hover:bg-muted"
+            : warnIfMissing
+              ? "text-amber-700 bg-amber-50 hover:bg-amber-100 italic"
+              : "text-muted-foreground bg-muted/30 hover:bg-muted italic"
+        }`}
+      >
+        <MessageSquare className="h-3 w-3 mt-0.5 shrink-0" />
+        <span className="flex-1">
+          {t.followUp || (warnIfMissing ? "Ajouter un commentaire de suivi…" : "Ajouter un suivi…")}
+        </span>
+      </button>
+    );
+  };
+
+  const renderCard = (t: Todo, opts?: { overdue?: boolean }) => (
+    <div key={t.id} className="bg-card border border-border rounded-xl p-4 shadow-sm space-y-3">
+      <div className="flex items-start gap-3">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium text-foreground">{t.title}</span>
+            {t.source && sourceStyles[t.source] && (
+              <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${sourceStyles[t.source].classes}`}>
+                {sourceStyles[t.source].label}
+              </span>
+            )}
+            {opts?.overdue && t.overdueDays && (
+              <span className="text-xs font-medium text-destructive">RETARD +{t.overdueDays}j</span>
+            )}
+          </div>
+          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+            <span>{t.responsible || "—"}</span>
+            <span>{t.deadline}</span>
+          </div>
+        </div>
+        <span className="text-sm shrink-0">{priorityIcons[t.priority]}</span>
+      </div>
+      {renderStatusBar(t)}
+      {renderFollowUp(t)}
+    </div>
+  );
 
   return (
     <section className="mb-8">
@@ -230,53 +423,21 @@ export function SectionTodo({ reportId }: Props) {
           </p>
           <div className="space-y-2">
             {inherited.map((t) => (
-              <div key={t.id} className="bg-card border border-blue-100 rounded-lg p-3">
+              <div key={t.id} className="bg-card border border-blue-100 rounded-lg p-3 space-y-3">
                 <div className="flex items-center justify-between gap-3">
-                  <div className="flex items-center gap-2 flex-1 min-w-0">
-                    <span className={`text-sm font-medium ${t.status === "done" ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                  <div className="flex items-center gap-2 flex-1 min-w-0 flex-wrap">
+                    <span className={`text-sm font-medium ${t.dbStatus === "done" ? "line-through text-muted-foreground" : "text-foreground"}`}>
                       {t.title}
                     </span>
                     <span className="text-xs text-muted-foreground">{t.responsible}</span>
                     <span className="text-xs text-muted-foreground">· {t.deadline}</span>
-                    {t.status === "done" && (
-                      <span className="text-xs font-medium text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">Fait</span>
-                    )}
-                    {t.overdueDays && t.status !== "done" && (
+                    {t.overdueDays && t.dbStatus !== "done" && (
                       <span className="text-xs font-medium text-destructive">RETARD +{t.overdueDays}j</span>
                     )}
                   </div>
-                  {t.status !== "done" && (
-                    <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => markDone(t.id)}>
-                      <Check className="h-3 w-3" /> Fait
-                    </Button>
-                  )}
                 </div>
-
-                {editingFollowUp === t.id ? (
-                  <div className="mt-2 flex gap-2">
-                    <Input
-                      autoFocus
-                      placeholder="Ex: Retours positifs / Repoussé pour congé / Fait avec ajustement…"
-                      value={followUpDraft}
-                      onChange={(e) => setFollowUpDraft(e.target.value)}
-                      className="text-sm h-8"
-                      onKeyDown={(e) => { if (e.key === "Enter") saveFollowUp(t.id); }}
-                    />
-                    <Button size="sm" className="h-8" onClick={() => saveFollowUp(t.id)}>OK</Button>
-                  </div>
-                ) : (
-                  <button
-                    onClick={() => { setEditingFollowUp(t.id); setFollowUpDraft(t.followUp || ""); }}
-                    className={`mt-2 w-full text-left text-xs flex items-start gap-1.5 px-2 py-1.5 rounded transition-colors ${
-                      t.followUp
-                        ? "text-foreground bg-muted/50 hover:bg-muted"
-                        : "text-amber-700 bg-amber-50 hover:bg-amber-100 italic"
-                    }`}
-                  >
-                    <MessageSquare className="h-3 w-3 mt-0.5 shrink-0" />
-                    <span className="flex-1">{t.followUp || "Ajouter un commentaire de suivi…"}</span>
-                  </button>
-                )}
+                {renderStatusBar(t)}
+                {renderFollowUp(t, true)}
               </div>
             ))}
           </div>
@@ -291,69 +452,20 @@ export function SectionTodo({ reportId }: Props) {
             {overdue.length} action{overdue.length > 1 ? "s" : ""} en retard
           </h3>
           <div className="space-y-2">
-            {overdue.map((t) => (
-              <div key={t.id} className="flex items-center justify-between gap-3 text-sm">
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <span className="text-foreground">{t.title}</span>
-                  <span className="text-xs text-muted-foreground">{t.responsible}</span>
-                </div>
-                <span className="text-xs font-medium text-destructive shrink-0">RETARD +{t.overdueDays}j</span>
-                <div className="flex gap-1.5 shrink-0">
-                  <Button size="sm" variant="outline" className="h-7 text-xs gap-1" onClick={() => markDone(t.id)}>
-                    <Check className="h-3 w-3" /> Fait
-                  </Button>
-                  <Dialog open={reportingId === t.id} onOpenChange={(open) => { setReportingId(open ? t.id : null); setReportComment(""); }}>
-                    <DialogTrigger asChild>
-                      <Button size="sm" variant="outline" className="h-7 text-xs gap-1">
-                        <Clock className="h-3 w-3" /> Reporter
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader><DialogTitle>Reporter l'action</DialogTitle></DialogHeader>
-                      <div className="space-y-3 mt-2">
-                        <Textarea placeholder="Raison du report" value={reportComment} onChange={(e) => setReportComment(e.target.value)} />
-                        <Button className="w-full" onClick={() => { updateStatus.mutate({ id: t.id, status: "deferred" }); setReportingId(null); }}>Confirmer le report</Button>
-                      </div>
-                    </DialogContent>
-                  </Dialog>
-                </div>
-              </div>
-            ))}
+            {overdue.map((t) => renderCard(t, { overdue: true }))}
           </div>
         </div>
       )}
 
       {/* Active block */}
       <div className="space-y-2">
-        {active.map((t) => (
-          <div key={t.id} className="bg-card border border-border rounded-xl p-4 shadow-sm flex items-center gap-3">
-            <button
-              onClick={() => markDone(t.id)}
-              className="h-5 w-5 rounded border-2 border-border shrink-0 flex items-center justify-center hover:bg-muted transition-colors"
-            />
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-medium text-foreground">{t.title}</span>
-                {t.source && sourceStyles[t.source] && (
-                  <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${sourceStyles[t.source].classes}`}>
-                    {sourceStyles[t.source].label}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-                <span>{t.responsible}</span>
-                <span>{t.deadline}</span>
-              </div>
-            </div>
-            <span className="text-sm shrink-0">{priorityIcons[t.priority]}</span>
-          </div>
-        ))}
+        {active.map((t) => renderCard(t))}
       </div>
 
       {/* Done count */}
-      {current.filter((t) => t.status === "done").length > 0 && (
+      {current.filter((t) => t.dbStatus === "done").length > 0 && (
         <p className="text-xs text-muted-foreground mt-3">
-          {current.filter((t) => t.status === "done").length} action{current.filter((t) => t.status === "done").length > 1 ? "s" : ""} terminée{current.filter((t) => t.status === "done").length > 1 ? "s" : ""} ce cycle
+          {current.filter((t) => t.dbStatus === "done").length} action{current.filter((t) => t.dbStatus === "done").length > 1 ? "s" : ""} terminée{current.filter((t) => t.dbStatus === "done").length > 1 ? "s" : ""} ce cycle
         </p>
       )}
     </section>
