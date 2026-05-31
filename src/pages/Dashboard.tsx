@@ -332,17 +332,58 @@ function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows
   const weeklyDate = nextWeeklyMeeting(schedule.weekly_day, now);
   const monthlyDate = nextMonthlyMeeting(schedule, now);
 
+  const toLocalISO = (d: Date): string => {
+    const y = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${mo}-${day}`;
+  };
+
   const [pending, setPending] = useState<PendingDialog | null>(null);
 
-  // Find latest draft per cycle type
-  const findDraft = (type: "weekly" | "monthly") =>
-    reports.find((r) => r.type === type && isPreparationState(r.state)) ?? null;
-  const weeklyDraft = findDraft("weekly");
-  const monthlyDraft = findDraft("monthly");
+  // Pre-compute current periods (timezone-safe)
+  const currentWeeklyPeriod = computeWeeklyPeriodForNextMeeting(schedule.weekly_day, now);
+  const currentMonthlyPeriodStart = toLocalISO(
+    new Date(monthlyDate.getFullYear(), monthlyDate.getMonth(), 1)
+  );
 
-  const readiness: Record<"weekly" | "monthly", { completion: number; reportId: string | null }> = {
-    weekly: { completion: weeklyDraft ? computeCompletion(weeklyDraft).percent : 0, reportId: weeklyDraft?.id ?? null },
-    monthly: { completion: monthlyDraft ? computeCompletion(monthlyDraft).percent : 0, reportId: monthlyDraft?.id ?? null },
+  // Find draft scoped to the current period (for completion %)
+  const weeklyDraftRow = rows.find(
+    (r) => r.cycle_type === "weekly" && r.status !== "validated" && r.period_start === currentWeeklyPeriod.periodStart
+  );
+  const monthlyDraftRow = rows.find(
+    (r) => r.cycle_type === "monthly" && r.status !== "validated" && r.period_start === currentMonthlyPeriodStart
+  );
+  const weeklyDraft = weeklyDraftRow
+    ? reports.find((r) => r.id === weeklyDraftRow.id && isPreparationState(r.state)) ?? null
+    : null;
+  const monthlyDraft = monthlyDraftRow
+    ? reports.find((r) => r.id === monthlyDraftRow.id && isPreparationState(r.state)) ?? null
+    : null;
+
+  // Find any report for the current period (validated or not)
+  const weeklyReportForCurrentPeriod = rows.find(
+    (r) => r.cycle_type === "weekly" && r.period_start === currentWeeklyPeriod.periodStart
+  ) ?? null;
+  const monthlyReportForCurrentPeriod = rows.find(
+    (r) => r.cycle_type === "monthly" && r.period_start === currentMonthlyPeriodStart
+  ) ?? null;
+
+  const readiness: Record<"weekly" | "monthly", { completion: number; reportId: string | null; isValidated: boolean }> = {
+    weekly: {
+      completion: weeklyReportForCurrentPeriod?.status === "validated"
+        ? 100
+        : weeklyDraft ? computeCompletion(weeklyDraft).percent : 0,
+      reportId: weeklyReportForCurrentPeriod?.id ?? null,
+      isValidated: weeklyReportForCurrentPeriod?.status === "validated",
+    },
+    monthly: {
+      completion: monthlyReportForCurrentPeriod?.status === "validated"
+        ? 100
+        : monthlyDraft ? computeCompletion(monthlyDraft).percent : 0,
+      reportId: monthlyReportForCurrentPeriod?.id ?? null,
+      isValidated: monthlyReportForCurrentPeriod?.status === "validated",
+    },
   };
 
   const meetings = [
@@ -361,11 +402,11 @@ function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows
       (r) => r.cycle_type === "weekly" && r.period_start === previousPeriod.periodStart && r.status === "validated"
     );
     const previousPeriodMissing = !isFirstWeeklyReport && !hasPreviousValidated;
-    const weeklyDraftForPeriod = rows.find(
-      (r) => r.cycle_type === "weekly" && r.period_start === currentPeriod.periodStart && r.status !== "validated"
+    const weeklyReportForPeriod = rows.find(
+      (r) => r.cycle_type === "weekly" && r.period_start === currentPeriod.periodStart
     );
-    if (weeklyDraftForPeriod) {
-      navigate(`/rapport/${weeklyDraftForPeriod.id}`);
+    if (weeklyReportForPeriod) {
+      navigate(`/rapport/${weeklyReportForPeriod.id}`);
       return;
     }
     setPending({
@@ -382,17 +423,14 @@ function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows
     const m = target.getMonth();
     const first = new Date(y, m, 1);
     const last = new Date(y, m + 1, 0);
-    const toLocalISO = (d: Date): string => {
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    };
     const periodStart = toLocalISO(first);
     const periodEnd = toLocalISO(last);
     const label = FR_MONTH_YEAR.format(target).replace(/^./, (c) => c.toUpperCase());
-    const monthlyDraftForPeriod = rows.find(
-      (r) => r.cycle_type === "monthly" && r.period_start === periodStart && r.status !== "validated"
+    const monthlyReportForPeriod = rows.find(
+      (r) => r.cycle_type === "monthly" && r.period_start === periodStart
     );
-    if (monthlyDraftForPeriod) {
-      navigate(`/rapport/${monthlyDraftForPeriod.id}`);
+    if (monthlyReportForPeriod) {
+      navigate(`/rapport/${monthlyReportForPeriod.id}`);
       return;
     }
     setPending({ kind: "monthly", period: { meetingDate: target, periodStart, periodEnd, label } });
@@ -422,13 +460,15 @@ function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows
       }
     } catch (e: any) {
       const msg: string = e?.message ?? "";
-      if (msg.includes("rapport actif existe") || msg.includes("existe déjà")) {
-        const existingDraft = rows.find(
-          (r) => r.cycle_type === (pending?.kind ?? "weekly") && r.status !== "validated"
+      const pendingPeriodStart = pending?.period?.periodStart ?? null;
+      const pendingKind = pending?.kind ?? null;
+      if (pendingPeriodStart && pendingKind) {
+        const existingRow = rows.find(
+          (r) => r.cycle_type === pendingKind && r.period_start === pendingPeriodStart
         );
-        if (existingDraft) {
+        if (existingRow) {
           setPending(null);
-          navigate(`/rapport/${existingDraft.id}`);
+          navigate(`/rapport/${existingRow.id}`);
           return;
         }
       }
@@ -443,9 +483,12 @@ function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows
           const days = daysUntil(m.date, now);
           const ready = readiness[m.type];
           const isReady = ready.completion >= 80;
-          const readinessBadge = isReady
-            ? { label: "Prêt", cls: "bg-emerald-100 text-emerald-800" }
-            : { label: "À préparer", cls: days <= 2 ? "bg-destructive/15 text-destructive" : "bg-amber-100 text-amber-800" };
+          const isValidated = ready.isValidated;
+          const readinessBadge = isValidated
+            ? { label: "Rapport validé ✓", cls: "bg-emerald-100 text-emerald-800" }
+            : isReady
+              ? { label: "Prêt", cls: "bg-emerald-100 text-emerald-800" }
+              : { label: "À préparer", cls: days <= 2 ? "bg-destructive/15 text-destructive" : "bg-amber-100 text-amber-800" };
           const daysLabel = days === 0 ? "Aujourd'hui" : days === 1 ? "Demain" : `Dans ${days} jours`;
 
           const handleClick = m.type === "weekly" ? handleWeeklyClick : handleMonthlyClick;
@@ -471,7 +514,11 @@ function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows
               <p className="text-xs text-muted-foreground mb-4">{daysLabel}</p>
               {ready.reportId ? (
                 <span className="inline-flex items-center gap-1 text-sm text-primary font-medium">
-                  {isReady ? "Ouvrir la réunion" : "Continuer la préparation"}
+                  {isValidated
+                    ? "Voir le rapport validé"
+                    : isReady
+                      ? "Ouvrir la réunion"
+                      : "Continuer la préparation"}
                   <ArrowRight className="h-4 w-4" />
                 </span>
               ) : (
