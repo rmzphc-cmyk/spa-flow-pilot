@@ -151,6 +151,51 @@ export function computeWeeklyLabel(periodStart: string): string {
   return `Semaine ${weekNum} — ${d.getFullYear()}`;
 }
 
+export interface WeeklyPeriodOption {
+  periodStart: string;
+  periodEnd: string;
+  label: string;
+  display: string;
+}
+
+export function getAvailableWeeklyPeriods(
+  weeklyDay: number,
+  existingPeriodStarts: string[],
+  count: number = 10
+): WeeklyPeriodOption[] {
+  const FR = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" });
+  const toLocalISO = (d: Date): string =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+
+  const result: WeeklyPeriodOption[] = [];
+  let current = computeWeeklyPeriodForNextMeeting(weeklyDay);
+
+  for (let i = 0; i < count + existingPeriodStarts.length; i++) {
+    const { periodStart, periodEnd } = current;
+    if (!existingPeriodStarts.includes(periodStart)) {
+      const label = computeWeeklyLabel(periodStart);
+      const startDate = new Date(periodStart + "T12:00:00");
+      const endDate = new Date(periodEnd + "T12:00:00");
+      result.push({
+        periodStart,
+        periodEnd,
+        label,
+        display: `${label} — ${FR.format(startDate)} → ${FR.format(endDate)} ${endDate.getFullYear()}`,
+      });
+      if (result.length >= count) break;
+    }
+    const prevEnd = new Date(periodStart + "T12:00:00");
+    prevEnd.setDate(prevEnd.getDate() - 1);
+    const prevStart = new Date(prevEnd.getFullYear(), prevEnd.getMonth(), prevEnd.getDate() - 6);
+    current = {
+      meetingDate: new Date(prevEnd.getFullYear(), prevEnd.getMonth(), prevEnd.getDate() + 1),
+      periodStart: toLocalISO(prevStart),
+      periodEnd: toLocalISO(prevEnd),
+    };
+  }
+  return result;
+}
+
 export function daysUntil(date: Date, from: Date = new Date()): number {
   const a = new Date(date.getFullYear(), date.getMonth(), date.getDate()).getTime();
   const b = new Date(from.getFullYear(), from.getMonth(), from.getDate()).getTime();
