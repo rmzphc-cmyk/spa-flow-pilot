@@ -1,23 +1,37 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, AlertTriangle, Sparkles, CheckCircle2, Target, Calendar, Plus, FileText, Eye } from "lucide-react";
+import { ArrowRight, AlertTriangle, Sparkles, CheckCircle2, Target, Calendar, Plus, FileText, Eye, Loader2, CalendarClock } from "lucide-react";
 import {
   useMeetingSchedule,
   nextWeeklyMeeting,
   nextMonthlyMeeting,
   daysUntil,
+  computeWeeklyPeriodForNextMeeting,
+  computePreviousWeeklyPeriod,
+  computeWeeklyLabel,
 } from "@/lib/meetingSchedule";
 import {
   isPreparationState,
   type ReportRecord,
   type ReportState,
 } from "@/lib/reportsStore";
-import { useReports, mapReportRowToRecord } from "@/hooks/useReports";
+import { useReports, useCreateReport, mapReportRowToRecord, type ReportRow } from "@/hooks/useReports";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTodos } from "@/hooks/useTodos";
 import { useObjectives, parseObjectiveDescription } from "@/hooks/useObjectives";
 import { useKpiEntries } from "@/hooks/useKpiEntries";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 type ReportStatus = ReportState;
 
