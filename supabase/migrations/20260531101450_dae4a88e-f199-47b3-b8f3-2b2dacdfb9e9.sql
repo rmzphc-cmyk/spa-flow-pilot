@@ -1,0 +1,1 @@
+ALTER TABLE public.spas ADD COLUMN IF NOT EXISTS meeting_schedule JSONB DEFAULT NULL;

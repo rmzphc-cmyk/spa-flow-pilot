@@ -1,25 +1,34 @@
 // Meeting schedule helpers.
 // Convention used in storage: 0 = Monday, 6 = Sunday.
 
+import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+
 export type MonthlyMode = "weekday" | "date";
 
 export interface MeetingSchedule {
   weekly_day: number; // 0=Mon..6=Sun
-  monthly_mode: MonthlyMode; // "weekday" = nth weekday, "date" = exact day of month
-  monthly_week: number; // 1..4 or 5 (=Last) — used when monthly_mode === "weekday"
-  monthly_day: number; // 0=Mon..6=Sun — used when monthly_mode === "weekday"
-  monthly_date: number; // 1..31 (32 = last day of month) — used when monthly_mode === "date"
+  monthly_mode: MonthlyMode;
+  monthly_week: number; // 1..4 or 5 (=Last)
+  monthly_day: number; // 0=Mon..6=Sun
+  monthly_date: number; // 1..31 (32 = last day of month)
 }
 
 export const DEFAULT_SCHEDULE: MeetingSchedule = {
-  weekly_day: 3, // Thursday
+  weekly_day: 3,
   monthly_mode: "weekday",
-  monthly_week: 1, // 1st
-  monthly_day: 0, // Monday
+  monthly_week: 1,
+  monthly_day: 0,
   monthly_date: 1,
 };
 
 const STORAGE_KEY = "meeting_schedule";
+
+function toISO(d: Date): string {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().slice(0, 10);
+}
 
 export function loadSchedule(): MeetingSchedule {
   if (typeof window === "undefined") return DEFAULT_SCHEDULE;
@@ -40,6 +49,15 @@ export function saveSchedule(s: MeetingSchedule) {
   }
 }
 
+export async function saveScheduleToDb(schedule: MeetingSchedule, spaId: string): Promise<void> {
+  const { error } = await supabase
+    .from("spas")
+    .update({ meeting_schedule: schedule as unknown as never })
+    .eq("id", spaId);
+  if (error) throw error;
+  saveSchedule(schedule);
+}
+
 // Convert "0=Mon..6=Sun" to JS Date.getDay() "0=Sun..6=Sat"
 function toJsDay(d: number) {
   return (d + 1) % 7;
@@ -49,13 +67,12 @@ export function nextWeeklyMeeting(weeklyDay: number, from: Date = new Date()): D
   const target = toJsDay(weeklyDay);
   const base = new Date(from.getFullYear(), from.getMonth(), from.getDate());
   let diff = (target - base.getDay() + 7) % 7;
-  if (diff === 0) diff = 7; // next occurrence, not today
+  if (diff === 0) diff = 7;
   const d = new Date(base);
   d.setDate(base.getDate() + diff);
   return d;
 }
 
-// nth occurrence of a given weekday in month (week 5 = last)
 function occurrenceInMonth(year: number, month: number, week: number, day: number): Date | null {
   const target = toJsDay(day);
   if (week === 5) {
@@ -73,7 +90,6 @@ function occurrenceInMonth(year: number, month: number, week: number, day: numbe
 
 function dateInMonth(year: number, month: number, dom: number): Date {
   const lastDay = new Date(year, month + 1, 0).getDate();
-  // 32 (or any value > lastDay) = last day of month
   const day = dom >= 32 ? lastDay : Math.min(dom, lastDay);
   return new Date(year, month, day);
 }
@@ -91,6 +107,46 @@ export function nextMonthlyMeeting(schedule: MeetingSchedule, from: Date = new D
     d = resolve(base.getFullYear(), base.getMonth() + 1)!;
   }
   return d;
+}
+
+export function computeWeeklyPeriodForNextMeeting(
+  weeklyDay: number,
+  from: Date = new Date()
+): { meetingDate: Date; periodStart: string; periodEnd: string } {
+  const todayJsDay = from.getDay();
+  const meetingJsDay = (weeklyDay + 1) % 7;
+  let meetingDate: Date;
+  if (todayJsDay === meetingJsDay) {
+    meetingDate = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  } else {
+    meetingDate = nextWeeklyMeeting(weeklyDay, from);
+  }
+  const periodEnd = new Date(meetingDate.getFullYear(), meetingDate.getMonth(), meetingDate.getDate() - 1);
+  const periodStart = new Date(periodEnd.getFullYear(), periodEnd.getMonth(), periodEnd.getDate() - 6);
+  return { meetingDate, periodStart: toISO(periodStart), periodEnd: toISO(periodEnd) };
+}
+
+export function computePreviousWeeklyPeriod(
+  weeklyDay: number,
+  from: Date = new Date()
+): { periodStart: string; periodEnd: string; meetingDate: Date } {
+  const current = computeWeeklyPeriodForNextMeeting(weeklyDay, from);
+  const currentStart = new Date(current.periodStart + "T12:00:00");
+  const prevEnd = new Date(currentStart.getFullYear(), currentStart.getMonth(), currentStart.getDate() - 1);
+  const prevStart = new Date(prevEnd.getFullYear(), prevEnd.getMonth(), prevEnd.getDate() - 6);
+  const prevMeeting = new Date(prevEnd.getFullYear(), prevEnd.getMonth(), prevEnd.getDate() + 1);
+  return { periodStart: toISO(prevStart), periodEnd: toISO(prevEnd), meetingDate: prevMeeting };
+}
+
+export function computeWeeklyLabel(periodStart: string): string {
+  const d = new Date(periodStart + "T12:00:00");
+  const target = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const dayNum = (target.getUTCDay() + 6) % 7;
+  target.setUTCDate(target.getUTCDate() - dayNum + 3);
+  const firstThursday = new Date(Date.UTC(target.getUTCFullYear(), 0, 4));
+  const diff = (target.getTime() - firstThursday.getTime()) / 86400000;
+  const weekNum = 1 + Math.round((diff - 3 + ((firstThursday.getUTCDay() + 6) % 7)) / 7);
+  return `Semaine ${weekNum} — ${d.getFullYear()}`;
 }
 
 export function daysUntil(date: Date, from: Date = new Date()): number {
@@ -123,12 +179,12 @@ export function describeSchedule(s: MeetingSchedule): { weekly: string; monthly:
   return { weekly, monthly };
 }
 
-import { useEffect, useState } from "react";
+export function useMeetingSchedule(): MeetingSchedule & { isScheduleConfigured: boolean } {
+  const { spaId } = useAuth();
+  const [localSchedule, setLocalSchedule] = useState<MeetingSchedule>(() => loadSchedule());
 
-export function useMeetingSchedule(): MeetingSchedule {
-  const [schedule, setSchedule] = useState<MeetingSchedule>(() => loadSchedule());
   useEffect(() => {
-    const refresh = () => setSchedule(loadSchedule());
+    const refresh = () => setLocalSchedule(loadSchedule());
     window.addEventListener("storage", refresh);
     window.addEventListener("meeting-schedule-changed", refresh);
     return () => {
@@ -136,5 +192,27 @@ export function useMeetingSchedule(): MeetingSchedule {
       window.removeEventListener("meeting-schedule-changed", refresh);
     };
   }, []);
-  return schedule;
+
+  const { data: spa } = useQuery({
+    queryKey: ["spa-schedule", spaId],
+    queryFn: async () => {
+      if (!spaId) return null;
+      const { data } = await supabase
+        .from("spas")
+        .select("meeting_schedule")
+        .eq("id", spaId)
+        .maybeSingle();
+      return data;
+    },
+    enabled: !!spaId,
+    staleTime: 60_000,
+  });
+
+  const dbSchedule = spa?.meeting_schedule as Partial<MeetingSchedule> | null | undefined;
+  const isScheduleConfigured = !!dbSchedule;
+  const schedule = dbSchedule
+    ? { ...DEFAULT_SCHEDULE, ...dbSchedule }
+    : localSchedule;
+
+  return { ...schedule, isScheduleConfigured };
 }

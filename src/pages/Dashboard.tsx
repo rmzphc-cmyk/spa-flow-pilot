@@ -1,23 +1,37 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { ArrowRight, AlertTriangle, Sparkles, CheckCircle2, Target, Calendar, Plus, FileText, Eye } from "lucide-react";
+import { ArrowRight, AlertTriangle, Sparkles, CheckCircle2, Target, Calendar, Plus, FileText, Eye, Loader2, CalendarClock } from "lucide-react";
 import {
   useMeetingSchedule,
   nextWeeklyMeeting,
   nextMonthlyMeeting,
   daysUntil,
+  computeWeeklyPeriodForNextMeeting,
+  computePreviousWeeklyPeriod,
+  computeWeeklyLabel,
 } from "@/lib/meetingSchedule";
 import {
   isPreparationState,
   type ReportRecord,
   type ReportState,
 } from "@/lib/reportsStore";
-import { useReports, mapReportRowToRecord } from "@/hooks/useReports";
+import { useReports, useCreateReport, mapReportRowToRecord, type ReportRow } from "@/hooks/useReports";
 import { useAuth } from "@/contexts/AuthContext";
 import { useTodos } from "@/hooks/useTodos";
 import { useObjectives, parseObjectiveDescription } from "@/hooks/useObjectives";
 import { useKpiEntries } from "@/hooks/useKpiEntries";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
 
 type ReportStatus = ReportState;
 
@@ -296,12 +310,27 @@ function RecentActivity({ items }: { items: RecentActivityItem[] }) {
   );
 }
 
-function UpcomingMeetingsCard({ reports }: { reports: ReportRecord[] }) {
+const FR_DAY_MONTH = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long" });
+const FR_FULL = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+const FR_MONTH_YEAR = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" });
+
+function formatIsoFr(iso: string): string {
+  return FR_DAY_MONTH.format(new Date(iso + "T12:00:00"));
+}
+
+type PendingDialog =
+  | { kind: "weekly"; period: { meetingDate: Date; periodStart: string; periodEnd: string }; previousMissing: boolean; previousMeetingDate: Date }
+  | { kind: "monthly"; period: { meetingDate: Date; periodStart: string; periodEnd: string; label: string } };
+
+function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows: ReportRow[] }) {
   const navigate = useNavigate();
   const schedule = useMeetingSchedule();
+  const createReport = useCreateReport();
   const now = new Date();
   const weeklyDate = nextWeeklyMeeting(schedule.weekly_day, now);
   const monthlyDate = nextMonthlyMeeting(schedule, now);
+
+  const [pending, setPending] = useState<PendingDialog | null>(null);
 
   // Find latest draft per cycle type
   const findDraft = (type: "weekly" | "monthly") =>
@@ -319,57 +348,196 @@ function UpcomingMeetingsCard({ reports }: { reports: ReportRecord[] }) {
     { type: "monthly" as const, date: monthlyDate, label: "🔵 Monthly", chip: "bg-blue-100 text-blue-800" },
   ];
 
-  const fmt = new Intl.DateTimeFormat("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
+  const fmt = FR_FULL;
+
+  const handleWeeklyClick = () => {
+    const currentPeriod = computeWeeklyPeriodForNextMeeting(schedule.weekly_day, now);
+    const previousPeriod = computePreviousWeeklyPeriod(schedule.weekly_day, now);
+    const allWeeklyReports = rows.filter((r) => r.cycle_type === "weekly");
+    const isFirstWeeklyReport = allWeeklyReports.length === 0;
+    const hasPreviousValidated = rows.some(
+      (r) => r.cycle_type === "weekly" && r.period_start === previousPeriod.periodStart && r.status === "validated"
+    );
+    const previousPeriodMissing = !isFirstWeeklyReport && !hasPreviousValidated;
+    const weeklyDraftForPeriod = rows.find(
+      (r) => r.cycle_type === "weekly" && r.period_start === currentPeriod.periodStart && r.status !== "validated"
+    );
+    if (weeklyDraftForPeriod) {
+      navigate(`/rapport/${weeklyDraftForPeriod.id}`);
+      return;
+    }
+    setPending({
+      kind: "weekly",
+      period: currentPeriod,
+      previousMissing: previousPeriodMissing,
+      previousMeetingDate: previousPeriod.meetingDate,
+    });
+  };
+
+  const handleMonthlyClick = () => {
+    const target = nextMonthlyMeeting(schedule, now);
+    const y = target.getFullYear();
+    const m = target.getMonth();
+    const first = new Date(y, m, 1);
+    const last = new Date(y, m + 1, 0);
+    const periodStart = first.toISOString().slice(0, 10);
+    const periodEnd = last.toISOString().slice(0, 10);
+    const label = FR_MONTH_YEAR.format(target).replace(/^./, (c) => c.toUpperCase());
+    const monthlyDraftForPeriod = rows.find(
+      (r) => r.cycle_type === "monthly" && r.period_start === periodStart && r.status !== "validated"
+    );
+    if (monthlyDraftForPeriod) {
+      navigate(`/rapport/${monthlyDraftForPeriod.id}`);
+      return;
+    }
+    setPending({ kind: "monthly", period: { meetingDate: target, periodStart, periodEnd, label } });
+  };
+
+  const handleConfirmCreate = async () => {
+    if (!pending) return;
+    try {
+      if (pending.kind === "weekly") {
+        const created = await createReport.mutateAsync({
+          cycle_type: "weekly",
+          cycle_label: computeWeeklyLabel(pending.period.periodStart),
+          period_start: pending.period.periodStart,
+          period_end: pending.period.periodEnd,
+        });
+        setPending(null);
+        navigate(`/rapport/${created.id}`);
+      } else {
+        const created = await createReport.mutateAsync({
+          cycle_type: "monthly",
+          cycle_label: pending.period.label,
+          period_start: pending.period.periodStart,
+          period_end: pending.period.periodEnd,
+        });
+        setPending(null);
+        navigate(`/rapport/${created.id}`);
+      }
+    } catch (e: any) {
+      toast.error(e?.message ?? "Impossible de créer le rapport.");
+    }
+  };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-      {meetings.map((m) => {
-        const days = daysUntil(m.date, now);
-        const ready = readiness[m.type];
-        const isReady = ready.completion >= 80;
-        const readinessBadge = isReady
-          ? { label: "Prêt", cls: "bg-emerald-100 text-emerald-800" }
-          : { label: "À préparer", cls: days <= 2 ? "bg-destructive/15 text-destructive" : "bg-amber-100 text-amber-800" };
-        const daysLabel = days === 0 ? "Aujourd'hui" : days === 1 ? "Demain" : `Dans ${days} jours`;
+    <>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+        {meetings.map((m) => {
+          const days = daysUntil(m.date, now);
+          const ready = readiness[m.type];
+          const isReady = ready.completion >= 80;
+          const readinessBadge = isReady
+            ? { label: "Prêt", cls: "bg-emerald-100 text-emerald-800" }
+            : { label: "À préparer", cls: days <= 2 ? "bg-destructive/15 text-destructive" : "bg-amber-100 text-amber-800" };
+          const daysLabel = days === 0 ? "Aujourd'hui" : days === 1 ? "Demain" : `Dans ${days} jours`;
 
-        const handleClick = () => {
-          if (ready.reportId) navigate(`/rapport/${ready.reportId}`);
-          else navigate("/rapports");
-        };
+          const handleClick = m.type === "weekly" ? handleWeeklyClick : handleMonthlyClick;
 
-        return (
-          <button
-            key={m.type}
-            onClick={handleClick}
-            className="bg-card rounded-xl shadow-sm border border-border p-5 text-left hover:shadow-md hover:border-primary/40 transition-all"
-          >
-            <div className="flex items-center justify-between mb-3 gap-2">
-              <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${m.chip}`}>
-                {m.label}
-              </span>
-              <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${readinessBadge.cls}`}>
-                {readinessBadge.label}
-              </span>
-            </div>
-            <div className="flex items-center gap-2 text-sm text-foreground mb-1">
-              <Calendar className="h-4 w-4 text-muted-foreground" />
-              <span className="capitalize">{fmt.format(m.date)}</span>
-            </div>
-            <p className="text-xs text-muted-foreground mb-4">{daysLabel}</p>
-            {ready.reportId ? (
-              <span className="inline-flex items-center gap-1 text-sm text-primary font-medium">
-                {isReady ? "Ouvrir la réunion" : "Continuer la préparation"}
-                <ArrowRight className="h-4 w-4" />
-              </span>
-            ) : (
-              <span className="inline-flex items-center gap-1 text-sm text-primary font-medium">
-                <Plus className="h-4 w-4" /> Créer le rapport
-              </span>
-            )}
-          </button>
-        );
-      })}
-    </div>
+          return (
+            <button
+              key={m.type}
+              onClick={handleClick}
+              className="bg-card rounded-xl shadow-sm border border-border p-5 text-left hover:shadow-md hover:border-primary/40 transition-all"
+            >
+              <div className="flex items-center justify-between mb-3 gap-2">
+                <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium ${m.chip}`}>
+                  {m.label}
+                </span>
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold ${readinessBadge.cls}`}>
+                  {readinessBadge.label}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-foreground mb-1">
+                <Calendar className="h-4 w-4 text-muted-foreground" />
+                <span className="capitalize">{fmt.format(m.date)}</span>
+              </div>
+              <p className="text-xs text-muted-foreground mb-4">{daysLabel}</p>
+              {ready.reportId ? (
+                <span className="inline-flex items-center gap-1 text-sm text-primary font-medium">
+                  {isReady ? "Ouvrir la réunion" : "Continuer la préparation"}
+                  <ArrowRight className="h-4 w-4" />
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 text-sm text-primary font-medium">
+                  <Plus className="h-4 w-4" /> Créer le rapport
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      <AlertDialog open={!!pending} onOpenChange={(v) => !v && !createReport.isPending && setPending(null)}>
+        <AlertDialogContent>
+          {pending?.kind === "weekly" && pending.previousMissing && (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                  <AlertTriangle className="h-5 w-5" />
+                  Semaine précédente sans rapport
+                </AlertDialogTitle>
+                <AlertDialogDescription>
+                  La réunion du {FR_FULL.format(pending.previousMeetingDate)} n'a pas de rapport validé.
+                  Elle apparaîtra comme réunion non effectuée dans votre historique.
+                  <br /><br />
+                  Créer le rapport pour la semaine du {formatIsoFr(pending.period.periodStart)} au {formatIsoFr(pending.period.periodEnd)} ?
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={createReport.isPending}>Annuler</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleConfirmCreate}
+                  disabled={createReport.isPending}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  {createReport.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Créer quand même
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          )}
+          {pending?.kind === "weekly" && !pending.previousMissing && (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Créer le rapport Weekly</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Ce rapport couvrira la période du {formatIsoFr(pending.period.periodStart)} au {formatIsoFr(pending.period.periodEnd)}.
+                  <br />
+                  Réunion prévue le {FR_FULL.format(pending.period.meetingDate)}.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={createReport.isPending}>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleConfirmCreate} disabled={createReport.isPending}>
+                  {createReport.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Créer le rapport
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          )}
+          {pending?.kind === "monthly" && (
+            <>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Créer le rapport Monthly</AlertDialogTitle>
+                <AlertDialogDescription>
+                  Ce rapport couvrira la période du {formatIsoFr(pending.period.periodStart)} au {formatIsoFr(pending.period.periodEnd)}.
+                  <br />
+                  Réunion prévue le {FR_FULL.format(pending.period.meetingDate)}.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel disabled={createReport.isPending}>Annuler</AlertDialogCancel>
+                <AlertDialogAction onClick={handleConfirmCreate} disabled={createReport.isPending}>
+                  {createReport.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Créer le rapport
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </>
+          )}
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }
 
@@ -450,13 +618,36 @@ export default function Dashboard() {
   return (
     <>
       <h1 className="text-2xl font-bold text-foreground mb-6">Dashboard</h1>
-      <UpcomingMeetingsCard reports={reports} />
+      <ScheduleNotConfiguredBanner />
+      <UpcomingMeetingsCard reports={reports} rows={rows} />
       <OverdueAlert todos={overdueTodos} />
       {currentReport ? <CurrentReportCard report={currentReport} /> : <NoCurrentReportCard />}
       <AiBriefCard items={aiBriefItems} />
       <QuickMetrics />
       <RecentActivity items={recentActivity} />
     </>
+  );
+}
+
+function ScheduleNotConfiguredBanner() {
+  const navigate = useNavigate();
+  const { isScheduleConfigured } = useMeetingSchedule();
+  if (isScheduleConfigured) return null;
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 mb-4 flex items-start gap-3">
+      <CalendarClock className="h-5 w-5 text-amber-700 mt-0.5 shrink-0" />
+      <div className="flex-1 text-sm text-amber-900">
+        Calendrier de réunions non configuré — les dates affichées sont des valeurs par défaut.
+      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        className="shrink-0 border-amber-300 text-amber-900 hover:bg-amber-100"
+        onClick={() => navigate("/admin/responsabilites")}
+      >
+        Configurer →
+      </Button>
+    </div>
   );
 }
 

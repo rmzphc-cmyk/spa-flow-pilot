@@ -894,6 +894,7 @@ export type Database = {
           default_language: Database["public"]["Enums"]["language_code"]
           id: string
           is_active: boolean
+          meeting_schedule: Json | null
           monthly_meeting_day: number | null
           name: string
           reporting_cycle_type: Database["public"]["Enums"]["reporting_cycle_type"]
@@ -909,6 +910,7 @@ export type Database = {
           default_language?: Database["public"]["Enums"]["language_code"]
           id?: string
           is_active?: boolean
+          meeting_schedule?: Json | null
           monthly_meeting_day?: number | null
           name: string
           reporting_cycle_type?: Database["public"]["Enums"]["reporting_cycle_type"]
@@ -924,6 +926,7 @@ export type Database = {
           default_language?: Database["public"]["Enums"]["language_code"]
           id?: string
           is_active?: boolean
+          meeting_schedule?: Json | null
           monthly_meeting_day?: number | null
           name?: string
           reporting_cycle_type?: Database["public"]["Enums"]["reporting_cycle_type"]

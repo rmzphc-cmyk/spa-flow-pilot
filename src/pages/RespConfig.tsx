@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import {
   loadSchedule,
-  saveSchedule,
+  saveScheduleToDb,
   describeSchedule,
   DAY_LABELS_FR,
   WEEK_LABELS_FR,
@@ -174,11 +174,52 @@ export default function RespConfig() {
   };
 
   // ----- Schedule (calendrier) -----
+  const queryClient = useQueryClient();
   const [schedule, setSchedule] = useState<MeetingSchedule>(() => loadSchedule());
+  const [isSavingSchedule, setIsSavingSchedule] = useState(false);
+
+  // Initial load from DB once spaId is available
   useEffect(() => {
-    saveSchedule(schedule);
-  }, [schedule]);
+    let cancelled = false;
+    if (!spaId) return;
+    (async () => {
+      const { data } = await supabase
+        .from("spas")
+        .select("meeting_schedule")
+        .eq("id", spaId)
+        .maybeSingle();
+      if (cancelled) return;
+      const dbSched = data?.meeting_schedule as Partial<MeetingSchedule> | null | undefined;
+      if (dbSched) {
+        setSchedule((prev) => ({ ...prev, ...dbSched }));
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [spaId]);
+
+  // Auto-save (debounced) when schedule changes
+  useEffect(() => {
+    if (!spaId) return;
+    const t = setTimeout(async () => {
+      setIsSavingSchedule(true);
+      try {
+        await saveScheduleToDb(schedule, spaId);
+        await queryClient.invalidateQueries({ queryKey: ["spa-schedule", spaId] });
+        toast.success("Calendrier de réunions sauvegardé");
+      } catch (e: any) {
+        toast.error(e?.message ?? "Erreur de sauvegarde du calendrier");
+      } finally {
+        setIsSavingSchedule(false);
+      }
+    }, 600);
+    return () => clearTimeout(t);
+     
+  }, [schedule.weekly_day, schedule.monthly_mode, schedule.monthly_week, schedule.monthly_day, schedule.monthly_date, spaId]);
+
   const scheduleDesc = describeSchedule(schedule);
+  void isSavingSchedule;
 
   return (
     <div className="max-w-[1100px] mx-auto px-6 py-6 pb-20">
