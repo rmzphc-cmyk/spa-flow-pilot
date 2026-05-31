@@ -204,7 +204,7 @@ export function useMeetingSchedule(): MeetingSchedule & { isScheduleConfigured: 
       return data;
     },
     enabled: !!spaId,
-    staleTime: 60_000,
+    staleTime: 5_000,
   });
 
   const dbSchedule = spa?.meeting_schedule as Partial<MeetingSchedule> | null | undefined;
