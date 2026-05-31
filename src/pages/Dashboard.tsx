@@ -343,9 +343,11 @@ function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows
 
   // Pre-compute current periods (timezone-safe)
   const currentWeeklyPeriod = computeWeeklyPeriodForNextMeeting(schedule.weekly_day, now);
-  const currentMonthlyPeriodStart = toLocalISO(
-    new Date(monthlyDate.getFullYear(), monthlyDate.getMonth(), 1)
-  );
+  const _mY = monthlyDate.getFullYear();
+  const _mM = monthlyDate.getMonth(); // mois de la réunion
+  const periodMonthYear = _mM === 0 ? _mY - 1 : _mY;
+  const periodMonth = _mM === 0 ? 11 : _mM - 1; // mois précédent
+  const currentMonthlyPeriodStart = toLocalISO(new Date(periodMonthYear, periodMonth, 1));
 
   // Find draft scoped to the current period (for completion %)
   const weeklyDraftRow = rows.find(
@@ -419,13 +421,18 @@ function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows
 
   const handleMonthlyClick = () => {
     const target = nextMonthlyMeeting(schedule, now);
-    const y = target.getFullYear();
-    const m = target.getMonth();
-    const first = new Date(y, m, 1);
-    const last = new Date(y, m + 1, 0);
+    const meetingYear = target.getFullYear();
+    const meetingMonth = target.getMonth(); // mois de la réunion (ex: 5 = juin)
+    // La réunion analyse le mois précédent
+    const periodYear = meetingMonth === 0 ? meetingYear - 1 : meetingYear;
+    const periodMonth = meetingMonth === 0 ? 11 : meetingMonth - 1;
+    const first = new Date(periodYear, periodMonth, 1);
+    const last = new Date(periodYear, periodMonth + 1, 0);
     const periodStart = toLocalISO(first);
     const periodEnd = toLocalISO(last);
-    const label = FR_MONTH_YEAR.format(target).replace(/^./, (c) => c.toUpperCase());
+    const label = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" })
+      .format(first)
+      .replace(/^./, (c) => c.toUpperCase()); // ex: "Mai 2026"
     const monthlyReportForPeriod = rows.find(
       (r) => r.cycle_type === "monthly" && r.period_start === periodStart
     );
