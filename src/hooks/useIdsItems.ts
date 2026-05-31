@@ -190,3 +190,59 @@ export function useUpdateIdsStructure() {
 
   return { mutate: debouncedMutate, isPending: mutation.isPending };
 }
+
+export interface DbIdsItemWithReport extends DbIdsItem {
+  report_cycle_label: string;
+  report_period_start: string;
+}
+
+export function useIdsItemsForMonthlyPeriod(
+  spaId: string | undefined,
+  periodStart: string | undefined,
+  periodEnd: string | undefined,
+) {
+  const weeklyReportsQ = useQuery({
+    queryKey: ["reports_weekly_in_month", spaId, periodStart, periodEnd],
+    enabled: !!spaId && !!periodStart && !!periodEnd,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("reports")
+        .select("id, cycle_label, period_start")
+        .eq("spa_id", spaId!)
+        .eq("cycle_type", "weekly")
+        .gte("period_start", periodStart!)
+        .lte("period_start", periodEnd!);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const weeklyReports = weeklyReportsQ.data ?? [];
+  const reportIds = weeklyReports.map((r) => r.id);
+
+  const idsQ = useQuery({
+    queryKey: ["ids_items_monthly_preview", reportIds.join(",")],
+    enabled: reportIds.length > 0,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("ids_items")
+        .select("*")
+        .in("report_id", reportIds)
+        .order("created_at", { ascending: true });
+      if (error) throw error;
+      const items = (data ?? []) as DbIdsItem[];
+      const reportMap = new Map(weeklyReports.map((r) => [r.id, r]));
+      return items.map((item) => ({
+        ...item,
+        report_cycle_label: reportMap.get(item.report_id)?.cycle_label ?? "",
+        report_period_start: reportMap.get(item.report_id)?.period_start ?? "",
+      })) as DbIdsItemWithReport[];
+    },
+  });
+
+  return {
+    data: idsQ.data ?? [],
+    isLoading: weeklyReportsQ.isLoading || (reportIds.length > 0 && idsQ.isLoading),
+    weeklyReports,
+  };
+}

@@ -3,6 +3,12 @@ import { Textarea } from "@/components/ui/textarea";
 import type { SectionStatus } from "@/pages/RapportDetail";
 import { EmojiScore } from "./EmojiScore";
 import { useCheckin, useUpsertCheckin, parseKeyContext } from "@/hooks/useCheckin";
+import { Sparkles, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { VoiceRecordButton } from "@/components/VoiceRecordButton";
+import { useStructureVoiceNote } from "@/hooks/useStructureVoiceNote";
+
+const MAX_SITUATION = 250;
 
 interface Props {
   reportId: string;
@@ -59,6 +65,19 @@ function Field({
 export function SectionCheckin({ reportId, onStatusChange, isLocked = false }: Props) {
   const { data: row, isFetching } = useCheckin(reportId);
   const { debouncedUpsert } = useUpsertCheckin();
+  const structureMutation = useStructureVoiceNote();
+
+  const handleStructureSituation = () => {
+    if (!situation.trim()) return;
+    structureMutation.mutate(
+      { text: situation, context: "check_in" },
+      {
+        onSuccess: (structured) => {
+          if (structured) setSituation(structured.slice(0, MAX_SITUATION));
+        },
+      },
+    );
+  };
 
   const [equipeScore, setEquipeScore] = useState(0);
   const [managerScore, setManagerScore] = useState(0);
@@ -146,10 +165,40 @@ export function SectionCheckin({ reportId, onStatusChange, isLocked = false }: P
           En une phrase, comment se porte le spa ce cycle ?
           <span className="italic ml-1">Sera visible par la Direction</span>
         </p>
+        <div className="flex flex-wrap items-center gap-2 mb-2">
+          <VoiceRecordButton
+            context="check_in"
+            onTranscript={(transcript) =>
+              setSituation((prev) =>
+                prev ? (prev + " " + transcript).slice(0, MAX_SITUATION) : transcript.slice(0, MAX_SITUATION),
+              )
+            }
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs"
+            disabled={!situation.trim() || structureMutation.isPending}
+            onClick={handleStructureSituation}
+          >
+            {structureMutation.isPending ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Structuration…
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-3.5 w-3.5" />
+                Structurer avec l'IA
+              </>
+            )}
+          </Button>
+        </div>
         <Textarea
           className="text-sm min-h-[60px]"
           placeholder="En une phrase, comment se porte le spa ce cycle ?"
-          maxLength={250}
+          maxLength={MAX_SITUATION}
           value={situation}
           onChange={(e) => setSituation(e.target.value)}
         />

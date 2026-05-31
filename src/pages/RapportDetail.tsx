@@ -36,7 +36,7 @@ interface OutletContext {
 }
 
 const weeklySections: SectionId[] = ["kpi", "checkin", "todo", "ids", "notes"];
-const monthlySections: SectionId[] = ["kpi", "checkin", "responsabilites", "todo", "objectifs", "ids", "cloture"];
+const monthlySections: SectionId[] = ["kpi", "checkin", "responsabilites", "todo", "objectifs", "ids", "notes", "cloture"];
 
 export default function RapportDetail() {
   const { id } = useParams<{ id: string }>();
@@ -267,11 +267,18 @@ function PreparationMode({ report, periodStart, periodEnd }: { report: ReportRec
         />
       )}
       {activeSection === "objectifs" && !isWeekly && <SectionObjectifs reportId={report.id} reportType={report.type} />}
-      {activeSection === "ids" && !isWeekly && <SectionIds reportId={report.id} reportType={report.type} />}
+      {activeSection === "ids" && !isWeekly && (
+        <SectionIds
+          reportId={report.id}
+          reportType={report.type}
+          periodStart={periodStart}
+          periodEnd={periodEnd}
+        />
+      )}
       {activeSection === "ids" && isWeekly && (
         <SectionIdsWeekly reportId={report.id} onStatusChange={onIdsStatusChange} />
       )}
-      {activeSection === "notes" && isWeekly && (
+      {activeSection === "notes" && (
         <SectionNotes reportId={report.id} onStatusChange={onNotesStatusChange} isLocked={isLockedForSave} />
       )}
       {activeSection === "cloture" && !isWeekly && <SectionCloture reportId={report.id} reportType={report.type} />}
