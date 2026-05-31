@@ -423,17 +423,14 @@ function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows
     const m = target.getMonth();
     const first = new Date(y, m, 1);
     const last = new Date(y, m + 1, 0);
-    const toLocalISO = (d: Date): string => {
-      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-    };
     const periodStart = toLocalISO(first);
     const periodEnd = toLocalISO(last);
     const label = FR_MONTH_YEAR.format(target).replace(/^./, (c) => c.toUpperCase());
-    const monthlyDraftForPeriod = rows.find(
-      (r) => r.cycle_type === "monthly" && r.period_start === periodStart && r.status !== "validated"
+    const monthlyReportForPeriod = rows.find(
+      (r) => r.cycle_type === "monthly" && r.period_start === periodStart
     );
-    if (monthlyDraftForPeriod) {
-      navigate(`/rapport/${monthlyDraftForPeriod.id}`);
+    if (monthlyReportForPeriod) {
+      navigate(`/rapport/${monthlyReportForPeriod.id}`);
       return;
     }
     setPending({ kind: "monthly", period: { meetingDate: target, periodStart, periodEnd, label } });
