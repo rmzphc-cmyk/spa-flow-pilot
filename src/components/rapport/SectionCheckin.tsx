@@ -7,6 +7,7 @@ import { useCheckin, useUpsertCheckin, parseKeyContext } from "@/hooks/useChecki
 interface Props {
   reportId: string;
   onStatusChange: (status: SectionStatus) => void;
+  isLocked?: boolean;
 }
 
 function Field({
@@ -55,7 +56,7 @@ function Field({
   );
 }
 
-export function SectionCheckin({ reportId, onStatusChange }: Props) {
+export function SectionCheckin({ reportId, onStatusChange, isLocked = false }: Props) {
   const { data: row, isFetching } = useCheckin(reportId);
   const { debouncedUpsert } = useUpsertCheckin();
 
