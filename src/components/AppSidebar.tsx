@@ -65,7 +65,7 @@ const secondaryLinks = [
 const mainNavItems = [
   { titleKey: "nav.dashboard", url: "/", icon: LayoutDashboard },
   { titleKey: "nav.reports", url: "/rapports", icon: FileText },
-  { titleKey: "nav.todos", url: "/todos", icon: CheckSquare, badge: 3 },
+  { titleKey: "nav.todos", url: "/todos", icon: CheckSquare },
   { titleKey: "nav.objectives", url: "/objectifs", icon: Target },
 ];
 
@@ -106,6 +106,20 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
     },
   });
   const spaName = userRole === "direction" ? "Vue Direction" : spaRow?.name ?? "Mon Spa";
+
+  const { data: pendingTodosCount = 0 } = useQuery({
+    queryKey: ["todos", "pending-count", spaId],
+    enabled: !!spaId && userRole !== "direction",
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("todos")
+        .select("id", { count: "exact", head: true })
+        .eq("spa_id", spaId as string)
+        .eq("status", "pending");
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
 
   const fullName = user?.user_metadata?.full_name as string | undefined;
   const email = user?.email;
@@ -234,9 +248,9 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
             >
               <item.icon className="h-4 w-4 shrink-0" />
               <span className="lg:inline hidden">{t(item.titleKey)}</span>
-              {item.badge && (
+              {item.url === "/todos" && pendingTodosCount > 0 && (
                 <span className="ml-auto bg-destructive text-destructive-foreground text-xs font-semibold rounded-full h-5 w-5 flex items-center justify-center lg:flex hidden">
-                  {item.badge}
+                  {pendingTodosCount}
                 </span>
               )}
             </NavLink>
