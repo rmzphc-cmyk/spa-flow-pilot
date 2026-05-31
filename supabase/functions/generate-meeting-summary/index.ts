@@ -32,6 +32,9 @@ Deno.serve(async (req) => {
       return json({ data: existing }, 200);
     }
 
+    const transcriptText: string | null =
+      existing?.transcript_status === "done" ? existing.transcript_text ?? null : null;
+
     const [{ data: kpis }, { data: checkin }, { data: resps }, { data: ids }, { data: objs }] =
       await Promise.all([
         admin
@@ -83,7 +86,7 @@ ${(ids ?? []).map((i: any) => `- [${i.status}] ${i.capture_text}${i.proposed_sol
 Objectifs actifs:
 ${(objs ?? []).map((o: any) => `- ${o.title}`).join("\n") || "Aucun"}
 
-Génère un JSON avec exactement ces clés: executive_summary (200-250 mots), kpi_synthesis (100 mots), management_synthesis (80 mots), ids_synthesis (100 mots), key_actions (array de 3-5 strings d'actions prioritaires).`;
+Génère un JSON avec exactement ces clés: executive_summary (200-250 mots), kpi_synthesis (100 mots), management_synthesis (80 mots), ids_synthesis (100 mots), key_actions (array de 3-5 strings d'actions prioritaires).${transcriptText ? `\n\nTranscript de la réunion (Whisper, extrait) :\n${transcriptText.slice(0, 3000)}` : ""}`;
 
     // Build template fallback from real data (used when OpenAI is unavailable or fails)
     const buildFallback = () => {

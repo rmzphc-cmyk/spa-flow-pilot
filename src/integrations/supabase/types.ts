@@ -481,6 +481,9 @@ export type Database = {
           objectives_synthesis: string | null
           report_id: string
           tokens_used: number | null
+          transcript_generated_at: string | null
+          transcript_status: string | null
+          transcript_text: string | null
           updated_at: string
           validated_at: string | null
           validated_by: string | null
@@ -503,6 +506,9 @@ export type Database = {
           objectives_synthesis?: string | null
           report_id: string
           tokens_used?: number | null
+          transcript_generated_at?: string | null
+          transcript_status?: string | null
+          transcript_text?: string | null
           updated_at?: string
           validated_at?: string | null
           validated_by?: string | null
@@ -525,6 +531,9 @@ export type Database = {
           objectives_synthesis?: string | null
           report_id?: string
           tokens_used?: number | null
+          transcript_generated_at?: string | null
+          transcript_status?: string | null
+          transcript_text?: string | null
           updated_at?: string
           validated_at?: string | null
           validated_by?: string | null
@@ -707,6 +716,9 @@ export type Database = {
         Row: {
           ai_synthesis_generated_at: string | null
           ai_synthesis_scheduled_at: string | null
+          audio_duration_s: number | null
+          audio_mime_type: string | null
+          audio_storage_path: string | null
           created_at: string
           cycle_label: string
           cycle_type: Database["public"]["Enums"]["ids_cycle_type"]
@@ -726,6 +738,9 @@ export type Database = {
         Insert: {
           ai_synthesis_generated_at?: string | null
           ai_synthesis_scheduled_at?: string | null
+          audio_duration_s?: number | null
+          audio_mime_type?: string | null
+          audio_storage_path?: string | null
           created_at?: string
           cycle_label: string
           cycle_type: Database["public"]["Enums"]["ids_cycle_type"]
@@ -745,6 +760,9 @@ export type Database = {
         Update: {
           ai_synthesis_generated_at?: string | null
           ai_synthesis_scheduled_at?: string | null
+          audio_duration_s?: number | null
+          audio_mime_type?: string | null
+          audio_storage_path?: string | null
           created_at?: string
           cycle_label?: string
           cycle_type?: Database["public"]["Enums"]["ids_cycle_type"]
