@@ -332,17 +332,58 @@ function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows
   const weeklyDate = nextWeeklyMeeting(schedule.weekly_day, now);
   const monthlyDate = nextMonthlyMeeting(schedule, now);
 
+  const toLocalISO = (d: Date): string => {
+    const y = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${mo}-${day}`;
+  };
+
   const [pending, setPending] = useState<PendingDialog | null>(null);
 
-  // Find latest draft per cycle type
-  const findDraft = (type: "weekly" | "monthly") =>
-    reports.find((r) => r.type === type && isPreparationState(r.state)) ?? null;
-  const weeklyDraft = findDraft("weekly");
-  const monthlyDraft = findDraft("monthly");
+  // Pre-compute current periods (timezone-safe)
+  const currentWeeklyPeriod = computeWeeklyPeriodForNextMeeting(schedule.weekly_day, now);
+  const currentMonthlyPeriodStart = toLocalISO(
+    new Date(monthlyDate.getFullYear(), monthlyDate.getMonth(), 1)
+  );
 
-  const readiness: Record<"weekly" | "monthly", { completion: number; reportId: string | null }> = {
-    weekly: { completion: weeklyDraft ? computeCompletion(weeklyDraft).percent : 0, reportId: weeklyDraft?.id ?? null },
-    monthly: { completion: monthlyDraft ? computeCompletion(monthlyDraft).percent : 0, reportId: monthlyDraft?.id ?? null },
+  // Find draft scoped to the current period (for completion %)
+  const weeklyDraftRow = rows.find(
+    (r) => r.cycle_type === "weekly" && r.status !== "validated" && r.period_start === currentWeeklyPeriod.periodStart
+  );
+  const monthlyDraftRow = rows.find(
+    (r) => r.cycle_type === "monthly" && r.status !== "validated" && r.period_start === currentMonthlyPeriodStart
+  );
+  const weeklyDraft = weeklyDraftRow
+    ? reports.find((r) => r.id === weeklyDraftRow.id && isPreparationState(r.state)) ?? null
+    : null;
+  const monthlyDraft = monthlyDraftRow
+    ? reports.find((r) => r.id === monthlyDraftRow.id && isPreparationState(r.state)) ?? null
+    : null;
+
+  // Find any report for the current period (validated or not)
+  const weeklyReportForCurrentPeriod = rows.find(
+    (r) => r.cycle_type === "weekly" && r.period_start === currentWeeklyPeriod.periodStart
+  ) ?? null;
+  const monthlyReportForCurrentPeriod = rows.find(
+    (r) => r.cycle_type === "monthly" && r.period_start === currentMonthlyPeriodStart
+  ) ?? null;
+
+  const readiness: Record<"weekly" | "monthly", { completion: number; reportId: string | null; isValidated: boolean }> = {
+    weekly: {
+      completion: weeklyReportForCurrentPeriod?.status === "validated"
+        ? 100
+        : weeklyDraft ? computeCompletion(weeklyDraft).percent : 0,
+      reportId: weeklyReportForCurrentPeriod?.id ?? null,
+      isValidated: weeklyReportForCurrentPeriod?.status === "validated",
+    },
+    monthly: {
+      completion: monthlyReportForCurrentPeriod?.status === "validated"
+        ? 100
+        : monthlyDraft ? computeCompletion(monthlyDraft).percent : 0,
+      reportId: monthlyReportForCurrentPeriod?.id ?? null,
+      isValidated: monthlyReportForCurrentPeriod?.status === "validated",
+    },
   };
 
   const meetings = [
