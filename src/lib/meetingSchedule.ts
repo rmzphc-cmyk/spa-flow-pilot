@@ -49,12 +49,11 @@ export function saveSchedule(s: MeetingSchedule) {
   }
 }
 
-export async function saveScheduleToDb(schedule: MeetingSchedule, spaId: string): Promise<void> {
-  const { error } = await supabase
-    .from("spas")
-    .update({ meeting_schedule: schedule as unknown as never })
-    .eq("id", spaId);
-  if (error) throw error;
+export async function saveScheduleToDb(schedule: MeetingSchedule): Promise<void> {
+  const { error } = await supabase.functions.invoke("update-meeting-schedule", {
+    body: { meeting_schedule: schedule },
+  });
+  if (error) throw new Error(error.message ?? "Erreur de sauvegarde du calendrier");
   saveSchedule(schedule);
 }
 
