@@ -4,7 +4,7 @@ import {
   ChevronLeft, ChevronRight, Mic, MicOff, Pause, Square,
   BarChart3, MessageSquare, Users, CheckSquare, Target,
   Lightbulb, FileText, CheckCircle, Loader2, Plus, X,
-  PenLine, AlertCircle, Check,
+  PenLine, AlertCircle, Check, Upload, UploadCloud,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,7 @@ import {
 import { useResponsabilityTemplates, useResponsabilityLogs } from "@/hooks/useResponsabilites";
 import { useCloseMeeting } from "@/hooks/useReports";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
+import { useUploadMeetingAudio } from "@/hooks/useAudioUpload";
 import { toast } from "@/hooks/use-toast";
 
 /* ── helpers ── */
@@ -84,8 +85,12 @@ export function MeetingView({ report, periodStart, periodEnd }: Props) {
   const [newDecision, setNewDecision] = useState("");
   const [newIdsText, setNewIdsText] = useState("");
   const [closeConfirm, setCloseConfirm] = useState(false);
+  const [audioStoragePath, setAudioStoragePath] = useState<string | null>(null);
+  const [audioMimeType, setAudioMimeType] = useState<string | null>(null);
+  const [audioDurationS, setAudioDurationS] = useState<number | null>(null);
 
   const recorder = useAudioRecorder();
+  const uploadAudio = useUploadMeetingAudio();
 
   const kpiEntriesQ  = useKpiEntries(report.id);
   const kpiDefsQ     = useKpiDefinitions(spaId);
@@ -151,7 +156,12 @@ export function MeetingView({ report, periodStart, periodEnd }: Props) {
   const handleClose = () => {
     setCloseConfirm(false);
     closeMeeting.mutate(
-      { reportId: report.id },
+      {
+        reportId: report.id,
+        audioStoragePath: audioStoragePath ?? undefined,
+        audioMimeType: audioMimeType ?? undefined,
+        audioDurationS: audioDurationS ?? undefined,
+      },
       {
         onSuccess: (res) => {
           if (res.warning) toast({ title: "Réunion clôturée", description: res.warning });
@@ -535,16 +545,79 @@ export function MeetingView({ report, periodStart, periodEnd }: Props) {
               </div>
             )}
 
-            {/* Badge enregistrement */}
-            {recorder.blob && (
-              <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 flex items-center gap-3">
-                <Check className="h-5 w-5 text-emerald-600 shrink-0" />
-                <div>
-                  <p className="text-sm font-medium text-emerald-800">Réunion enregistrée</p>
-                  <p className="text-xs text-emerald-700">Durée : {formatDuration(recorder.durationSeconds)}</p>
+            {/* Section enregistrement audio */}
+            <div className="rounded-xl border border-border p-4 bg-card space-y-3">
+              <p className="text-sm font-semibold text-foreground flex items-center gap-2">
+                <UploadCloud className="h-4 w-4 text-muted-foreground" />
+                Enregistrement audio
+              </p>
+
+              {recorder.blob && !audioStoragePath && (
+                <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                  <span className="text-sm text-emerald-800 flex items-center gap-2">
+                    <Check className="h-4 w-4" /> Enregistré in-app ({formatDuration(recorder.durationSeconds)})
+                  </span>
+                  <Button
+                    size="sm" variant="outline" className="gap-1.5 text-xs shrink-0"
+                    disabled={uploadAudio.isPending}
+                    onClick={() => {
+                      const mime = recorder.blob!.type || "audio/webm";
+                      const ext = mime.includes("mp4") ? "mp4" : mime.includes("ogg") ? "ogg" : "webm";
+                      uploadAudio.mutate(
+                        { reportId: report.id, spaId: spaId ?? "", blob: recorder.blob!, mimeType: mime, durationSeconds: recorder.durationSeconds, filename: `audio.${ext}` },
+                        { onSuccess: (res) => { setAudioStoragePath(res.storagePath); setAudioMimeType(res.mimeType); setAudioDurationS(res.durationSeconds); } },
+                      );
+                    }}
+                  >
+                    {uploadAudio.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                    Sauvegarder
+                  </Button>
                 </div>
-              </div>
-            )}
+              )}
+
+              {!audioStoragePath && (
+                <div>
+                  <input type="file" id="audio-import-input"
+                    accept="audio/mp3,audio/mpeg,audio/mp4,audio/x-m4a,audio/m4a,audio/wav,audio/webm,audio/ogg"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (file.size > 20 * 1024 * 1024) {
+                        toast({ title: "Fichier trop volumineux", description: "Recommandé < 20 Mo (limite Whisper : 25 Mo)", variant: "destructive" });
+                        e.target.value = ""; return;
+                      }
+                      const mime = file.type || "audio/mpeg";
+                      const filename = `import_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+                      uploadAudio.mutate(
+                        { reportId: report.id, spaId: spaId ?? "", blob: file, mimeType: mime, durationSeconds: 0, filename },
+                        { onSuccess: (res) => { setAudioStoragePath(res.storagePath); setAudioMimeType(res.mimeType); setAudioDurationS(res.durationSeconds); } },
+                      );
+                      e.target.value = "";
+                    }}
+                  />
+                  <label htmlFor="audio-import-input"
+                    className={`flex items-center gap-2 text-sm text-muted-foreground border border-dashed border-border rounded-lg px-3 py-2.5 cursor-pointer hover:bg-muted/50 transition-colors ${uploadAudio.isPending ? "opacity-50 pointer-events-none" : ""}`}
+                  >
+                    {uploadAudio.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
+                    Importer un fichier audio (MP3, M4A, MP4, WAV)
+                  </label>
+                </div>
+              )}
+
+              {audioStoragePath && (
+                <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                  <Check className="h-4 w-4 shrink-0" />
+                  <span>Audio sauvegardé — transcription disponible après clôture</span>
+                </div>
+              )}
+
+              {!recorder.blob && !audioStoragePath && !uploadAudio.isPending && (
+                <p className="text-xs text-muted-foreground">
+                  Utilisez l'enregistrement in-app (header) ou importez un fichier audio externe.
+                </p>
+              )}
+            </div>
 
             <Button
               className="w-full gap-2 bg-teal-600 hover:bg-teal-700 text-white"
