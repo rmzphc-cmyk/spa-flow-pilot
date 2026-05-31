@@ -514,7 +514,11 @@ function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows
               <p className="text-xs text-muted-foreground mb-4">{daysLabel}</p>
               {ready.reportId ? (
                 <span className="inline-flex items-center gap-1 text-sm text-primary font-medium">
-                  {isReady ? "Ouvrir la réunion" : "Continuer la préparation"}
+                  {isValidated
+                    ? "Voir le rapport validé"
+                    : isReady
+                      ? "Ouvrir la réunion"
+                      : "Continuer la préparation"}
                   <ArrowRight className="h-4 w-4" />
                 </span>
               ) : (
