@@ -402,11 +402,11 @@ function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows
       (r) => r.cycle_type === "weekly" && r.period_start === previousPeriod.periodStart && r.status === "validated"
     );
     const previousPeriodMissing = !isFirstWeeklyReport && !hasPreviousValidated;
-    const weeklyDraftForPeriod = rows.find(
-      (r) => r.cycle_type === "weekly" && r.period_start === currentPeriod.periodStart && r.status !== "validated"
+    const weeklyReportForPeriod = rows.find(
+      (r) => r.cycle_type === "weekly" && r.period_start === currentPeriod.periodStart
     );
-    if (weeklyDraftForPeriod) {
-      navigate(`/rapport/${weeklyDraftForPeriod.id}`);
+    if (weeklyReportForPeriod) {
+      navigate(`/rapport/${weeklyReportForPeriod.id}`);
       return;
     }
     setPending({
