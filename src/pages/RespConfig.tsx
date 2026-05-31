@@ -72,6 +72,7 @@ const EMPTY_EDIT: EditingTemplate = {
 
 export default function RespConfig() {
   const { user, userRole, spaId: authSpaId } = useAuth();
+  const { toast: showToast } = useToast();
   const [tab, setTab] = useState<TabKey>("templates");
   const [adminSpaId, setAdminSpaId] = useState<string | null>(null);
   const spaId = userRole === "admin" ? adminSpaId : authSpaId;
