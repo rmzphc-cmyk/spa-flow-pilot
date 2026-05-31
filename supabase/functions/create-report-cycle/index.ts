@@ -29,27 +29,28 @@ Deno.serve(async (req) => {
       }
     }
 
-    const { data: existing, error: existingErr } = await admin
+    const { data: existingRows, error: existingErr } = await admin
       .from("reports")
       .select("id")
       .eq("spa_id", body.spa_id)
       .eq("cycle_type", body.cycle_type)
       .neq("status", "validated")
-      .maybeSingle();
+      .limit(1);
     if (existingErr) throw existingErr;
-    if (existing) {
+    if (existingRows && existingRows.length > 0) {
       return json({ error: "Un rapport actif existe déjà pour ce cycle." }, 409);
     }
 
     // Vérifier qu'aucun rapport n'existe pour cette période exacte (quel que soit le statut)
-    const { data: existingByPeriod, error: periodErr } = await admin
+    const { data: existingPeriodRows, error: periodErr } = await admin
       .from("reports")
       .select("id, cycle_label, status")
       .eq("spa_id", body.spa_id)
       .eq("cycle_type", body.cycle_type)
       .eq("period_start", body.period_start)
-      .maybeSingle();
+      .limit(1);
     if (periodErr) throw periodErr;
+    const existingByPeriod = existingPeriodRows?.[0];
     if (existingByPeriod) {
       return json({
         error: `Un rapport existe déjà pour cette période : "${existingByPeriod.cycle_label}" (statut : ${existingByPeriod.status}).`,
