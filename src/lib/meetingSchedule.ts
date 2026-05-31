@@ -27,7 +27,10 @@ export const DEFAULT_SCHEDULE: MeetingSchedule = {
 const STORAGE_KEY = "meeting_schedule";
 
 function toISO(d: Date): string {
-  return new Date(d.getFullYear(), d.getMonth(), d.getDate()).toISOString().slice(0, 10);
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 export function loadSchedule(): MeetingSchedule {
