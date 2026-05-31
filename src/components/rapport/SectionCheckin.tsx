@@ -165,10 +165,40 @@ export function SectionCheckin({ reportId, onStatusChange, isLocked = false }: P
           En une phrase, comment se porte le spa ce cycle ?
           <span className="italic ml-1">Sera visible par la Direction</span>
         </p>
+        <div className="flex flex-wrap items-center gap-2 mb-2">
+          <VoiceRecordButton
+            context="check_in"
+            onTranscript={(transcript) =>
+              setSituation((prev) =>
+                prev ? (prev + " " + transcript).slice(0, MAX_SITUATION) : transcript.slice(0, MAX_SITUATION),
+              )
+            }
+          />
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            className="gap-1.5 text-xs"
+            disabled={!situation.trim() || structureMutation.isPending}
+            onClick={handleStructureSituation}
+          >
+            {structureMutation.isPending ? (
+              <>
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                Structuration…
+              </>
+            ) : (
+              <>
+                <Sparkles className="h-3.5 w-3.5" />
+                Structurer avec l'IA
+              </>
+            )}
+          </Button>
+        </div>
         <Textarea
           className="text-sm min-h-[60px]"
           placeholder="En une phrase, comment se porte le spa ce cycle ?"
-          maxLength={250}
+          maxLength={MAX_SITUATION}
           value={situation}
           onChange={(e) => setSituation(e.target.value)}
         />
