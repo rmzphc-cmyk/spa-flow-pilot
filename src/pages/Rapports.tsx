@@ -157,26 +157,57 @@ export default function Rapports() {
   const [tab, setTab] = useState<"prep" | "consult">("prep");
   const { data: rows = [], isLoading, error } = useReports();
   const createReport = useCreateReport();
+  const schedule = useMeetingSchedule();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newType, setNewType] = useState<ReportType>("monthly");
-  const initialPeriod = computePeriod("monthly");
-  const [periodStart, setPeriodStart] = useState<string>(initialPeriod.start);
-  const [periodEnd, setPeriodEnd] = useState<string>(initialPeriod.end);
-  const [label, setLabel] = useState<string>(() => defaultLabel("monthly", initialPeriod.start));
-  const [labelEdited, setLabelEdited] = useState(false);
 
-  // Quand le type change → recalculer début + fin par défaut
+  type MonthlyOption = { periodStart: string; periodEnd: string; yearMonth: string; display: string };
+  const [selectedWeeklyPeriod, setSelectedWeeklyPeriod] = useState<WeeklyPeriodOption | null>(null);
+  const [selectedMonthlyPeriod, setSelectedMonthlyPeriod] = useState<MonthlyOption | null>(null);
+
   useEffect(() => {
-    const { start, end } = computePeriod(newType);
-    setPeriodStart(start);
-    setPeriodEnd(end);
+    setSelectedWeeklyPeriod(null);
+    setSelectedMonthlyPeriod(null);
   }, [newType]);
 
-  useEffect(() => {
-    if (!labelEdited) setLabel(defaultLabel(newType, periodStart));
-  }, [newType, periodStart, labelEdited]);
+  const existingWeeklyPeriodStarts = useMemo(
+    () => rows.filter((r) => r.cycle_type === "weekly").map((r) => r.period_start),
+    [rows]
+  );
+  const existingMonthlyYearMonths = useMemo(
+    () => rows.filter((r) => r.cycle_type === "monthly").map((r) => r.period_start.slice(0, 7)),
+    [rows]
+  );
 
+  const weeklyOptions = useMemo(
+    () => getAvailableWeeklyPeriods(schedule.weekly_day, existingWeeklyPeriodStarts, 10),
+    [schedule.weekly_day, existingWeeklyPeriodStarts]
+  );
+
+  const monthlyOptions = useMemo<MonthlyOption[]>(() => {
+    const opts: MonthlyOption[] = [];
+    const toLocalISO = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    const FR_MONTH = new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" });
+    for (let i = 0; i < 12; i++) {
+      const ref = new Date();
+      ref.setDate(1);
+      ref.setMonth(ref.getMonth() - i);
+      const ym = `${ref.getFullYear()}-${String(ref.getMonth() + 1).padStart(2, "0")}`;
+      if (!existingMonthlyYearMonths.includes(ym)) {
+        const first = new Date(ref.getFullYear(), ref.getMonth(), 1);
+        const last = new Date(ref.getFullYear(), ref.getMonth() + 1, 0);
+        opts.push({
+          periodStart: toLocalISO(first),
+          periodEnd: toLocalISO(last),
+          yearMonth: ym,
+          display: FR_MONTH.format(first).replace(/^./, (c) => c.toUpperCase()),
+        });
+      }
+    }
+    return opts;
+  }, [existingMonthlyYearMonths]);
 
   const [blockedInfo, setBlockedInfo] = useState<{ type: ReportType; label: string; stateLabel: string; id: string } | null>(null);
 
@@ -192,17 +223,28 @@ export default function Rapports() {
   );
 
   const handleCreate = async () => {
-    const finalLabel = label.trim() || defaultLabel(newType, periodStart);
+    let pStart: string, pEnd: string, finalLabel: string;
+    if (newType === "weekly") {
+      if (!selectedWeeklyPeriod) return;
+      pStart = selectedWeeklyPeriod.periodStart;
+      pEnd = selectedWeeklyPeriod.periodEnd;
+      finalLabel = selectedWeeklyPeriod.label;
+    } else {
+      if (!selectedMonthlyPeriod) return;
+      pStart = selectedMonthlyPeriod.periodStart;
+      pEnd = selectedMonthlyPeriod.periodEnd;
+      finalLabel = selectedMonthlyPeriod.display;
+    }
     try {
       const created = await createReport.mutateAsync({
         cycle_type: newType,
         cycle_label: finalLabel,
-        period_start: periodStart,
-        period_end: periodEnd,
+        period_start: pStart,
+        period_end: pEnd,
       });
       setDialogOpen(false);
-      setLabelEdited(false);
-      setLabel(defaultLabel(newType, periodStart));
+      setSelectedWeeklyPeriod(null);
+      setSelectedMonthlyPeriod(null);
       navigate(`/rapport/${created.id}`);
     } catch (e) {
       const message = e instanceof Error ? e.message : "";
