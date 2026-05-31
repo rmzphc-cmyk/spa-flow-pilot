@@ -65,6 +65,19 @@ function Field({
 export function SectionCheckin({ reportId, onStatusChange, isLocked = false }: Props) {
   const { data: row, isFetching } = useCheckin(reportId);
   const { debouncedUpsert } = useUpsertCheckin();
+  const structureMutation = useStructureVoiceNote();
+
+  const handleStructureSituation = () => {
+    if (!situation.trim()) return;
+    structureMutation.mutate(
+      { text: situation, context: "check_in" },
+      {
+        onSuccess: (structured) => {
+          if (structured) setSituation(structured.slice(0, MAX_SITUATION));
+        },
+      },
+    );
+  };
 
   const [equipeScore, setEquipeScore] = useState(0);
   const [managerScore, setManagerScore] = useState(0);
