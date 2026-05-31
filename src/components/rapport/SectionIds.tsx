@@ -1,30 +1,31 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Lightbulb, Plus, Lock, CheckSquare, Target, Check } from "lucide-react";
+import { Lightbulb, Plus, Check, AlertCircle, Loader2 } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   useIdsItems,
   useAddIdsItem,
-  useConvertIdsToTodo,
-  useConvertIdsToObjective,
+  useIdsItemsForMonthlyPeriod,
   type DbIdsItem,
 } from "@/hooks/useIdsItems";
 
 interface Props {
   reportId: string;
   reportType: "monthly" | "weekly";
+  periodStart?: string;
+  periodEnd?: string;
 }
 
-const previousIssues = [
-  "Fuite d'eau cabine 3 — en attente réparation",
-  "Retards fréquents livraisons fournisseur huiles",
-];
-
-export function SectionIds({ reportId, reportType }: Props) {
+export function SectionIds({ reportId, reportType, periodStart, periodEnd }: Props) {
+  const { spaId } = useAuth();
   const { data: issues = [] } = useIdsItems(reportId);
+  const { data: monthlyPreviewItems, isLoading: isLoadingPreview } = useIdsItemsForMonthlyPeriod(
+    reportType === "monthly" ? spaId ?? undefined : undefined,
+    periodStart,
+    periodEnd,
+  );
   const addItem = useAddIdsItem(reportId, reportType);
-  const convertToTodo = useConvertIdsToTodo(reportId);
-  const convertToObjective = useConvertIdsToObjective(reportId);
   const [newIssue, setNewIssue] = useState("");
 
   const addIssue = () => {
@@ -32,41 +33,6 @@ export function SectionIds({ reportId, reportType }: Props) {
     if (!text) return;
     addItem.mutate(text);
     setNewIssue("");
-  };
-
-  const renderIssueRow = (item: DbIdsItem) => {
-    const hasTodo = item.converted_to_todo_id !== null;
-    const hasObj = item.converted_to_objective_id !== null;
-    return (
-      <div key={item.id} className="bg-card border border-border rounded-xl p-3 shadow-sm">
-        <div className="flex items-center gap-3">
-          <Lightbulb className="h-4 w-4 text-amber-500 shrink-0" />
-          <span className="text-sm text-foreground flex-1">{item.capture_text}</span>
-        </div>
-        <div className="flex gap-2 mt-2.5 flex-wrap">
-          {hasTodo ? (
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full">
-              <Check className="h-3 w-3" /> To-do créé
-            </span>
-          ) : (
-            <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5"
-              onClick={() => convertToTodo.mutate(item)}>
-              <CheckSquare className="h-3.5 w-3.5" /> → To-do
-            </Button>
-          )}
-          {hasObj ? (
-            <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full">
-              <Check className="h-3 w-3" /> Objectif créé
-            </span>
-          ) : (
-            <Button size="sm" variant="outline" className="h-7 text-xs gap-1.5"
-              onClick={() => convertToObjective.mutate(item)}>
-              <Target className="h-3.5 w-3.5" /> → Objectif
-            </Button>
-          )}
-        </div>
-      </div>
-    );
   };
 
   const renderIssueRowWeekly = (item: DbIdsItem) => (
@@ -81,29 +47,60 @@ export function SectionIds({ reportId, reportType }: Props) {
   if (reportType === "monthly") {
     return (
       <section className="mb-8">
-        <h2 className="text-lg font-semibold text-foreground">IDS — Identifier, Discuter, Solutionner</h2>
-        <p className="text-sm text-muted-foreground mb-4">Traitement des problèmes en réunion</p>
+        <h2 className="text-lg font-semibold text-foreground">IDS — Problèmes du mois</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Récapitulatif des problèmes remontés lors des réunions weekly — lecture seule
+        </p>
 
-        {issues.length === 0 ? (
+        {isLoadingPreview ? (
+          <div className="flex items-center justify-center py-10 text-muted-foreground">
+            <Loader2 className="h-5 w-5 animate-spin" />
+          </div>
+        ) : monthlyPreviewItems.length === 0 ? (
           <div className="bg-muted/50 border border-border rounded-xl p-8 text-center">
-            <Lock className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-foreground font-medium">L'IDS se remplit pendant et après la réunion</p>
-            <p className="text-sm text-muted-foreground mt-1">Revenez ici lors de la réunion.</p>
+            <Lightbulb className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
+            <p className="text-foreground font-medium">Aucun problème signalé ce mois</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Les problèmes remontés lors des weekly apparaîtront ici.
+            </p>
           </div>
         ) : (
-          <div className="space-y-2">{issues.map(renderIssueRow)}</div>
-        )}
-
-        {previousIssues.length > 0 && (
-          <div className="mt-4">
-            <h3 className="text-sm font-medium text-muted-foreground mb-2">Problèmes du cycle précédent (non résolus)</h3>
-            <ul className="space-y-1.5">
-              {previousIssues.map((issue, i) => (
-                <li key={i} className="text-sm text-muted-foreground bg-muted/30 rounded-lg px-3 py-2">
-                  {issue}
-                </li>
-              ))}
-            </ul>
+          <div className="space-y-2">
+            {monthlyPreviewItems.map((item) => {
+              const hasTodo = item.converted_to_todo_id !== null;
+              const hasObj = item.converted_to_objective_id !== null;
+              const isUnresolved = !hasTodo && !hasObj;
+              return (
+                <div key={item.id} className="bg-card border border-border rounded-xl p-3 shadow-sm">
+                  <div className="flex items-start gap-3">
+                    <Lightbulb className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <span className="text-xs font-medium text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+                          {item.report_cycle_label}
+                        </span>
+                        {hasTodo && (
+                          <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                            <Check className="h-3 w-3" /> Todo créé
+                          </span>
+                        )}
+                        {hasObj && (
+                          <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
+                            <Check className="h-3 w-3" /> Objectif créé
+                          </span>
+                        )}
+                        {isUnresolved && (
+                          <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                            <AlertCircle className="h-3 w-3" /> À traiter en réunion
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-sm text-foreground">{item.capture_text}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </section>
