@@ -32,6 +32,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 
 type ReportStatus = ReportState;
 
@@ -326,6 +327,7 @@ function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows
   const navigate = useNavigate();
   const schedule = useMeetingSchedule();
   const createReport = useCreateReport();
+  const { toast: showToast } = useToast();
   const now = new Date();
   const weeklyDate = nextWeeklyMeeting(schedule.weekly_day, now);
   const monthlyDate = nextMonthlyMeeting(schedule, now);
@@ -380,8 +382,11 @@ function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows
     const m = target.getMonth();
     const first = new Date(y, m, 1);
     const last = new Date(y, m + 1, 0);
-    const periodStart = first.toISOString().slice(0, 10);
-    const periodEnd = last.toISOString().slice(0, 10);
+    const toLocalISO = (d: Date): string => {
+      return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    };
+    const periodStart = toLocalISO(first);
+    const periodEnd = toLocalISO(last);
     const label = FR_MONTH_YEAR.format(target).replace(/^./, (c) => c.toUpperCase());
     const monthlyDraftForPeriod = rows.find(
       (r) => r.cycle_type === "monthly" && r.period_start === periodStart && r.status !== "validated"
@@ -416,7 +421,18 @@ function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows
         navigate(`/rapport/${created.id}`);
       }
     } catch (e: any) {
-      toast.error(e?.message ?? "Impossible de créer le rapport.");
+      const msg: string = e?.message ?? "";
+      if (msg.includes("rapport actif existe") || msg.includes("existe déjà")) {
+        const existingDraft = rows.find(
+          (r) => r.cycle_type === (pending?.kind ?? "weekly") && r.status !== "validated"
+        );
+        if (existingDraft) {
+          setPending(null);
+          navigate(`/rapport/${existingDraft.id}`);
+          return;
+        }
+      }
+      showToast({ title: "Erreur", description: msg || "Impossible de créer le rapport.", variant: "destructive" });
     }
   };
 
