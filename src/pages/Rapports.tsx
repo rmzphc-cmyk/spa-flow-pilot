@@ -37,6 +37,7 @@ import {
 } from "@/lib/reportsStore";
 import { useReports, useCreateReport, mapReportRowToRecord } from "@/hooks/useReports";
 import { toast } from "@/hooks/use-toast";
+import { useMeetingSchedule, getAvailableWeeklyPeriods, type WeeklyPeriodOption } from "@/lib/meetingSchedule";
 
 function ReportCard({ report, mode }: { report: ReportRecord; mode: "prep" | "consult" }) {
   const navigate = useNavigate();
