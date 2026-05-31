@@ -71,7 +71,7 @@ export default function RapportDetail() {
 
   // MEETING MODE — only during active meeting
   if (report.state === "in_meeting") {
-    return <MeetingView report={report} />;
+    return <MeetingView report={report} periodStart={row.period_start} periodEnd={row.period_end} />;
   }
 
   // PREPARATION MODE (incl. validated read-only) — keep existing editable layout
