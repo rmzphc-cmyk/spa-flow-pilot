@@ -281,7 +281,7 @@ export default function Rapports() {
         </Button>
       </div>
 
-      <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) setLabelEdited(false); setDialogOpen(open); }}>
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>Nouveau rapport</DialogTitle>
@@ -297,42 +297,76 @@ export default function Rapports() {
                 </SelectContent>
               </Select>
             </div>
-            <div>
-              <Label className="text-sm mb-1.5 block">Label</Label>
-              <Input
-                placeholder={defaultLabel(newType, periodStart)}
-                value={label}
-                onChange={(e) => { setLabelEdited(true); setLabel(e.target.value); }}
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-3">
+            {newType === "weekly" ? (
               <div>
-                <Label className="text-sm mb-1.5 block">Début</Label>
-                <Input
-                  type="date"
-                  value={periodStart}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setPeriodStart(v);
-                    if (v) setPeriodEnd(computeEndFromStart(newType, v));
+                <Label className="text-sm mb-1.5 block">Période de la réunion</Label>
+                <Select
+                  value={selectedWeeklyPeriod?.periodStart ?? ""}
+                  onValueChange={(v) => {
+                    const opt = weeklyOptions.find((o) => o.periodStart === v) ?? null;
+                    setSelectedWeeklyPeriod(opt);
                   }}
-                />
+                >
+                  <SelectTrigger><SelectValue placeholder="Sélectionner une période…" /></SelectTrigger>
+                  <SelectContent>
+                    {weeklyOptions.length === 0 ? (
+                      <div className="px-2 py-1.5 text-sm text-muted-foreground">Aucune période disponible</div>
+                    ) : (
+                      weeklyOptions.map((opt) => (
+                        <SelectItem key={opt.periodStart} value={opt.periodStart}>
+                          {opt.display}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground mt-1.5">
+                  Calculé automatiquement selon votre calendrier de réunions.
+                </p>
               </div>
+            ) : (
               <div>
-                <Label className="text-sm mb-1.5 block">Fin</Label>
-                <Input type="date" value={periodEnd} onChange={(e) => setPeriodEnd(e.target.value)} />
+                <Label className="text-sm mb-1.5 block">Mois du rapport</Label>
+                <Select
+                  value={selectedMonthlyPeriod?.yearMonth ?? ""}
+                  onValueChange={(v) => {
+                    const opt = monthlyOptions.find((o) => o.yearMonth === v) ?? null;
+                    setSelectedMonthlyPeriod(opt);
+                  }}
+                >
+                  <SelectTrigger><SelectValue placeholder="Sélectionner un mois…" /></SelectTrigger>
+                  <SelectContent>
+                    {monthlyOptions.length === 0 ? (
+                      <div className="px-2 py-1.5 text-sm text-muted-foreground">Aucun mois disponible</div>
+                    ) : (
+                      monthlyOptions.map((opt) => (
+                        <SelectItem key={opt.yearMonth} value={opt.yearMonth}>
+                          {opt.display}
+                        </SelectItem>
+                      ))
+                    )}
+                  </SelectContent>
+                </Select>
               </div>
-            </div>
+            )}
           </div>
           <DialogFooter className="mt-4">
             <Button variant="ghost" onClick={() => setDialogOpen(false)} disabled={createReport.isPending}>Annuler</Button>
-            <Button onClick={handleCreate} disabled={createReport.isPending}>
+            <Button
+              onClick={handleCreate}
+              disabled={
+                createReport.isPending ||
+                (newType === "weekly" && !selectedWeeklyPeriod) ||
+                (newType === "monthly" && !selectedMonthlyPeriod)
+              }
+            >
               {createReport.isPending && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
               Créer et ouvrir
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
 
       <AlertDialog open={!!blockedInfo} onOpenChange={(o) => !o && setBlockedInfo(null)}>
         <AlertDialogContent>
