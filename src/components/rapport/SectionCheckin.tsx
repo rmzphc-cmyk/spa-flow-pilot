@@ -83,7 +83,7 @@ export function SectionCheckin({ reportId, onStatusChange }: Props) {
 
   // Autosave (debounced) on any change once hydrated
   useEffect(() => {
-    if (!hydrated || !reportId) return;
+    if (!hydrated || !reportId || isLocked) return;
     if (equipeScore === 0 && managerScore === 0 && !equipeComment && !managerComment && !situation) {
       return;
     }
@@ -93,7 +93,7 @@ export function SectionCheckin({ reportId, onStatusChange }: Props) {
       focus_level: managerScore,
       key_context: { equipeComment, managerComment, situation },
     });
-  }, [hydrated, reportId, equipeScore, managerScore, equipeComment, managerComment, situation, debouncedUpsert]);
+  }, [hydrated, reportId, equipeScore, managerScore, equipeComment, managerComment, situation, debouncedUpsert, isLocked]);
 
   const isComplete = useMemo(() => {
     if (equipeScore === 0 || managerScore === 0) return false;

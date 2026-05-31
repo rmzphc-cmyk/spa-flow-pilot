@@ -11,9 +11,10 @@ import type { SectionStatus } from "@/pages/RapportDetail";
 interface Props {
   reportId: string;
   onStatusChange: (status: SectionStatus) => void;
+  isLocked?: boolean;
 }
 
-export function SectionNotes({ reportId, onStatusChange }: Props) {
+export function SectionNotes({ reportId, onStatusChange, isLocked = false }: Props) {
   const { data: row, isFetching } = useCheckin(reportId);
   const { debouncedUpsert } = useUpsertCheckin();
   const structureMutation = useStructureVoiceNote();
@@ -35,7 +36,7 @@ export function SectionNotes({ reportId, onStatusChange }: Props) {
   }, [onStatusChange]);
 
   useEffect(() => {
-    if (!hydrated || !reportId) return;
+    if (!hydrated || !reportId || isLocked) return;
     debouncedUpsert({
       report_id: reportId,
       mood_score: row?.mood_score ?? 0,
@@ -45,7 +46,7 @@ export function SectionNotes({ reportId, onStatusChange }: Props) {
         free_note: note,
       },
     });
-  }, [note, hydrated, reportId, row, debouncedUpsert]);
+  }, [note, hydrated, reportId, debouncedUpsert, isLocked]);
 
   const handleStructure = () => {
     if (!note.trim()) return;
