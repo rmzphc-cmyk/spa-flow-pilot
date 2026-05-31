@@ -248,10 +248,10 @@ function PreparationMode({ report, periodStart, periodEnd }: { report: ReportRec
         <SectionKpi reportId={report.id} reportType={report.type} period={report.period} yearMonth={report.yearMonth} onStatusChange={onKpiStatusChange} />
       )}
       {activeSection === "checkin" && !isWeekly && (
-        <SectionCheckin reportId={report.id} onStatusChange={onCheckinStatusChange} />
+        <SectionCheckin reportId={report.id} onStatusChange={onCheckinStatusChange} isLocked={isValidated} />
       )}
       {activeSection === "checkin" && isWeekly && (
-        <SectionCheckinWeekly reportId={report.id} onStatusChange={onCheckinStatusChange} />
+        <SectionCheckinWeekly reportId={report.id} onStatusChange={onCheckinStatusChange} isLocked={isValidated} />
       )}
       {activeSection === "responsabilites" && !isWeekly && (
         <SectionResponsabilites reportId={report.id} reportType={report.type} onStatusChange={onResponsabilitesStatusChange} />
@@ -271,7 +271,7 @@ function PreparationMode({ report, periodStart, periodEnd }: { report: ReportRec
         <SectionIdsWeekly reportId={report.id} onStatusChange={onIdsStatusChange} />
       )}
       {activeSection === "notes" && isWeekly && (
-        <SectionNotes reportId={report.id} onStatusChange={onNotesStatusChange} />
+        <SectionNotes reportId={report.id} onStatusChange={onNotesStatusChange} isLocked={isValidated} />
       )}
       {activeSection === "cloture" && !isWeekly && <SectionCloture reportId={report.id} reportType={report.type} />}
 

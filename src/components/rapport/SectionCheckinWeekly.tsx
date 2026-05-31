@@ -12,9 +12,10 @@ import { useStructureVoiceNote } from "@/hooks/useStructureVoiceNote";
 interface Props {
   reportId: string;
   onStatusChange: (status: SectionStatus) => void;
+  isLocked?: boolean;
 }
 
-export function SectionCheckinWeekly({ reportId, onStatusChange }: Props) {
+export function SectionCheckinWeekly({ reportId, onStatusChange, isLocked = false }: Props) {
   const { data: row, isFetching } = useCheckin(reportId);
   const { debouncedUpsert } = useUpsertCheckin();
   const structureMutation = useStructureVoiceNote();
@@ -37,7 +38,7 @@ export function SectionCheckinWeekly({ reportId, onStatusChange }: Props) {
   }, [row, hydrated, isFetching]);
 
   useEffect(() => {
-    if (!hydrated || !reportId) return;
+    if (!hydrated || !reportId || isLocked) return;
     if (meteoScore === 0 && !note) return;
     debouncedUpsert({
       report_id: reportId,
@@ -45,7 +46,7 @@ export function SectionCheckinWeekly({ reportId, onStatusChange }: Props) {
       focus_level: 0,
       key_context: { ...parseKeyContext(row?.key_context ?? null), note },
     });
-  }, [hydrated, reportId, meteoScore, note, debouncedUpsert]);
+  }, [hydrated, reportId, meteoScore, note, debouncedUpsert, isLocked]);
 
   const needsComment = meteoScore > 0 && meteoScore <= 2;
   const missing = needsComment && !note.trim();
