@@ -12,9 +12,10 @@ import { useStructureVoiceNote } from "@/hooks/useStructureVoiceNote";
 interface Props {
   reportId: string;
   onStatusChange: (status: SectionStatus) => void;
+  isLocked?: boolean;
 }
 
-export function SectionCheckinWeekly({ reportId, onStatusChange }: Props) {
+export function SectionCheckinWeekly({ reportId, onStatusChange, isLocked = false }: Props) {
   const { data: row, isFetching } = useCheckin(reportId);
   const { debouncedUpsert } = useUpsertCheckin();
   const structureMutation = useStructureVoiceNote();
