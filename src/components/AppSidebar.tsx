@@ -65,7 +65,7 @@ const secondaryLinks = [
 const mainNavItems = [
   { titleKey: "nav.dashboard", url: "/", icon: LayoutDashboard },
   { titleKey: "nav.reports", url: "/rapports", icon: FileText },
-  { titleKey: "nav.todos", url: "/todos", icon: CheckSquare, badge: 3 },
+  { titleKey: "nav.todos", url: "/todos", icon: CheckSquare },
   { titleKey: "nav.objectives", url: "/objectifs", icon: Target },
 ];
 
