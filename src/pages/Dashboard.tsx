@@ -618,13 +618,36 @@ export default function Dashboard() {
   return (
     <>
       <h1 className="text-2xl font-bold text-foreground mb-6">Dashboard</h1>
-      <UpcomingMeetingsCard reports={reports} />
+      <ScheduleNotConfiguredBanner />
+      <UpcomingMeetingsCard reports={reports} rows={rows} />
       <OverdueAlert todos={overdueTodos} />
       {currentReport ? <CurrentReportCard report={currentReport} /> : <NoCurrentReportCard />}
       <AiBriefCard items={aiBriefItems} />
       <QuickMetrics />
       <RecentActivity items={recentActivity} />
     </>
+  );
+}
+
+function ScheduleNotConfiguredBanner() {
+  const navigate = useNavigate();
+  const { isScheduleConfigured } = useMeetingSchedule();
+  if (isScheduleConfigured) return null;
+  return (
+    <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 mb-4 flex items-start gap-3">
+      <CalendarClock className="h-5 w-5 text-amber-700 mt-0.5 shrink-0" />
+      <div className="flex-1 text-sm text-amber-900">
+        Calendrier de réunions non configuré — les dates affichées sont des valeurs par défaut.
+      </div>
+      <Button
+        variant="outline"
+        size="sm"
+        className="shrink-0 border-amber-300 text-amber-900 hover:bg-amber-100"
+        onClick={() => navigate("/admin/responsabilites")}
+      >
+        Configurer →
+      </Button>
+    </div>
   );
 }
 
