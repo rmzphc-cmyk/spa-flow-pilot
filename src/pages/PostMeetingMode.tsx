@@ -5,6 +5,7 @@ import {
   useGenerateMeetingSummary,
   useUpdateMeetingSummary,
   useValidateMonthlySummary,
+  useTranscribeMeeting,
 } from "@/hooks/useMeetingSummary";
 import {
   useIdsItems,
@@ -41,6 +42,7 @@ import {
   AlertTriangle,
   ArrowRight,
   Loader2,
+  Mic,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -208,6 +210,7 @@ export default function PostMeetingMode() {
   const convertToObjective = useConvertIdsToObjective(id ?? "");
   const updateSummary = useUpdateMeetingSummary();
   const validateMonthly = useValidateMonthlySummary();
+  const transcribeMeeting = useTranscribeMeeting();
 
   const cycleType = (row?.cycle_type as ReportType | undefined) ?? report.type;
   const isMonthly = cycleType === "monthly";
@@ -414,6 +417,62 @@ export default function PostMeetingMode() {
                 />
               ))}
             </div>
+          </section>
+        )}
+
+        {/* ===== SECTION TRANSCRIPT ===== */}
+        {isMonthly && row?.audio_storage_path && (
+          <section className="mb-8">
+            <h2 className="text-lg font-semibold text-foreground mb-4">Enregistrement & Transcript</h2>
+
+            {(!summaryRow?.transcript_status || summaryRow.transcript_status === "none") && (
+              <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
+                <p className="text-sm text-muted-foreground mb-3">
+                  Un enregistrement audio est disponible. Lancez la transcription Whisper pour enrichir la synthèse IA.
+                </p>
+                <Button size="sm" className="gap-1.5" disabled={transcribeMeeting.isPending}
+                  onClick={() => id && transcribeMeeting.mutate({ reportId: id })}>
+                  {transcribeMeeting.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className="h-4 w-4" />}
+                  Transcrire l'enregistrement
+                </Button>
+              </div>
+            )}
+
+            {summaryRow?.transcript_status === "pending" && (
+              <div className="bg-card border border-border rounded-xl p-5 shadow-sm flex items-center gap-3">
+                <Loader2 className="h-5 w-5 animate-spin text-primary shrink-0" />
+                <div>
+                  <p className="text-sm font-medium text-foreground">Transcription Whisper en cours…</p>
+                  <p className="text-xs text-muted-foreground">Rafraîchissement automatique</p>
+                </div>
+              </div>
+            )}
+
+            {summaryRow?.transcript_status === "done" && summaryRow.transcript_text && (
+              <details className="bg-card border border-border rounded-xl shadow-sm">
+                <summary className="px-5 py-4 cursor-pointer font-medium text-sm text-foreground flex items-center gap-2 select-none list-none">
+                  <Mic className="h-4 w-4 text-muted-foreground shrink-0" />
+                  <span className="flex-1">Voir le transcript complet (IA Whisper)</span>
+                  <span className="text-xs text-muted-foreground">{summaryRow.transcript_text.length.toLocaleString("fr-FR")} car.</span>
+                </summary>
+                <div className="px-5 pb-5 border-t border-border pt-4">
+                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{summaryRow.transcript_text}</p>
+                </div>
+              </details>
+            )}
+
+            {summaryRow?.transcript_status === "error" && (
+              <div className="bg-card border border-destructive/30 rounded-xl p-5 shadow-sm">
+                <p className="text-sm text-destructive mb-3">
+                  La transcription a échoué. Vérifiez que le fichier fait moins de 25 Mo et est dans un format supporté.
+                </p>
+                <Button size="sm" variant="outline" className="gap-1.5" disabled={transcribeMeeting.isPending}
+                  onClick={() => id && transcribeMeeting.mutate({ reportId: id })}>
+                  {transcribeMeeting.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
+                  Réessayer
+                </Button>
+              </div>
+            )}
           </section>
         )}
 

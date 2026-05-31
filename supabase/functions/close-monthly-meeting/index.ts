@@ -8,7 +8,13 @@ Deno.serve(async (req) => {
     if (!auth.ok) return auth.response;
     const { caller, admin } = auth;
 
-    const { report_id } = (await req.json()) as { report_id?: string };
+    const body = (await req.json()) as {
+      report_id?: string;
+      audio_storage_path?: string;
+      audio_mime_type?: string;
+      audio_duration_s?: number;
+    };
+    const { report_id, audio_storage_path, audio_mime_type, audio_duration_s } = body;
     if (!report_id) return json({ error: "Missing report_id" }, 400);
 
     const access = await authorizeReportAccess(admin, caller, report_id);
@@ -28,27 +34,28 @@ Deno.serve(async (req) => {
     const now = new Date();
     const scheduledAt = new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString();
 
-    const { error: uErr } = await admin
-      .from("reports")
-      .update({
-        status: "post_meeting_generated",
-        meeting_closed_at: now.toISOString(),
-        ai_synthesis_scheduled_at: scheduledAt,
-        updated_at: now.toISOString(),
-      })
-      .eq("id", report_id);
+    const updatePayload: Record<string, unknown> = {
+      status: "post_meeting_generated",
+      meeting_closed_at: now.toISOString(),
+      ai_synthesis_scheduled_at: scheduledAt,
+      updated_at: now.toISOString(),
+    };
+    if (audio_storage_path) {
+      updatePayload.audio_storage_path = audio_storage_path;
+      updatePayload.audio_mime_type = audio_mime_type ?? null;
+      updatePayload.audio_duration_s = audio_duration_s ?? null;
+    }
+
+    const { error: uErr } = await admin.from("reports").update(updatePayload).eq("id", report_id);
     if (uErr) throw uErr;
 
     const { data: finalReport, error: fErr } = await admin
-      .from("reports")
-      .select("*")
-      .eq("id", report_id)
-      .single();
+      .from("reports").select("*").eq("id", report_id).single();
     if (fErr) throw fErr;
 
-    const body: { data: typeof finalReport; warning?: string } = { data: finalReport };
-    if (!idsCount || idsCount === 0) body.warning = "Aucun IDS capturé";
-    return json(body, 200);
+    const responseBody: { data: typeof finalReport; warning?: string } = { data: finalReport };
+    if (!idsCount || idsCount === 0) responseBody.warning = "Aucun IDS capturé";
+    return json(responseBody, 200);
   } catch (e) {
     return internalError(e);
   }

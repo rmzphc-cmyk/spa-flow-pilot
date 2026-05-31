@@ -23,19 +23,24 @@ export interface MeetingSummaryRow {
   generated_at: string;
   created_at: string;
   updated_at: string;
+  transcript_text: string | null;
+  transcript_status: "none" | "pending" | "done" | "error";
+  transcript_generated_at: string | null;
 }
 
 export function useMeetingSummary(reportId: string | undefined) {
   return useQuery({
     queryKey: ["meeting_summary", reportId],
     enabled: !!reportId,
-    refetchInterval: (query) => (query.state.data == null ? 30000 : false),
+    refetchInterval: (query) => {
+      const data = query.state.data as MeetingSummaryRow | null | undefined;
+      if (data == null) return 30000;
+      if (data.transcript_status === "pending") return 10000;
+      return false;
+    },
     queryFn: async () => {
       const { data, error } = await supabase
-        .from("meeting_summaries")
-        .select("*")
-        .eq("report_id", reportId!)
-        .maybeSingle();
+        .from("meeting_summaries").select("*").eq("report_id", reportId!).maybeSingle();
       if (error) throw error;
       return (data ?? null) as MeetingSummaryRow | null;
     },
@@ -58,6 +63,30 @@ export function useGenerateMeetingSummary() {
     },
     onError: (e: Error) => {
       toast({ title: "Erreur synthèse IA", description: e.message, variant: "destructive" });
+    },
+  });
+}
+
+export function useTranscribeMeeting() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: { reportId: string }) => {
+      const { data, error } = await supabase.functions.invoke("transcribe-meeting-audio", {
+        body: { report_id: input.reportId },
+      });
+      if (error) throw new Error(data?.error ?? error.message ?? "Erreur transcription");
+      if (data?.error) throw new Error(data.error);
+      return data.data as { transcript_text: string; duration: number | null };
+    },
+    onMutate: () => {
+      toast({ title: "Transcription lancée…", description: "Whisper analyse l'enregistrement." });
+    },
+    onSuccess: (_d, vars) => {
+      qc.invalidateQueries({ queryKey: ["meeting_summary", vars.reportId] });
+      toast({ title: "Transcript disponible ✓" });
+    },
+    onError: (e: Error) => {
+      toast({ title: "Erreur transcription", description: e.message, variant: "destructive" });
     },
   });
 }
