@@ -483,9 +483,12 @@ function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows
           const days = daysUntil(m.date, now);
           const ready = readiness[m.type];
           const isReady = ready.completion >= 80;
-          const readinessBadge = isReady
-            ? { label: "Prêt", cls: "bg-emerald-100 text-emerald-800" }
-            : { label: "À préparer", cls: days <= 2 ? "bg-destructive/15 text-destructive" : "bg-amber-100 text-amber-800" };
+          const isValidated = ready.isValidated;
+          const readinessBadge = isValidated
+            ? { label: "Rapport validé ✓", cls: "bg-emerald-100 text-emerald-800" }
+            : isReady
+              ? { label: "Prêt", cls: "bg-emerald-100 text-emerald-800" }
+              : { label: "À préparer", cls: days <= 2 ? "bg-destructive/15 text-destructive" : "bg-amber-100 text-amber-800" };
           const daysLabel = days === 0 ? "Aujourd'hui" : days === 1 ? "Demain" : `Dans ${days} jours`;
 
           const handleClick = m.type === "weekly" ? handleWeeklyClick : handleMonthlyClick;
