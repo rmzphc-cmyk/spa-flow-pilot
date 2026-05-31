@@ -52,7 +52,7 @@ export function saveSchedule(s: MeetingSchedule) {
 export async function saveScheduleToDb(schedule: MeetingSchedule, spaId: string): Promise<void> {
   const { error } = await supabase
     .from("spas")
-    .update({ meeting_schedule: schedule as unknown as Record<string, unknown> })
+    .update({ meeting_schedule: schedule as unknown as never })
     .eq("id", spaId);
   if (error) throw error;
   saveSchedule(schedule);
