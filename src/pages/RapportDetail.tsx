@@ -267,11 +267,18 @@ function PreparationMode({ report, periodStart, periodEnd }: { report: ReportRec
         />
       )}
       {activeSection === "objectifs" && !isWeekly && <SectionObjectifs reportId={report.id} reportType={report.type} />}
-      {activeSection === "ids" && !isWeekly && <SectionIds reportId={report.id} reportType={report.type} />}
+      {activeSection === "ids" && !isWeekly && (
+        <SectionIds
+          reportId={report.id}
+          reportType={report.type}
+          periodStart={periodStart}
+          periodEnd={periodEnd}
+        />
+      )}
       {activeSection === "ids" && isWeekly && (
         <SectionIdsWeekly reportId={report.id} onStatusChange={onIdsStatusChange} />
       )}
-      {activeSection === "notes" && isWeekly && (
+      {activeSection === "notes" && (
         <SectionNotes reportId={report.id} onStatusChange={onNotesStatusChange} isLocked={isLockedForSave} />
       )}
       {activeSection === "cloture" && !isWeekly && <SectionCloture reportId={report.id} reportType={report.type} />}
