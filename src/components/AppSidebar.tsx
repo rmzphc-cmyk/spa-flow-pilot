@@ -248,9 +248,9 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
             >
               <item.icon className="h-4 w-4 shrink-0" />
               <span className="lg:inline hidden">{t(item.titleKey)}</span>
-              {item.badge && (
+              {item.url === "/todos" && pendingTodosCount > 0 && (
                 <span className="ml-auto bg-destructive text-destructive-foreground text-xs font-semibold rounded-full h-5 w-5 flex items-center justify-center lg:flex hidden">
-                  {item.badge}
+                  {pendingTodosCount}
                 </span>
               )}
             </NavLink>
