@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useToast } from "@/hooks/use-toast";
 import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,6 +72,7 @@ const EMPTY_EDIT: EditingTemplate = {
 
 export default function RespConfig() {
   const { user, userRole, spaId: authSpaId } = useAuth();
+  const { toast: showToast } = useToast();
   const [tab, setTab] = useState<TabKey>("templates");
   const [adminSpaId, setAdminSpaId] = useState<string | null>(null);
   const spaId = userRole === "admin" ? adminSpaId : authSpaId;
@@ -205,11 +207,11 @@ export default function RespConfig() {
     const t = setTimeout(async () => {
       setIsSavingSchedule(true);
       try {
-        await saveScheduleToDb(schedule, spaId);
+        await saveScheduleToDb(schedule);
         await queryClient.invalidateQueries({ queryKey: ["spa-schedule", spaId] });
-        toast.success("Calendrier de réunions sauvegardé");
+        showToast({ title: "Calendrier sauvegardé", description: "Synchronisé sur tous vos appareils." });
       } catch (e: any) {
-        toast.error(e?.message ?? "Erreur de sauvegarde du calendrier");
+        showToast({ title: "Erreur", description: e?.message ?? "Erreur de sauvegarde", variant: "destructive" });
       } finally {
         setIsSavingSchedule(false);
       }
