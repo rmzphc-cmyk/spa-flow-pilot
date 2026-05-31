@@ -107,6 +107,20 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
   });
   const spaName = userRole === "direction" ? "Vue Direction" : spaRow?.name ?? "Mon Spa";
 
+  const { data: pendingTodosCount = 0 } = useQuery({
+    queryKey: ["todos", "pending-count", spaId],
+    enabled: !!spaId && userRole !== "direction",
+    queryFn: async () => {
+      const { count, error } = await supabase
+        .from("todos")
+        .select("id", { count: "exact", head: true })
+        .eq("spa_id", spaId as string)
+        .eq("status", "pending");
+      if (error) throw error;
+      return count ?? 0;
+    },
+  });
+
   const fullName = user?.user_metadata?.full_name as string | undefined;
   const email = user?.email;
   const initials = (() => {
