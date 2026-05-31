@@ -460,13 +460,15 @@ function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows
       }
     } catch (e: any) {
       const msg: string = e?.message ?? "";
-      if (msg.includes("rapport actif existe") || msg.includes("existe déjà")) {
-        const existingDraft = rows.find(
-          (r) => r.cycle_type === (pending?.kind ?? "weekly") && r.status !== "validated"
+      const pendingPeriodStart = pending?.period?.periodStart ?? null;
+      const pendingKind = pending?.kind ?? null;
+      if (pendingPeriodStart && pendingKind) {
+        const existingRow = rows.find(
+          (r) => r.cycle_type === pendingKind && r.period_start === pendingPeriodStart
         );
-        if (existingDraft) {
+        if (existingRow) {
           setPending(null);
-          navigate(`/rapport/${existingDraft.id}`);
+          navigate(`/rapport/${existingRow.id}`);
           return;
         }
       }
