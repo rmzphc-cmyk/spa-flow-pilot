@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Textarea } from "@/components/ui/textarea";
 import type { SectionStatus } from "@/pages/RapportDetail";
 import { useAuth } from "@/contexts/AuthContext";
+import { VoiceRecordButton } from "@/components/VoiceRecordButton";
 import {
   useResponsabilityTemplates,
   useResponsabilityLogs,
@@ -23,6 +25,8 @@ const STATES: { value: 100 | 50 | 0; label: string; cls: string }[] = [
 ];
 
 export function SectionResponsabilites({ reportId, onStatusChange }: Props) {
+  const { i18n } = useTranslation();
+  const speechLang = i18n.language === "es" ? "es-ES" : i18n.language === "en" ? "en-US" : "fr-FR";
   const { spaId } = useAuth();
   const { data: templates = [] } = useResponsabilityTemplates(spaId);
   const { data: logs } = useResponsabilityLogs(reportId);
@@ -145,10 +149,28 @@ export function SectionResponsabilites({ reportId, onStatusChange }: Props) {
                 </div>
               </div>
 
-              <div className="mt-3">
+              <div className="mt-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <VoiceRecordButton
+                    context="responsibility_comment"
+                    lang={speechLang}
+                    onTranscript={(transcript) =>
+                      updateComment(
+                        resp.id,
+                        (comment ? comment + " " + transcript : transcript).slice(0, 500),
+                      )
+                    }
+                  />
+                </div>
                 <Textarea
                   className="text-sm min-h-[40px]"
-                  placeholder="Commentaire (optionnel)"
+                  placeholder={
+                    selected === 0
+                      ? "Qu'est-ce qui a bloqué ?"
+                      : selected === 50
+                        ? "Qu'est-ce qui a été fait ? Qu'est-ce qui manque ?"
+                        : "Commentaire (optionnel)"
+                  }
                   value={comment}
                   onChange={(e) => updateComment(resp.id, e.target.value)}
                 />

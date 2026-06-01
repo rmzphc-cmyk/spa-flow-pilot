@@ -17,7 +17,7 @@ interface Props {
   onTranscript: (text: string) => void;
   disabled?: boolean;
   lang?: string;
-  context?: "check_in" | "free_note";
+  context?: "check_in" | "free_note" | "responsibility_comment";
 }
 
 export function VoiceRecordButton({
