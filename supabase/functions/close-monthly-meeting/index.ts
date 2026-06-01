@@ -32,12 +32,11 @@ Deno.serve(async (req) => {
     if (cErr) throw cErr;
 
     const now = new Date();
-    const scheduledAt = new Date(now.getTime() + 2 * 60 * 60 * 1000).toISOString();
 
     const updatePayload: Record<string, unknown> = {
       status: "post_meeting_generated",
       meeting_closed_at: now.toISOString(),
-      ai_synthesis_scheduled_at: scheduledAt,
+      ai_synthesis_scheduled_at: null,
       updated_at: now.toISOString(),
     };
     if (audio_storage_path) {

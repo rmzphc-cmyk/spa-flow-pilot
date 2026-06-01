@@ -20,21 +20,18 @@ Deno.serve(async (req) => {
     if (report.status !== "post_meeting_generated")
       return json({ error: "Le rapport n'est pas en post-réunion." }, 409);
 
-    const { data: unresolved, error: idsErr } = await admin
+    // IDS — comptage informatif uniquement (non bloquant)
+    const { data: idsItems, error: idsErr } = await admin
       .from("ids_items")
-      .select("id, proposed_solution")
+      .select("id, proposed_solution, root_cause, converted_to_todo_id, converted_to_objective_id, capture_text")
       .eq("report_id", report_id);
     if (idsErr) throw idsErr;
-    const missing = (unresolved ?? []).filter(
+    const allIds = idsItems ?? [];
+    const missingCount = allIds.filter(
       (i) => !i.proposed_solution || i.proposed_solution.trim() === "",
-    );
-    if (missing.length > 0) {
-      return json(
-        { error: "Tous les IDS doivent avoir une solution avant validation.", field: "ids" },
-        422,
-      );
-    }
+    ).length;
 
+    // Synthèse — toujours requise
     const { data: summary, error: sErr } = await admin
       .from("meeting_summaries")
       .select("id, executive_summary")
@@ -47,6 +44,7 @@ Deno.serve(async (req) => {
 
     const now = new Date().toISOString();
 
+    // Valider la synthèse
     const { error: us1 } = await admin
       .from("meeting_summaries")
       .update({
@@ -58,6 +56,7 @@ Deno.serve(async (req) => {
       .eq("report_id", report_id);
     if (us1) throw us1;
 
+    // Valider le rapport
     const { error: us2 } = await admin
       .from("reports")
       .update({
@@ -70,6 +69,27 @@ Deno.serve(async (req) => {
       .eq("id", report_id);
     if (us2) throw us2;
 
+    // Auto-créer todos depuis IDS avec solution mais non encore convertis
+    const spaId = report.spa_id as string;
+    for (const ids of allIds) {
+      if (ids.converted_to_todo_id) continue;
+      if (!ids.proposed_solution?.trim()) continue;
+      await admin.from("todos").insert({
+        spa_id: spaId,
+        report_id: report_id,
+        title: ids.capture_text,
+        description: JSON.stringify({ responsible: "", followUp: ids.proposed_solution }),
+        status: "pending",
+        priority: "medium",
+        source: "ids_conversion",
+        ids_item_id: ids.id,
+        created_by: userId,
+        created_at: now,
+        updated_at: now,
+      }).select().maybeSingle();
+    }
+
+    // Récupérer le rapport final
     const { data: finalReport, error: fErr } = await admin
       .from("reports")
       .select("*")
@@ -77,7 +97,32 @@ Deno.serve(async (req) => {
       .single();
     if (fErr) throw fErr;
 
-    return json({ data: finalReport }, 200);
+    // Notifier les utilisateurs Direction
+    try {
+      const { data: { users } } = await admin.auth.admin.listUsers();
+      const directionUsers = (users ?? []).filter(
+        (u) => u.app_metadata?.role === "direction",
+      );
+      if (directionUsers.length > 0) {
+        await admin.from("notifications").insert(
+          directionUsers.map((u) => ({
+            user_id: u.id,
+            title: "Nouveau rapport disponible",
+            body: `Le rapport mensuel a été validé et est disponible.`,
+            type: "synthesis_ready",
+            language: u.app_metadata?.language ?? "fr",
+            report_id: report_id,
+            spa_id: spaId,
+            is_read: false,
+            created_at: now,
+          })),
+        );
+      }
+    } catch (_notifErr) {
+      // Notifications non bloquantes
+    }
+
+    return json({ data: finalReport, warnings: missingCount > 0 ? `${missingCount} IDS sans solution` : null }, 200);
   } catch (e) {
     return internalError(e);
   }

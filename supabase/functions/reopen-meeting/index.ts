@@ -15,15 +15,20 @@ Deno.serve(async (req) => {
     if (!access.ok) return access.response;
     const report = access.report;
 
-    if (report.cycle_type !== "monthly") return json({ error: "Rapport non mensuel." }, 400);
-    if (!["draft_preparation", "ready_for_review"].includes(report.status)) {
-      return json({ error: "Le rapport doit être en préparation ou prêt pour démarrer la réunion." }, 409);
-    }
+    if (report.cycle_type !== "monthly") return json({ error: "Rapport non mensuel." }, 409);
+    if (report.status !== "post_meeting_generated")
+      return json({ error: "La réunion ne peut être relancée que depuis l'état post_meeting_generated." }, 409);
 
     const now = new Date().toISOString();
+
     const { error: uErr } = await admin
       .from("reports")
-      .update({ status: "in_meeting", meeting_started_at: now, updated_at: now })
+      .update({
+        status: "in_meeting",
+        meeting_closed_at: null,
+        ai_synthesis_scheduled_at: null,
+        updated_at: now,
+      })
       .eq("id", report_id);
     if (uErr) throw uErr;
 
