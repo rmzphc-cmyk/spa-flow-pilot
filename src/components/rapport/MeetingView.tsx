@@ -900,9 +900,21 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
               {currentSlide + 1} / {TOTAL} — {currentMeta.label}
             </span>
           </div>
-          {/* Center — recording */}
-          <div className="shrink-0">{renderRecordingControls()}</div>
-          {/* Right — nav + clôturer */}
+          {/* Center — badge selon phase */}
+          <div className="shrink-0">
+            {readOnly ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground border border-border">
+                📋 Présentation archivée — lecture seule
+              </span>
+            ) : meetingPhase === "closing" ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                <Sparkles className="h-3 w-3" /> Phase 2 — Clôture
+              </span>
+            ) : (
+              renderRecordingControls()
+            )}
+          </div>
+          {/* Right — nav + action */}
           <div className="flex items-center gap-1.5 shrink-0">
             <Button variant="ghost" size="icon" className="h-8 w-8" disabled={currentSlide === 0} onClick={() => goTo(currentSlide - 1)}>
               <ChevronLeft className="h-4 w-4" />
@@ -910,14 +922,32 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
             <Button variant="ghost" size="icon" className="h-8 w-8" disabled={currentSlide === TOTAL - 1} onClick={() => goTo(currentSlide + 1)}>
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <Button
-              size="sm" variant="outline"
-              className="gap-1.5 text-xs border-destructive text-destructive hover:bg-destructive/10 ml-1"
-              onClick={() => setCloseConfirm(true)}
-              disabled={closeMeeting.isPending}
-            >
-              <Square className="h-3.5 w-3.5" /> Clôturer
-            </Button>
+            {readOnly ? (
+              <Button
+                size="sm" variant="outline"
+                className="gap-1.5 text-xs ml-1"
+                onClick={() => navigate(report.state === "validated" ? "/rapports" : "/post-reunion/" + report.id)}
+              >
+                <ChevronLeft className="h-3.5 w-3.5" /> Fermer
+              </Button>
+            ) : meetingPhase === "closing" ? (
+              <Button
+                size="sm" variant="outline"
+                className="gap-1.5 text-xs ml-1"
+                onClick={() => navigate("/post-reunion/" + report.id)}
+              >
+                <ChevronLeft className="h-3.5 w-3.5" /> Voir le compte-rendu
+              </Button>
+            ) : (
+              <Button
+                size="sm" variant="outline"
+                className="gap-1.5 text-xs border-destructive text-destructive hover:bg-destructive/10 ml-1"
+                onClick={() => setCloseConfirm(true)}
+                disabled={closeMeeting.isPending}
+              >
+                <Square className="h-3.5 w-3.5" /> Clôturer
+              </Button>
+            )}
           </div>
         </div>
         {/* Progress bar */}
