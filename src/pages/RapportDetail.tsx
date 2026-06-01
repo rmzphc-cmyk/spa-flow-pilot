@@ -74,12 +74,7 @@ export default function RapportDetail() {
     return <MeetingView report={report} periodStart={row.period_start} periodEnd={row.period_end} />;
   }
 
-  // REPLAY MODE — lecture seule après clôture
-  if (report.state === "post_meeting_generated" || report.state === "validated") {
-    return <MeetingView report={report} periodStart={row.period_start} periodEnd={row.period_end} readOnly />;
-  }
-
-  // PREPARATION MODE — draft_preparation + ready_for_review
+  // PREPARATION MODE (incl. validated read-only) — keep existing editable layout
   return <PreparationMode report={report} periodStart={row.period_start} periodEnd={row.period_end} />;
 }
 

@@ -72,10 +72,9 @@ interface Props {
   report: ReportRecord;
   periodStart?: string;
   periodEnd?: string;
-  readOnly?: boolean;
 }
 
-export function MeetingView({ report, periodStart, periodEnd, readOnly = false }: Props) {
+export function MeetingView({ report, periodStart, periodEnd }: Props) {
   const navigate = useNavigate();
   const { spaId } = useAuth();
 
@@ -427,7 +426,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                                 <p className="text-sm text-foreground">{item.capture_text}</p>
                               </div>
                             </div>
-                            {!isResolved && !readOnly && (
+                            {!isResolved && (
                               <div className="flex gap-2 mt-2.5 ml-7 flex-wrap">
                                 <Button
                                   size="sm" variant="outline" className="h-7 text-xs gap-1"
@@ -455,21 +454,19 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
             {/* Bloc B — Nouveaux IDS monthly */}
             <div>
               <h3 className="text-sm font-semibold text-foreground mb-3">Nouveaux points soulevés en réunion</h3>
-              {!readOnly && (
-                <div className="flex gap-2 mb-3">
-                  <Input
-                    placeholder="Décrire le problème (max 150 car.)"
-                    maxLength={150}
-                    value={newIdsText}
-                    onChange={(e) => setNewIdsText(e.target.value)}
-                    onKeyDown={(e) => e.key === "Enter" && handleAddIds()}
-                    className="flex-1"
-                  />
-                  <Button size="sm" onClick={handleAddIds} disabled={addIds.isPending || !newIdsText.trim()} className="gap-1.5 shrink-0">
-                    <Plus className="h-4 w-4" /> Ajouter
-                  </Button>
-                </div>
-              )}
+              <div className="flex gap-2 mb-3">
+                <Input
+                  placeholder="Décrire le problème (max 150 car.)"
+                  maxLength={150}
+                  value={newIdsText}
+                  onChange={(e) => setNewIdsText(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleAddIds()}
+                  className="flex-1"
+                />
+                <Button size="sm" onClick={handleAddIds} disabled={addIds.isPending || !newIdsText.trim()} className="gap-1.5 shrink-0">
+                  <Plus className="h-4 w-4" /> Ajouter
+                </Button>
+              </div>
               {(idsQ.data ?? []).length === 0
                 ? <p className="text-sm text-muted-foreground italic">Aucun nouveau point capturé.</p>
                 : (
@@ -548,20 +545,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
               </div>
             )}
 
-            {/* Section enregistrement audio — masqué en replay */}
-            {readOnly && (
-              <div className="rounded-xl border border-emerald-200 p-5 bg-emerald-50 flex items-center gap-3">
-                <CheckCircle className="h-6 w-6 text-emerald-600 shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-emerald-800">Réunion terminée</p>
-                  <p className="text-xs text-emerald-700 mt-0.5">
-                    La synthèse IA et les données complètes sont disponibles dans le rapport post-réunion.
-                  </p>
-                </div>
-              </div>
-            )}
-            {!readOnly && (
-            <>
+            {/* Section enregistrement audio */}
             <div className="rounded-xl border border-border p-4 bg-card space-y-3">
               <p className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <UploadCloud className="h-4 w-4 text-muted-foreground" />
@@ -645,8 +629,6 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                 : <CheckCircle className="h-4 w-4" />}
               Clôturer la réunion
             </Button>
-            </>
-            )}
           </div>
         );
 
@@ -679,15 +661,9 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
               {currentSlide + 1} / {TOTAL} — {currentMeta.label}
             </span>
           </div>
-          {/* Center — recording ou badge replay */}
-          <div className="shrink-0">
-            {readOnly ? (
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground border border-border">
-                📋 Présentation archivée — lecture seule
-              </span>
-            ) : renderRecordingControls()}
-          </div>
-          {/* Right — nav + action */}
+          {/* Center — recording */}
+          <div className="shrink-0">{renderRecordingControls()}</div>
+          {/* Right — nav + clôturer */}
           <div className="flex items-center gap-1.5 shrink-0">
             <Button variant="ghost" size="icon" className="h-8 w-8" disabled={currentSlide === 0} onClick={() => goTo(currentSlide - 1)}>
               <ChevronLeft className="h-4 w-4" />
@@ -695,24 +671,14 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
             <Button variant="ghost" size="icon" className="h-8 w-8" disabled={currentSlide === TOTAL - 1} onClick={() => goTo(currentSlide + 1)}>
               <ChevronRight className="h-4 w-4" />
             </Button>
-            {readOnly ? (
-              <Button
-                size="sm" variant="outline"
-                className="gap-1.5 text-xs ml-1"
-                onClick={() => navigate(report.state === "validated" ? "/rapports" : "/post-reunion/" + report.id)}
-              >
-                <ChevronLeft className="h-3.5 w-3.5" /> Fermer
-              </Button>
-            ) : (
-              <Button
-                size="sm" variant="outline"
-                className="gap-1.5 text-xs border-destructive text-destructive hover:bg-destructive/10 ml-1"
-                onClick={() => setCloseConfirm(true)}
-                disabled={closeMeeting.isPending}
-              >
-                <Square className="h-3.5 w-3.5" /> Clôturer
-              </Button>
-            )}
+            <Button
+              size="sm" variant="outline"
+              className="gap-1.5 text-xs border-destructive text-destructive hover:bg-destructive/10 ml-1"
+              onClick={() => setCloseConfirm(true)}
+              disabled={closeMeeting.isPending}
+            >
+              <Square className="h-3.5 w-3.5" /> Clôturer
+            </Button>
           </div>
         </div>
         {/* Progress bar */}
@@ -748,8 +714,8 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
         </div>
       </main>
 
-      {/* ── Enrichissement panel (bottom drawer) — masqué en replay ── */}
-      {!readOnly && <div className={`shrink-0 bg-card border-t border-border transition-all duration-200 ${isPanelOpen ? "max-h-64" : "max-h-12"} overflow-hidden`}>
+      {/* ── Enrichissement panel (bottom drawer) ── */}
+      <div className={`shrink-0 bg-card border-t border-border transition-all duration-200 ${isPanelOpen ? "max-h-64" : "max-h-12"} overflow-hidden`}>
         <button
           className="w-full flex items-center justify-between px-5 py-3 hover:bg-muted/50 transition-colors"
           onClick={() => setIsPanelOpen((v) => !v)}
@@ -795,10 +761,10 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
             )}
           </div>
         )}
-      </div>}
+      </div>
 
       {/* ── Confirm close dialog ── */}
-      {!readOnly && closeConfirm && (
+      {closeConfirm && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-card rounded-2xl border border-border shadow-lg p-6 max-w-sm w-full space-y-4">
             <h2 className="text-lg font-bold text-foreground">Clôturer la réunion ?</h2>
