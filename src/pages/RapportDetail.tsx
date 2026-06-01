@@ -1,6 +1,6 @@
-import { useMemo, useCallback, useEffect } from "react";
+import { useMemo, useCallback } from "react";
 import { useIsMutating } from "@tanstack/react-query";
-import { useParams, useOutletContext, useNavigate } from "react-router-dom";
+import { useParams, useOutletContext, useNavigate, useLocation } from "react-router-dom";
 import { ReportHeader } from "@/components/rapport/ReportHeader";
 import { SectionKpi } from "@/components/rapport/SectionKpi";
 import { SectionCheckin } from "@/components/rapport/SectionCheckin";
@@ -41,14 +41,9 @@ const monthlySections: SectionId[] = ["kpi", "checkin", "responsabilites", "todo
 export default function RapportDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const forceReadOnly = (location.state as { readOnly?: boolean } | null)?.readOnly ?? false;
   const { data: row, isLoading, error } = useReport(id);
-
-  const state = row?.status;
-  useEffect(() => {
-    if (state === "post_meeting_generated" && id) {
-      navigate("/post-reunion/" + id, { replace: true });
-    }
-  }, [state, id, navigate]);
 
   if (isLoading) {
     return (
@@ -69,13 +64,13 @@ export default function RapportDetail() {
 
   const report: ReportRecord = mapReportRowToRecord(row);
 
-  // MEETING MODE — monthly uniquement, réunion active
-  if (report.type === "monthly" && report.state === "in_meeting") {
+  // MEETING MODE — monthly, réunion active OU Phase 2 (clôture en cours)
+  if (report.type === "monthly" && (report.state === "in_meeting" || (report.state === "post_meeting_generated" && !forceReadOnly))) {
     return <MeetingView report={report} periodStart={row.period_start} periodEnd={row.period_end} />;
   }
 
-  // REPLAY MODE — lecture seule après clôture (monthly uniquement)
-  if (report.type === "monthly" && (report.state === "post_meeting_generated" || report.state === "validated")) {
+  // REPLAY MODE — lecture seule : validated, ou "Voir la présentation" depuis PostMeetingMode
+  if (report.type === "monthly" && (report.state === "validated" || (report.state === "post_meeting_generated" && forceReadOnly))) {
     return <MeetingView report={report} periodStart={row.period_start} periodEnd={row.period_end} readOnly />;
   }
 

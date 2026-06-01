@@ -88,7 +88,7 @@ export default function PostMeetingMode() {
               variant="ghost"
               size="sm"
               className="gap-1.5 text-xs"
-              onClick={() => navigate(`/rapport/${id}`)}
+              onClick={() => navigate(`/rapport/${id}`, { state: { readOnly: true } })}
             >
               <Eye className="h-3.5 w-3.5" />
               Voir la présentation
