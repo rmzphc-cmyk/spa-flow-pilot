@@ -168,6 +168,7 @@ export function SectionTodo({ reportId }: Props) {
       const prio = { critical: 0, high: 1, normal: 2 };
       return prio[a.priority] - prio[b.priority];
     });
+  const doneCurrent = current.filter((t) => t.dbStatus === "done");
 
   const handleStatusClick = (t: Todo, status: DbTodoStatus) => {
     if (t.dbStatus === status) return;
@@ -470,7 +471,47 @@ export function SectionTodo({ reportId }: Props) {
         </Dialog>
       </div>
 
-      {/* ═══════ HÉRITÉES DU CYCLE PRÉCÉDENT ═══════ */}
+      {/* 1. En retard */}
+      {overdue.length > 0 && (
+        <div className="rounded-xl p-4 mb-4 border-l-4 border-l-destructive" style={{ backgroundColor: "#FFF5F5" }}>
+          <h3 className="text-sm font-bold text-destructive flex items-center gap-2 mb-3">
+            <AlertTriangle className="h-4 w-4" />
+            {overdue.length} action{overdue.length > 1 ? "s" : ""} en retard
+          </h3>
+          <div className="space-y-2">
+            {overdue.map((t) => renderCard(t, { overdue: true }))}
+          </div>
+        </div>
+      )}
+
+      {/* 2. Actions actives */}
+      <div className="space-y-2 mb-4">
+        {active.map((t) => renderCard(t))}
+      </div>
+
+      {/* 3. Faites ce cycle */}
+      {doneCurrent.length > 0 && (
+        <div className="rounded-xl p-4 mb-4 border border-emerald-200 bg-emerald-50/50">
+          <h3 className="text-sm font-bold text-emerald-900 flex items-center gap-2 mb-3">
+            <CheckCircle2 className="h-4 w-4" />
+            Faites ce cycle
+            <span className="font-normal text-emerald-700 ml-1">
+              — {doneCurrent.length} action{doneCurrent.length > 1 ? "s" : ""}
+            </span>
+          </h3>
+          <div className="space-y-2">
+            {doneCurrent.map((t) => (
+              <div key={t.id} className="bg-white/60 border border-emerald-100 rounded-lg p-3 flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                <span className="text-sm line-through text-muted-foreground flex-1">{t.title}</span>
+                <span className="text-xs text-muted-foreground">{t.responsible || "—"}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 4. Héritées du cycle précédent — en dernier */}
       {inherited.length > 0 && (
         <div className="rounded-xl p-4 mb-4 border border-blue-200 bg-blue-50/50">
           <div className="flex items-center justify-between mb-3">
@@ -511,31 +552,6 @@ export function SectionTodo({ reportId }: Props) {
             ))}
           </div>
         </div>
-      )}
-
-      {/* Overdue block */}
-      {overdue.length > 0 && (
-        <div className="rounded-xl p-4 mb-4 border-l-4 border-l-destructive" style={{ backgroundColor: "#FFF5F5" }}>
-          <h3 className="text-sm font-bold text-destructive flex items-center gap-2 mb-3">
-            <AlertTriangle className="h-4 w-4" />
-            {overdue.length} action{overdue.length > 1 ? "s" : ""} en retard
-          </h3>
-          <div className="space-y-2">
-            {overdue.map((t) => renderCard(t, { overdue: true }))}
-          </div>
-        </div>
-      )}
-
-      {/* Active block */}
-      <div className="space-y-2">
-        {active.map((t) => renderCard(t))}
-      </div>
-
-      {/* Done count */}
-      {current.filter((t) => t.dbStatus === "done").length > 0 && (
-        <p className="text-xs text-muted-foreground mt-3">
-          {current.filter((t) => t.dbStatus === "done").length} action{current.filter((t) => t.dbStatus === "done").length > 1 ? "s" : ""} terminée{current.filter((t) => t.dbStatus === "done").length > 1 ? "s" : ""} ce cycle
-        </p>
       )}
     </section>
   );
