@@ -72,9 +72,10 @@ interface Props {
   report: ReportRecord;
   periodStart?: string;
   periodEnd?: string;
+  readOnly?: boolean;
 }
 
-export function MeetingView({ report, periodStart, periodEnd }: Props) {
+export function MeetingView({ report, periodStart, periodEnd, readOnly = false }: Props) {
   const navigate = useNavigate();
   const { spaId } = useAuth();
 
