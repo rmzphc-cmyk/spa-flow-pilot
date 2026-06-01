@@ -548,7 +548,20 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
               </div>
             )}
 
-            {/* Section enregistrement audio */}
+            {/* Section enregistrement audio — masqué en replay */}
+            {readOnly && (
+              <div className="rounded-xl border border-emerald-200 p-5 bg-emerald-50 flex items-center gap-3">
+                <CheckCircle className="h-6 w-6 text-emerald-600 shrink-0" />
+                <div>
+                  <p className="text-sm font-semibold text-emerald-800">Réunion terminée</p>
+                  <p className="text-xs text-emerald-700 mt-0.5">
+                    La synthèse IA et les données complètes sont disponibles dans le rapport post-réunion.
+                  </p>
+                </div>
+              </div>
+            )}
+            {!readOnly && (
+            <>
             <div className="rounded-xl border border-border p-4 bg-card space-y-3">
               <p className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <UploadCloud className="h-4 w-4 text-muted-foreground" />
@@ -632,6 +645,8 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                 : <CheckCircle className="h-4 w-4" />}
               Clôturer la réunion
             </Button>
+            </>
+            )}
           </div>
         );
 
