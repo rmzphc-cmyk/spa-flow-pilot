@@ -1,10 +1,10 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ChevronLeft, ChevronRight, Mic, MicOff, Pause, Square,
   BarChart3, MessageSquare, Users, CheckSquare, Target,
   Lightbulb, FileText, CheckCircle, Loader2, Plus, X,
-  PenLine, AlertCircle, Check, Upload, UploadCloud,
+  PenLine, AlertCircle, Check, Upload, UploadCloud, Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,11 +22,19 @@ import {
   useConvertIdsToTodo,
   useConvertIdsToObjective,
   useIdsItemsForMonthlyPeriod,
+  useUpdateIdsStructure,
+  type DbIdsItem,
 } from "@/hooks/useIdsItems";
 import { useResponsabilityTemplates, useResponsabilityLogs } from "@/hooks/useResponsabilites";
 import { useCloseMeeting } from "@/hooks/useReports";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { useUploadMeetingAudio } from "@/hooks/useAudioUpload";
+import {
+  useMeetingSummary,
+  useGenerateMeetingSummary,
+  useUpdateMeetingSummary,
+  useValidateMonthlySummary,
+} from "@/hooks/useMeetingSummary";
 import { toast } from "@/hooks/use-toast";
 
 /* ── helpers ── */
@@ -55,7 +63,7 @@ function formatDuration(s: number): string {
   return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
 }
 
-const SLIDE_META = [
+const LIVE_SLIDE_META = [
   { icon: BarChart3,     label: "KPI" },
   { icon: MessageSquare, label: "Check-in" },
   { icon: Users,         label: "Responsabilités" },
@@ -64,6 +72,13 @@ const SLIDE_META = [
   { icon: Lightbulb,     label: "IDS" },
   { icon: FileText,      label: "Notes" },
   { icon: CheckCircle,   label: "Clôture" },
+];
+
+const CLOSING_SLIDE_META = [
+  ...LIVE_SLIDE_META,
+  { icon: Sparkles,      label: "Synthèse IA" },
+  { icon: Lightbulb,     label: "IDS — Structuration" },
+  { icon: CheckCircle,   label: "Validation" },
 ];
 
 /* ── component ── */
@@ -75,12 +90,16 @@ interface Props {
   readOnly?: boolean;
 }
 
-export function MeetingView({ report, periodStart, periodEnd }: Props) {
+export function MeetingView({ report, periodStart, periodEnd, readOnly = false }: Props) {
   const navigate = useNavigate();
   const { spaId } = useAuth();
 
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [meetingPhase, setMeetingPhase] = useState<"live" | "closing">("live");
+  const SLIDE_META = meetingPhase === "closing" ? CLOSING_SLIDE_META : LIVE_SLIDE_META;
   const TOTAL = SLIDE_META.length;
+  const [editedSummary, setEditedSummary] = useState("");
+  const [editedDecisions, setEditedDecisions] = useState<string[]>([]);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [slideDecisions, setSlideDecisions] = useState<Record<number, string[]>>({});
   const [newDecision, setNewDecision] = useState("");
