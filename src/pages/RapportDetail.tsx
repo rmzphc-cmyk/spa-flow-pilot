@@ -1,6 +1,6 @@
-import { useMemo, useCallback, useEffect } from "react";
+import { useMemo, useCallback } from "react";
 import { useIsMutating } from "@tanstack/react-query";
-import { useParams, useOutletContext, useNavigate } from "react-router-dom";
+import { useParams, useOutletContext } from "react-router-dom";
 import { ReportHeader } from "@/components/rapport/ReportHeader";
 import { SectionKpi } from "@/components/rapport/SectionKpi";
 import { SectionCheckin } from "@/components/rapport/SectionCheckin";
