@@ -686,6 +686,191 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
           </div>
         );
 
+      /* ── 8 : Synthèse IA (Phase 2) ── */
+      case 8:
+        return (
+          <div className="space-y-6">
+            {(generateSummary.isPending || summaryQ.isLoading || !summaryQ.data?.executive_summary) ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-4">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <p className="text-sm font-medium text-foreground">Génération de la synthèse IA en cours…</p>
+                <p className="text-xs text-muted-foreground">~10–15 secondes</p>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-foreground">Résumé exécutif</h3>
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                      <Sparkles className="h-3 w-3" /> Synthèse IA
+                    </span>
+                  </div>
+                  <Textarea
+                    className="text-sm min-h-[140px]"
+                    value={editedSummary}
+                    onChange={(e) => {
+                      setEditedSummary(e.target.value);
+                      updateSummary.mutate({ reportId: report.id, newSummary: e.target.value, newKeyActions: editedDecisions });
+                    }}
+                    placeholder="Résumé de la réunion…"
+                  />
+                </div>
+                {editedDecisions.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground mb-3">Décisions clés</h3>
+                    <div className="space-y-2">
+                      {editedDecisions.map((d, i) => (
+                        <div key={i} className="flex items-start gap-2 bg-muted/40 rounded-lg px-3 py-2">
+                          <span className="text-primary mt-0.5 shrink-0">•</span>
+                          <p className="text-sm text-foreground">{d}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <Button className="w-full gap-2" onClick={() => goTo(9)}>
+                  <CheckSquare className="h-4 w-4" /> Passer à la structuration IDS →
+                </Button>
+              </>
+            )}
+          </div>
+        );
+
+      /* ── 9 : IDS Structuration collaborative (Phase 2) ── */
+      case 9: {
+        const idsItems = (idsQ.data ?? []) as DbIdsItem[];
+        const incomplete = idsItems.filter((i) => !i.proposed_solution?.trim()).length;
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                {idsItems.length} point{idsItems.length !== 1 ? "s" : ""} soulevé{idsItems.length !== 1 ? "s" : ""} en réunion
+              </p>
+              {incomplete > 0 && (
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                  <AlertCircle className="h-3 w-3" /> {incomplete} sans solution
+                </span>
+              )}
+            </div>
+            {idsItems.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">Aucun IDS capturé pendant la réunion.</p>
+            ) : (
+              <div className="space-y-4">
+                {idsItems.map((item, i) => (
+                  <div key={item.id} className="rounded-xl border border-border p-4 bg-card space-y-3">
+                    <div className="flex items-start gap-2">
+                      <span className="text-xs font-bold text-muted-foreground shrink-0 mt-0.5">#{i + 1}</span>
+                      <p className="text-sm font-medium text-foreground">{item.capture_text}</p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-foreground mb-1 block">Cause</label>
+                      <Textarea
+                        className="text-sm min-h-[50px]"
+                        placeholder="Cause principale (facultatif)"
+                        maxLength={300}
+                        defaultValue={item.root_cause ?? ""}
+                        onBlur={(e) => updateIdsStructure.mutate({ idsItemId: item.id, reportId: report.id, cause: e.target.value, solution: item.proposed_solution ?? "" })}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-foreground mb-1 block">
+                        Solution <span className="text-amber-500">*</span>
+                      </label>
+                      <Textarea
+                        className="text-sm min-h-[50px]"
+                        placeholder="Solution retenue"
+                        maxLength={300}
+                        defaultValue={item.proposed_solution ?? ""}
+                        onBlur={(e) => updateIdsStructure.mutate({ idsItemId: item.id, reportId: report.id, cause: item.root_cause ?? "", solution: e.target.value })}
+                      />
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                      {!item.converted_to_todo_id && (
+                        <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
+                          disabled={convertToTodo.isPending}
+                          onClick={() => convertToTodo.mutate(item)}>
+                          <CheckSquare className="h-3 w-3" /> → Todo
+                        </Button>
+                      )}
+                      {item.converted_to_todo_id && (
+                        <span className="inline-flex items-center gap-1 text-xs text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full font-medium">
+                          <Check className="h-3 w-3" /> Todo créé
+                        </span>
+                      )}
+                      {!item.converted_to_objective_id && (
+                        <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
+                          disabled={convertToObjective.isPending}
+                          onClick={() => convertToObjective.mutate(item)}>
+                          <Target className="h-3 w-3" /> → Objectif
+                        </Button>
+                      )}
+                      {item.converted_to_objective_id && (
+                        <span className="inline-flex items-center gap-1 text-xs text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full font-medium">
+                          <Check className="h-3 w-3" /> Objectif créé
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <Button className="w-full gap-2" onClick={() => goTo(10)}>
+              <CheckCircle className="h-4 w-4" /> Passer à la validation →
+            </Button>
+          </div>
+        );
+      }
+
+      /* ── 10 : Validation (Phase 2) ── */
+      case 10: {
+        const idsItems = (idsQ.data ?? []) as DbIdsItem[];
+        const structured = idsItems.filter((i) => i.proposed_solution?.trim()).length;
+        const incomplete = idsItems.length - structured;
+        const hasSynthesis = !!summaryQ.data?.executive_summary;
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="rounded-xl border border-border p-4 bg-muted/30 text-center">
+                <p className={`text-2xl font-bold ${hasSynthesis ? "text-emerald-600" : "text-amber-600"}`}>
+                  {hasSynthesis ? "✓" : "…"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">Synthèse IA</p>
+              </div>
+              <div className="rounded-xl border border-border p-4 bg-muted/30 text-center">
+                <p className="text-2xl font-bold text-foreground">{structured}/{idsItems.length}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">IDS structurés</p>
+              </div>
+              <div className="rounded-xl border border-border p-4 bg-muted/30 text-center">
+                <p className="text-2xl font-bold text-foreground">{Object.values(slideDecisions).flat().length}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Décisions</p>
+              </div>
+            </div>
+            {incomplete > 0 && (
+              <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>{incomplete} IDS sans solution — le rapport sera tout de même diffusé.</span>
+              </div>
+            )}
+            {!hasSynthesis && (
+              <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-800">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>La synthèse IA est requise avant validation.</span>
+              </div>
+            )}
+            <Button
+              className="w-full gap-2 bg-teal-600 hover:bg-teal-700 text-white"
+              disabled={!hasSynthesis || validateMonthly.isPending}
+              onClick={() => validateMonthly.mutate({ reportId: report.id })}
+            >
+              {validateMonthly.isPending
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <CheckCircle className="h-4 w-4" />}
+              Valider et diffuser à la Direction
+            </Button>
+          </div>
+        );
+      }
+
       default:
         return null;
     }
