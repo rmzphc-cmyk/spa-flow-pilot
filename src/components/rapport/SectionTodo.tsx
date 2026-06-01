@@ -153,6 +153,7 @@ export function SectionTodo({ reportId }: Props) {
     comment: string;
     newDueDate?: string;
   } | null>(null);
+  const [confirmReset, setConfirmReset] = useState<string | null>(null);
 
   const inherited = todos.filter((t) => t.source === "previous");
   const inheritedPending = inherited.filter((t) => t.dbStatus !== "done");
@@ -167,10 +168,15 @@ export function SectionTodo({ reportId }: Props) {
       const prio = { critical: 0, high: 1, normal: 2 };
       return prio[a.priority] - prio[b.priority];
     });
+  const doneCurrent = current.filter((t) => t.dbStatus === "done");
 
   const handleStatusClick = (t: Todo, status: DbTodoStatus) => {
     if (t.dbStatus === status) return;
-    if (status === "pending") {
+    if (status === "pending" && t.dbStatus === "done") {
+      setConfirmReset(t.id);
+      return;
+    }
+    if (status === "pending" || status === "in_progress" || status === "done") {
       updateWithComment.mutate({
         id: t.id,
         status,
@@ -180,7 +186,18 @@ export function SectionTodo({ reportId }: Props) {
       setPendingChange(null);
       return;
     }
-    setPendingChange({ id: t.id, status, comment: "" });
+    setPendingChange({ id: t.id, status, comment: "", newDueDate: "" });
+  };
+
+  const confirmResetTodo = (t: Todo) => {
+    updateWithComment.mutate({
+      id: t.id,
+      status: "pending",
+      comment: "",
+      currentDescription: t._description,
+    });
+    setPendingChange(null);
+    setConfirmReset(null);
   };
 
   const confirmChange = (t: Todo) => {
@@ -230,12 +247,12 @@ export function SectionTodo({ reportId }: Props) {
     let due: string | null = null;
     if (newDeadline === "next_meeting") {
       const d = new Date();
-      d.setDate(28);
+      d.setMonth(d.getMonth() + 1, 0);
       due = d.toISOString().slice(0, 10);
     }
     addTodo.mutate({
       title: newTitle,
-      responsible: newResponsible || "Marie D.",
+      responsible: newResponsible || "",
       priority: newPriority as "critical" | "high" | "normal",
       due_date: due,
     });
@@ -245,11 +262,35 @@ export function SectionTodo({ reportId }: Props) {
   };
 
   const renderStatusBar = (t: Todo) => {
-    const isPending = pendingChange?.id === t.id;
-    const commentRequired =
-      pendingChange?.status === "done" || pendingChange?.status === "deferred";
+    const isDeferOpen = pendingChange?.id === t.id && pendingChange.status === "deferred";
+    const isResetConfirm = confirmReset === t.id;
     return (
       <div className="space-y-2">
+        {isResetConfirm && (
+          <div className="bg-muted border border-border rounded-lg p-3 space-y-2">
+            <p className="text-xs text-foreground font-medium">
+              Remettre cette action "À faire" effacera son statut de complétion. Continuer ?
+            </p>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                variant="destructive"
+                className="h-7 text-xs"
+                onClick={() => confirmResetTodo(t)}
+              >
+                Confirmer
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 text-xs"
+                onClick={() => setConfirmReset(null)}
+              >
+                Annuler
+              </Button>
+            </div>
+          </div>
+        )}
         <div className="flex flex-wrap gap-1.5">
           {STATUS_OPTIONS.map((s) => {
             const isActive = t.dbStatus === s.value;
@@ -272,50 +313,51 @@ export function SectionTodo({ reportId }: Props) {
             );
           })}
         </div>
-        {isPending && pendingChange && (
-          <div className="space-y-2">
-            <div className="flex gap-2">
+        {isDeferOpen && pendingChange && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2">
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-amber-900">Reporter au *</label>
               <Input
                 autoFocus
-                placeholder={PLACEHOLDERS[pendingChange.status]}
-                value={pendingChange.comment}
-                onChange={(e) =>
-                  setPendingChange({ ...pendingChange, comment: e.target.value })
-                }
-                className="text-sm h-8"
-              />
-              <Button
-                size="sm"
-                className="h-8"
-                disabled={
-                  (commentRequired && !pendingChange.comment.trim()) ||
-                  (pendingChange.status === "deferred" && !pendingChange.newDueDate)
-                }
-                onClick={() => confirmChange(t)}
-              >
-                Confirmer
-              </Button>
-              {pendingChange.status === "in_progress" && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-8"
-                  onClick={() => skipChange(t)}
-                >
-                  Passer
-                </Button>
-              )}
-            </div>
-            {pendingChange.status === "deferred" && (
-              <Input
                 type="date"
                 value={pendingChange.newDueDate ?? ""}
                 onChange={(e) =>
                   setPendingChange((p) => (p ? { ...p, newDueDate: e.target.value } : null))
                 }
-                className="text-sm h-8"
+                className="text-sm h-8 bg-white"
               />
-            )}
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs font-medium text-amber-900">
+                Raison <span className="font-normal text-amber-700">(optionnel)</span>
+              </label>
+              <Input
+                placeholder="Pourquoi ce report…"
+                value={pendingChange.comment}
+                onChange={(e) =>
+                  setPendingChange((p) => (p ? { ...p, comment: e.target.value } : null))
+                }
+                className="text-sm h-8 bg-white"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                className="h-8 bg-amber-600 hover:bg-amber-700 text-white"
+                disabled={!pendingChange.newDueDate}
+                onClick={() => confirmChange(t)}
+              >
+                Confirmer le report
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8"
+                onClick={() => setPendingChange(null)}
+              >
+                Annuler
+              </Button>
+            </div>
           </div>
         )}
       </div>
@@ -385,7 +427,6 @@ export function SectionTodo({ reportId }: Props) {
         <span className="text-sm shrink-0">{priorityIcons[t.priority]}</span>
       </div>
       {renderStatusBar(t)}
-      {renderFollowUp(t)}
     </div>
   );
 
@@ -408,11 +449,11 @@ export function SectionTodo({ reportId }: Props) {
             </DialogHeader>
             <div className="space-y-3 mt-2">
               <Input placeholder="Titre de l'action *" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} />
-              <Input placeholder="Responsable" value={newResponsible} onChange={(e) => setNewResponsible(e.target.value)} />
+              <Input placeholder="Responsable (ex : Marie)" value={newResponsible} onChange={(e) => setNewResponsible(e.target.value)} />
               <Select value={newDeadline} onValueChange={setNewDeadline}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="next_meeting">Prochaine réunion (28 mars)</SelectItem>
+                  <SelectItem value="next_meeting">Prochaine réunion</SelectItem>
                   <SelectItem value="custom">Date précise</SelectItem>
                 </SelectContent>
               </Select>
@@ -430,7 +471,47 @@ export function SectionTodo({ reportId }: Props) {
         </Dialog>
       </div>
 
-      {/* ═══════ HÉRITÉES DU CYCLE PRÉCÉDENT ═══════ */}
+      {/* 1. En retard */}
+      {overdue.length > 0 && (
+        <div className="rounded-xl p-4 mb-4 border-l-4 border-l-destructive" style={{ backgroundColor: "#FFF5F5" }}>
+          <h3 className="text-sm font-bold text-destructive flex items-center gap-2 mb-3">
+            <AlertTriangle className="h-4 w-4" />
+            {overdue.length} action{overdue.length > 1 ? "s" : ""} en retard
+          </h3>
+          <div className="space-y-2">
+            {overdue.map((t) => renderCard(t, { overdue: true }))}
+          </div>
+        </div>
+      )}
+
+      {/* 2. Actions actives */}
+      <div className="space-y-2 mb-4">
+        {active.map((t) => renderCard(t))}
+      </div>
+
+      {/* 3. Faites ce cycle */}
+      {doneCurrent.length > 0 && (
+        <div className="rounded-xl p-4 mb-4 border border-emerald-200 bg-emerald-50/50">
+          <h3 className="text-sm font-bold text-emerald-900 flex items-center gap-2 mb-3">
+            <CheckCircle2 className="h-4 w-4" />
+            Faites ce cycle
+            <span className="font-normal text-emerald-700 ml-1">
+              — {doneCurrent.length} action{doneCurrent.length > 1 ? "s" : ""}
+            </span>
+          </h3>
+          <div className="space-y-2">
+            {doneCurrent.map((t) => (
+              <div key={t.id} className="bg-white/60 border border-emerald-100 rounded-lg p-3 flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
+                <span className="text-sm line-through text-muted-foreground flex-1">{t.title}</span>
+                <span className="text-xs text-muted-foreground">{t.responsible || "—"}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 4. Héritées du cycle précédent — en dernier */}
       {inherited.length > 0 && (
         <div className="rounded-xl p-4 mb-4 border border-blue-200 bg-blue-50/50">
           <div className="flex items-center justify-between mb-3">
@@ -467,36 +548,10 @@ export function SectionTodo({ reportId }: Props) {
                   </div>
                 </div>
                 {renderStatusBar(t)}
-                {renderFollowUp(t, true)}
               </div>
             ))}
           </div>
         </div>
-      )}
-
-      {/* Overdue block */}
-      {overdue.length > 0 && (
-        <div className="rounded-xl p-4 mb-4 border-l-4 border-l-destructive" style={{ backgroundColor: "#FFF5F5" }}>
-          <h3 className="text-sm font-bold text-destructive flex items-center gap-2 mb-3">
-            <AlertTriangle className="h-4 w-4" />
-            {overdue.length} action{overdue.length > 1 ? "s" : ""} en retard
-          </h3>
-          <div className="space-y-2">
-            {overdue.map((t) => renderCard(t, { overdue: true }))}
-          </div>
-        </div>
-      )}
-
-      {/* Active block */}
-      <div className="space-y-2">
-        {active.map((t) => renderCard(t))}
-      </div>
-
-      {/* Done count */}
-      {current.filter((t) => t.dbStatus === "done").length > 0 && (
-        <p className="text-xs text-muted-foreground mt-3">
-          {current.filter((t) => t.dbStatus === "done").length} action{current.filter((t) => t.dbStatus === "done").length > 1 ? "s" : ""} terminée{current.filter((t) => t.dbStatus === "done").length > 1 ? "s" : ""} ce cycle
-        </p>
       )}
     </section>
   );
