@@ -43,6 +43,7 @@ import {
   ArrowRight,
   Loader2,
   Mic,
+  Eye,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
