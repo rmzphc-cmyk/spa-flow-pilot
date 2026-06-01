@@ -1,0 +1,10 @@
+DELETE FROM public.kpi_entries;
+DELETE FROM public.checkins;
+DELETE FROM public.responsibility_logs;
+DELETE FROM public.meeting_summaries;
+DELETE FROM public.ids_items;
+DELETE FROM public.todos;
+DELETE FROM public.objectives;
+DELETE FROM public.notifications;
+DELETE FROM public.context_memories;
+DELETE FROM public.reports;
