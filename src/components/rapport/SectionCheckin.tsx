@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Textarea } from "@/components/ui/textarea";
 import type { SectionStatus } from "@/pages/RapportDetail";
 import { EmojiScore } from "./EmojiScore";
@@ -63,6 +64,8 @@ function Field({
 }
 
 export function SectionCheckin({ reportId, onStatusChange, isLocked = false }: Props) {
+  const { i18n } = useTranslation();
+  const speechLang = i18n.language === "es" ? "es-ES" : i18n.language === "en" ? "en-US" : "fr-FR";
   const { data: row, isFetching } = useCheckin(reportId);
   const { debouncedUpsert } = useUpsertCheckin();
   const structureMutation = useStructureVoiceNote();
@@ -168,6 +171,7 @@ export function SectionCheckin({ reportId, onStatusChange, isLocked = false }: P
         <div className="flex flex-wrap items-center gap-2 mb-2">
           <VoiceRecordButton
             context="check_in"
+            lang={speechLang}
             onTranscript={(transcript) =>
               setSituation((prev) =>
                 prev ? (prev + " " + transcript).slice(0, MAX_SITUATION) : transcript.slice(0, MAX_SITUATION),
