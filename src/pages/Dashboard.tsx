@@ -67,13 +67,15 @@ const statusConfig: Record<ReportStatus, { label: string; bg: string; text: stri
 function getCtaConfig(status: ReportStatus, type: "weekly" | "monthly") {
   switch (status) {
     case "draft_preparation":
-      return { label: "Continuer la préparation", icon: ArrowRight };
+      return type === "monthly"
+        ? { label: "Lancer la réunion", icon: ArrowRight }
+        : { label: "Continuer la préparation", icon: ArrowRight };
     case "ready_for_review":
-      return type === "monthly" ? { label: "Démarrer la réunion", icon: ArrowRight } : null;
+      return type === "monthly" ? { label: "Lancer la réunion", icon: ArrowRight } : null;
     case "in_meeting":
-      return { label: "Accéder à la réunion", icon: ArrowRight };
+      return { label: "Rejoindre la réunion →", icon: ArrowRight };
     case "post_meeting_generated":
-      return { label: "Valider la synthèse IA — 5 min", icon: CheckCircle2 };
+      return { label: "Voir le compte-rendu", icon: ArrowRight };
     case "validated":
       return { label: "Voir le rapport validé", icon: Eye };
     default:

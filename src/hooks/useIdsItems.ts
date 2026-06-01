@@ -16,6 +16,12 @@ export interface DbIdsItem {
   converted_to_todo_id: string | null;
   converted_to_objective_id: string | null;
   display_order: number;
+  problem_statement?: string | null;
+  root_cause?: string | null;
+  proposed_solution?: string | null;
+  resolution_notes?: string | null;
+  resolution_type?: string | null;
+  requires_solution?: boolean;
   created_by: string;
   created_at: string;
   updated_at: string;

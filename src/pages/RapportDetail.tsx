@@ -20,7 +20,7 @@ import { useReport, mapReportRowToRecord, useUpdateReportStatus, useStartMeeting
 import { Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { CheckCircle2, Play, Send } from "lucide-react";
+import { CheckCircle2, Play } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 export type ReportType = "monthly" | "weekly";
@@ -69,9 +69,14 @@ export default function RapportDetail() {
 
   const report: ReportRecord = mapReportRowToRecord(row);
 
-  // MEETING MODE — only during active meeting
-  if (report.state === "in_meeting") {
+  // MEETING MODE — monthly uniquement, réunion active
+  if (report.type === "monthly" && report.state === "in_meeting") {
     return <MeetingView report={report} periodStart={row.period_start} periodEnd={row.period_end} />;
+  }
+
+  // REPLAY MODE — lecture seule après clôture (monthly uniquement)
+  if (report.type === "monthly" && (report.state === "post_meeting_generated" || report.state === "validated")) {
+    return <MeetingView report={report} periodStart={row.period_start} periodEnd={row.period_end} readOnly />;
   }
 
   // PREPARATION MODE (incl. validated read-only) — keep existing editable layout
@@ -137,29 +142,8 @@ function PreparationMode({ report, periodStart, periodEnd }: { report: ReportRec
 
   const renderActionButton = () => {
     if (isValidated) return null;
-    if (report.type === "monthly" && report.state === "draft_preparation") {
-      return (
-        <Button
-          variant="outline"
-          size="sm"
-          className="gap-1.5"
-          disabled={updateStatus.isPending}
-          onClick={() =>
-            updateStatus.mutate(
-              { reportId: report.id, status: "ready_for_review" },
-              {
-                onError: (e) =>
-                  toast({ title: "Erreur", description: (e as Error).message, variant: "destructive" }),
-              },
-            )
-          }
-        >
-          <Send className="h-4 w-4" />
-          Soumettre pour révision
-        </Button>
-      );
-    }
-    if (report.type === "monthly" && report.state === "ready_for_review") {
+    // Monthly : "Lancer la réunion" depuis draft_preparation OU ready_for_review
+    if (report.type === "monthly" && (report.state === "draft_preparation" || report.state === "ready_for_review")) {
       return (
         <Button
           size="sm"
