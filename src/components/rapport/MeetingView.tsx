@@ -797,10 +797,10 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
             )}
           </div>
         )}
-      </div>
+      </div>}
 
       {/* ── Confirm close dialog ── */}
-      {closeConfirm && (
+      {!readOnly && closeConfirm && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
           <div className="bg-card rounded-2xl border border-border shadow-lg p-6 max-w-sm w-full space-y-4">
             <h2 className="text-lg font-bold text-foreground">Clôturer la réunion ?</h2>
