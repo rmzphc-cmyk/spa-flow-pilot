@@ -365,26 +365,37 @@ export default function PostMeetingMode() {
     <div className="min-h-screen bg-background">
       {/* Top banner */}
       <div className={`px-6 py-3 border-b ${aiReady ? "bg-emerald-50 border-emerald-200" : "bg-amber-50 border-amber-200"}`}>
-        {isMonthly ? (
-          aiReady ? (
-            <div className="flex items-center gap-2">
-              <Check className="h-4 w-4 text-emerald-600" />
-              <span className="text-sm font-medium text-emerald-800">Synthèse IA prête à valider ✓</span>
-            </div>
-          ) : (
-            <div className="flex items-center gap-3">
-              <Loader2 className="h-4 w-4 text-amber-700 animate-spin" />
-              <span className="text-sm font-medium text-amber-800">Réunion clôturée — Synthèse IA en cours de génération...</span>
-              <div className="flex-1 max-w-[200px] h-1.5 bg-amber-200 rounded-full overflow-hidden">
-                <div className="h-full bg-amber-500 rounded-full animate-pulse" style={{ width: "60%" }} />
+        <div className="flex items-center justify-between gap-4">
+          {isMonthly ? (
+            aiReady ? (
+              <div className="flex items-center gap-2">
+                <Check className="h-4 w-4 text-emerald-600" />
+                <span className="text-sm font-medium text-emerald-800">Synthèse IA prête à valider ✓</span>
               </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <Loader2 className="h-4 w-4 text-amber-700 animate-spin" />
+                <span className="text-sm font-medium text-amber-800">Réunion clôturée — Synthèse IA en cours de génération...</span>
+                <div className="flex-1 max-w-[200px] h-1.5 bg-amber-200 rounded-full overflow-hidden">
+                  <div className="h-full bg-amber-500 rounded-full animate-pulse" style={{ width: "60%" }} />
+                </div>
+              </div>
+            )
+          ) : (
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-amber-800">Rapport en attente de validation</span>
             </div>
-          )
-        ) : (
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-amber-800">Rapport en attente de validation</span>
-          </div>
-        )}
+          )}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-xs shrink-0"
+            onClick={() => navigate(`/rapport/${id}`)}
+          >
+            <Eye className="h-3.5 w-3.5" />
+            Voir la présentation
+          </Button>
+        </div>
       </div>
 
       <div className="max-w-[900px] mx-auto px-6 py-6 pb-24">
