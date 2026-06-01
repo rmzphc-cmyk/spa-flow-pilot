@@ -427,7 +427,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                                 <p className="text-sm text-foreground">{item.capture_text}</p>
                               </div>
                             </div>
-                            {!isResolved && (
+                            {!isResolved && !readOnly && (
                               <div className="flex gap-2 mt-2.5 ml-7 flex-wrap">
                                 <Button
                                   size="sm" variant="outline" className="h-7 text-xs gap-1"
