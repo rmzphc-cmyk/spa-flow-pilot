@@ -130,6 +130,35 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
   const convertToObjective = useConvertIdsToObjective(report.id);
   const closeMeeting     = useCloseMeeting();
 
+  // Hooks Phase 2
+  const summaryQ        = useMeetingSummary(meetingPhase === "closing" ? report.id : undefined);
+  const generateSummary = useGenerateMeetingSummary();
+  const updateSummary   = useUpdateMeetingSummary();
+  const validateMonthly = useValidateMonthlySummary();
+  const updateIdsStructure = useUpdateIdsStructure();
+
+  /* auto-start enregistrement dès le lancement de la réunion */
+  useEffect(() => {
+    if (!readOnly && recorder.status === "idle") {
+      recorder.startRecording().catch(() => {/* micro refusé — la réunion continue sans audio */});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* sync état local d'édition quand la synthèse IA arrive (init une seule fois) */
+  useEffect(() => {
+    if (summaryQ.data?.executive_summary && !editedSummary) {
+      setEditedSummary(summaryQ.data.executive_summary);
+    }
+    if (summaryQ.data?.key_actions && editedDecisions.length === 0) {
+      try {
+        const parsed = JSON.parse(summaryQ.data.key_actions);
+        if (Array.isArray(parsed)) setEditedDecisions(parsed);
+      } catch { /* ignore */ }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [summaryQ.data]);
+
   /* derived */
   const defsById = new Map((kpiDefsQ.data ?? []).map((d) => [d.id, d]));
   const kpiRows  = (kpiEntriesQ.data ?? [])
