@@ -40,7 +40,6 @@ const monthlySections: SectionId[] = ["kpi", "checkin", "responsabilites", "todo
 
 export default function RapportDetail() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const { data: row, isLoading, error } = useReport(id);
 
 
