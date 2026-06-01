@@ -12,9 +12,10 @@ export function AppLayout() {
   const { data: reportRow } = useReport(reportId || undefined);
   const reportType: ReportType = (reportRow?.cycle_type as ReportType) ?? "monthly";
   const fullscreenMeeting =
-    reportRow?.status === "in_meeting" ||
-    reportRow?.status === "post_meeting_generated" ||
-    reportRow?.status === "validated";
+    reportType === "monthly" &&
+    (reportRow?.status === "in_meeting" ||
+      reportRow?.status === "post_meeting_generated" ||
+      reportRow?.status === "validated");
 
   const [activeSection, setActiveSection] = useState<SectionId>("kpi");
   const [sectionStatuses, setSectionStatuses] = useState<Record<SectionId, SectionStatus>>({
