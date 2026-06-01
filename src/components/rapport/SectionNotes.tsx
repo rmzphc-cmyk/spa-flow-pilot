@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { PenLine, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -15,6 +16,8 @@ interface Props {
 }
 
 export function SectionNotes({ reportId, onStatusChange, isLocked = false }: Props) {
+  const { i18n } = useTranslation();
+  const speechLang = i18n.language === "es" ? "es-ES" : i18n.language === "en" ? "en-US" : "fr-FR";
   const { data: row, isFetching } = useCheckin(reportId);
   const { debouncedUpsert } = useUpsertCheckin();
   const structureMutation = useStructureVoiceNote();
@@ -77,6 +80,7 @@ export function SectionNotes({ reportId, onStatusChange, isLocked = false }: Pro
         <div className="flex flex-row gap-2 mb-2">
           <VoiceRecordButton
             context="free_note"
+            lang={speechLang}
             onTranscript={(t) =>
               setNote((prev) => (prev ? (prev + " " + t).slice(0, MAX_LENGTH) : t.slice(0, MAX_LENGTH)))
             }

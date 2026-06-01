@@ -32,7 +32,7 @@ FORMAT DE SORTIE :
 - Pas d'introduction, pas de conclusion, pas de formules de politesse.
 - 200 mots maximum.
 
-LANGUE : Français.`,
+LANGUE : Réponds dans la même langue que le texte fourni.`,
 
   free_note: `Tu es un assistant de mise en forme pour un manager de spa.
 
@@ -52,7 +52,7 @@ FORMAT DE SORTIE :
 - Phrases directes, sans introduction ni conclusion.
 - 300 mots maximum.
 
-LANGUE : Français.`,
+LANGUE : Réponds dans la même langue que le texte fourni.`,
 };
 
 Deno.serve(async (req) => {
