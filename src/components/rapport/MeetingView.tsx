@@ -750,8 +750,8 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
         </div>
       </main>
 
-      {/* ── Enrichissement panel (bottom drawer) ── */}
-      <div className={`shrink-0 bg-card border-t border-border transition-all duration-200 ${isPanelOpen ? "max-h-64" : "max-h-12"} overflow-hidden`}>
+      {/* ── Enrichissement panel (bottom drawer) — masqué en replay ── */}
+      {!readOnly && <div className={`shrink-0 bg-card border-t border-border transition-all duration-200 ${isPanelOpen ? "max-h-64" : "max-h-12"} overflow-hidden`}>
         <button
           className="w-full flex items-center justify-between px-5 py-3 hover:bg-muted/50 transition-colors"
           onClick={() => setIsPanelOpen((v) => !v)}
