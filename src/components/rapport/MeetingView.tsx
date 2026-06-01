@@ -455,19 +455,21 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
             {/* Bloc B — Nouveaux IDS monthly */}
             <div>
               <h3 className="text-sm font-semibold text-foreground mb-3">Nouveaux points soulevés en réunion</h3>
-              <div className="flex gap-2 mb-3">
-                <Input
-                  placeholder="Décrire le problème (max 150 car.)"
-                  maxLength={150}
-                  value={newIdsText}
-                  onChange={(e) => setNewIdsText(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && handleAddIds()}
-                  className="flex-1"
-                />
-                <Button size="sm" onClick={handleAddIds} disabled={addIds.isPending || !newIdsText.trim()} className="gap-1.5 shrink-0">
-                  <Plus className="h-4 w-4" /> Ajouter
-                </Button>
-              </div>
+              {!readOnly && (
+                <div className="flex gap-2 mb-3">
+                  <Input
+                    placeholder="Décrire le problème (max 150 car.)"
+                    maxLength={150}
+                    value={newIdsText}
+                    onChange={(e) => setNewIdsText(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleAddIds()}
+                    className="flex-1"
+                  />
+                  <Button size="sm" onClick={handleAddIds} disabled={addIds.isPending || !newIdsText.trim()} className="gap-1.5 shrink-0">
+                    <Plus className="h-4 w-4" /> Ajouter
+                  </Button>
+                </div>
+              )}
               {(idsQ.data ?? []).length === 0
                 ? <p className="text-sm text-muted-foreground italic">Aucun nouveau point capturé.</p>
                 : (
