@@ -645,6 +645,8 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                 : <CheckCircle className="h-4 w-4" />}
               Clôturer la réunion
             </Button>
+            </>
+            )}
           </div>
         );
 
