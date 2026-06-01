@@ -1,10 +1,10 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   ChevronLeft, ChevronRight, Mic, MicOff, Pause, Square,
   BarChart3, MessageSquare, Users, CheckSquare, Target,
   Lightbulb, FileText, CheckCircle, Loader2, Plus, X,
-  PenLine, AlertCircle, Check, Upload, UploadCloud,
+  PenLine, AlertCircle, Check, Upload, UploadCloud, Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,11 +22,19 @@ import {
   useConvertIdsToTodo,
   useConvertIdsToObjective,
   useIdsItemsForMonthlyPeriod,
+  useUpdateIdsStructure,
+  type DbIdsItem,
 } from "@/hooks/useIdsItems";
 import { useResponsabilityTemplates, useResponsabilityLogs } from "@/hooks/useResponsabilites";
 import { useCloseMeeting } from "@/hooks/useReports";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
 import { useUploadMeetingAudio } from "@/hooks/useAudioUpload";
+import {
+  useMeetingSummary,
+  useGenerateMeetingSummary,
+  useUpdateMeetingSummary,
+  useValidateMonthlySummary,
+} from "@/hooks/useMeetingSummary";
 import { toast } from "@/hooks/use-toast";
 
 /* ── helpers ── */
@@ -55,7 +63,7 @@ function formatDuration(s: number): string {
   return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
 }
 
-const SLIDE_META = [
+const LIVE_SLIDE_META = [
   { icon: BarChart3,     label: "KPI" },
   { icon: MessageSquare, label: "Check-in" },
   { icon: Users,         label: "Responsabilités" },
@@ -64,6 +72,13 @@ const SLIDE_META = [
   { icon: Lightbulb,     label: "IDS" },
   { icon: FileText,      label: "Notes" },
   { icon: CheckCircle,   label: "Clôture" },
+];
+
+const CLOSING_SLIDE_META = [
+  ...LIVE_SLIDE_META,
+  { icon: Sparkles,      label: "Synthèse IA" },
+  { icon: Lightbulb,     label: "IDS — Structuration" },
+  { icon: CheckCircle,   label: "Validation" },
 ];
 
 /* ── component ── */
@@ -75,12 +90,16 @@ interface Props {
   readOnly?: boolean;
 }
 
-export function MeetingView({ report, periodStart, periodEnd }: Props) {
+export function MeetingView({ report, periodStart, periodEnd, readOnly = false }: Props) {
   const navigate = useNavigate();
   const { spaId } = useAuth();
 
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [meetingPhase, setMeetingPhase] = useState<"live" | "closing">("live");
+  const SLIDE_META = meetingPhase === "closing" ? CLOSING_SLIDE_META : LIVE_SLIDE_META;
   const TOTAL = SLIDE_META.length;
+  const [editedSummary, setEditedSummary] = useState("");
+  const [editedDecisions, setEditedDecisions] = useState<string[]>([]);
   const [isPanelOpen, setIsPanelOpen] = useState(false);
   const [slideDecisions, setSlideDecisions] = useState<Record<number, string[]>>({});
   const [newDecision, setNewDecision] = useState("");
@@ -110,6 +129,35 @@ export function MeetingView({ report, periodStart, periodEnd }: Props) {
   const convertToTodo    = useConvertIdsToTodo(report.id);
   const convertToObjective = useConvertIdsToObjective(report.id);
   const closeMeeting     = useCloseMeeting();
+
+  // Hooks Phase 2
+  const summaryQ        = useMeetingSummary(meetingPhase === "closing" ? report.id : undefined);
+  const generateSummary = useGenerateMeetingSummary();
+  const updateSummary   = useUpdateMeetingSummary();
+  const validateMonthly = useValidateMonthlySummary();
+  const updateIdsStructure = useUpdateIdsStructure();
+
+  /* auto-start enregistrement dès le lancement de la réunion */
+  useEffect(() => {
+    if (!readOnly && recorder.status === "idle") {
+      recorder.startRecording().catch(() => {/* micro refusé — la réunion continue sans audio */});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* sync état local d'édition quand la synthèse IA arrive (init une seule fois) */
+  useEffect(() => {
+    if (summaryQ.data?.executive_summary && !editedSummary) {
+      setEditedSummary(summaryQ.data.executive_summary);
+    }
+    if (summaryQ.data?.key_actions && editedDecisions.length === 0) {
+      try {
+        const parsed = JSON.parse(summaryQ.data.key_actions);
+        if (Array.isArray(parsed)) setEditedDecisions(parsed);
+      } catch { /* ignore */ }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [summaryQ.data]);
 
   /* derived */
   const defsById = new Map((kpiDefsQ.data ?? []).map((d) => [d.id, d]));
@@ -156,6 +204,9 @@ export function MeetingView({ report, periodStart, periodEnd }: Props) {
 
   const handleClose = () => {
     setCloseConfirm(false);
+    if (recorder.status === "recording" || recorder.status === "paused") {
+      recorder.stopRecording();
+    }
     closeMeeting.mutate(
       {
         reportId: report.id,
@@ -166,8 +217,10 @@ export function MeetingView({ report, periodStart, periodEnd }: Props) {
       {
         onSuccess: (res) => {
           if (res.warning) toast({ title: "Réunion clôturée", description: res.warning });
-          else toast({ title: "Réunion clôturée" });
-          navigate("/post-reunion/" + report.id);
+          else toast({ title: "Réunion clôturée ✓", description: "Génération de la synthèse IA en cours…" });
+          setMeetingPhase("closing");
+          setCurrentSlide(8);
+          generateSummary.mutate({ reportId: report.id });
         },
         onError: (e) =>
           toast({ title: "Erreur", description: (e as Error).message, variant: "destructive" }),
@@ -633,6 +686,191 @@ export function MeetingView({ report, periodStart, periodEnd }: Props) {
           </div>
         );
 
+      /* ── 8 : Synthèse IA (Phase 2) ── */
+      case 8:
+        return (
+          <div className="space-y-6">
+            {(generateSummary.isPending || summaryQ.isLoading || !summaryQ.data?.executive_summary) ? (
+              <div className="flex flex-col items-center justify-center py-16 gap-4">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <p className="text-sm font-medium text-foreground">Génération de la synthèse IA en cours…</p>
+                <p className="text-xs text-muted-foreground">~10–15 secondes</p>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="text-sm font-semibold text-foreground">Résumé exécutif</h3>
+                    <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                      <Sparkles className="h-3 w-3" /> Synthèse IA
+                    </span>
+                  </div>
+                  <Textarea
+                    className="text-sm min-h-[140px]"
+                    value={editedSummary}
+                    onChange={(e) => {
+                      setEditedSummary(e.target.value);
+                      updateSummary.mutate({ reportId: report.id, newSummary: e.target.value, newKeyActions: editedDecisions });
+                    }}
+                    placeholder="Résumé de la réunion…"
+                  />
+                </div>
+                {editedDecisions.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-semibold text-foreground mb-3">Décisions clés</h3>
+                    <div className="space-y-2">
+                      {editedDecisions.map((d, i) => (
+                        <div key={i} className="flex items-start gap-2 bg-muted/40 rounded-lg px-3 py-2">
+                          <span className="text-primary mt-0.5 shrink-0">•</span>
+                          <p className="text-sm text-foreground">{d}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                <Button className="w-full gap-2" onClick={() => goTo(9)}>
+                  <CheckSquare className="h-4 w-4" /> Passer à la structuration IDS →
+                </Button>
+              </>
+            )}
+          </div>
+        );
+
+      /* ── 9 : IDS Structuration collaborative (Phase 2) ── */
+      case 9: {
+        const idsItems = (idsQ.data ?? []) as DbIdsItem[];
+        const incomplete = idsItems.filter((i) => !i.proposed_solution?.trim()).length;
+        return (
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                {idsItems.length} point{idsItems.length !== 1 ? "s" : ""} soulevé{idsItems.length !== 1 ? "s" : ""} en réunion
+              </p>
+              {incomplete > 0 && (
+                <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
+                  <AlertCircle className="h-3 w-3" /> {incomplete} sans solution
+                </span>
+              )}
+            </div>
+            {idsItems.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic">Aucun IDS capturé pendant la réunion.</p>
+            ) : (
+              <div className="space-y-4">
+                {idsItems.map((item, i) => (
+                  <div key={item.id} className="rounded-xl border border-border p-4 bg-card space-y-3">
+                    <div className="flex items-start gap-2">
+                      <span className="text-xs font-bold text-muted-foreground shrink-0 mt-0.5">#{i + 1}</span>
+                      <p className="text-sm font-medium text-foreground">{item.capture_text}</p>
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-foreground mb-1 block">Cause</label>
+                      <Textarea
+                        className="text-sm min-h-[50px]"
+                        placeholder="Cause principale (facultatif)"
+                        maxLength={300}
+                        defaultValue={item.root_cause ?? ""}
+                        onBlur={(e) => updateIdsStructure.mutate({ idsItemId: item.id, reportId: report.id, cause: e.target.value, solution: item.proposed_solution ?? "" })}
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs font-medium text-foreground mb-1 block">
+                        Solution <span className="text-amber-500">*</span>
+                      </label>
+                      <Textarea
+                        className="text-sm min-h-[50px]"
+                        placeholder="Solution retenue"
+                        maxLength={300}
+                        defaultValue={item.proposed_solution ?? ""}
+                        onBlur={(e) => updateIdsStructure.mutate({ idsItemId: item.id, reportId: report.id, cause: item.root_cause ?? "", solution: e.target.value })}
+                      />
+                    </div>
+                    <div className="flex gap-2 flex-wrap">
+                      {!item.converted_to_todo_id && (
+                        <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
+                          disabled={convertToTodo.isPending}
+                          onClick={() => convertToTodo.mutate(item)}>
+                          <CheckSquare className="h-3 w-3" /> → Todo
+                        </Button>
+                      )}
+                      {item.converted_to_todo_id && (
+                        <span className="inline-flex items-center gap-1 text-xs text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full font-medium">
+                          <Check className="h-3 w-3" /> Todo créé
+                        </span>
+                      )}
+                      {!item.converted_to_objective_id && (
+                        <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
+                          disabled={convertToObjective.isPending}
+                          onClick={() => convertToObjective.mutate(item)}>
+                          <Target className="h-3 w-3" /> → Objectif
+                        </Button>
+                      )}
+                      {item.converted_to_objective_id && (
+                        <span className="inline-flex items-center gap-1 text-xs text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full font-medium">
+                          <Check className="h-3 w-3" /> Objectif créé
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            <Button className="w-full gap-2" onClick={() => goTo(10)}>
+              <CheckCircle className="h-4 w-4" /> Passer à la validation →
+            </Button>
+          </div>
+        );
+      }
+
+      /* ── 10 : Validation (Phase 2) ── */
+      case 10: {
+        const idsItems = (idsQ.data ?? []) as DbIdsItem[];
+        const structured = idsItems.filter((i) => i.proposed_solution?.trim()).length;
+        const incomplete = idsItems.length - structured;
+        const hasSynthesis = !!summaryQ.data?.executive_summary;
+        return (
+          <div className="space-y-6">
+            <div className="grid grid-cols-3 gap-4">
+              <div className="rounded-xl border border-border p-4 bg-muted/30 text-center">
+                <p className={`text-2xl font-bold ${hasSynthesis ? "text-emerald-600" : "text-amber-600"}`}>
+                  {hasSynthesis ? "✓" : "…"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">Synthèse IA</p>
+              </div>
+              <div className="rounded-xl border border-border p-4 bg-muted/30 text-center">
+                <p className="text-2xl font-bold text-foreground">{structured}/{idsItems.length}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">IDS structurés</p>
+              </div>
+              <div className="rounded-xl border border-border p-4 bg-muted/30 text-center">
+                <p className="text-2xl font-bold text-foreground">{Object.values(slideDecisions).flat().length}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Décisions</p>
+              </div>
+            </div>
+            {incomplete > 0 && (
+              <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>{incomplete} IDS sans solution — le rapport sera tout de même diffusé.</span>
+              </div>
+            )}
+            {!hasSynthesis && (
+              <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-800">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>La synthèse IA est requise avant validation.</span>
+              </div>
+            )}
+            <Button
+              className="w-full gap-2 bg-teal-600 hover:bg-teal-700 text-white"
+              disabled={!hasSynthesis || validateMonthly.isPending}
+              onClick={() => validateMonthly.mutate({ reportId: report.id })}
+            >
+              {validateMonthly.isPending
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <CheckCircle className="h-4 w-4" />}
+              Valider et diffuser à la Direction
+            </Button>
+          </div>
+        );
+      }
+
       default:
         return null;
     }
@@ -662,9 +900,21 @@ export function MeetingView({ report, periodStart, periodEnd }: Props) {
               {currentSlide + 1} / {TOTAL} — {currentMeta.label}
             </span>
           </div>
-          {/* Center — recording */}
-          <div className="shrink-0">{renderRecordingControls()}</div>
-          {/* Right — nav + clôturer */}
+          {/* Center — badge selon phase */}
+          <div className="shrink-0">
+            {readOnly ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground border border-border">
+                📋 Présentation archivée — lecture seule
+              </span>
+            ) : meetingPhase === "closing" ? (
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
+                <Sparkles className="h-3 w-3" /> Phase 2 — Clôture
+              </span>
+            ) : (
+              renderRecordingControls()
+            )}
+          </div>
+          {/* Right — nav + action */}
           <div className="flex items-center gap-1.5 shrink-0">
             <Button variant="ghost" size="icon" className="h-8 w-8" disabled={currentSlide === 0} onClick={() => goTo(currentSlide - 1)}>
               <ChevronLeft className="h-4 w-4" />
@@ -672,14 +922,32 @@ export function MeetingView({ report, periodStart, periodEnd }: Props) {
             <Button variant="ghost" size="icon" className="h-8 w-8" disabled={currentSlide === TOTAL - 1} onClick={() => goTo(currentSlide + 1)}>
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <Button
-              size="sm" variant="outline"
-              className="gap-1.5 text-xs border-destructive text-destructive hover:bg-destructive/10 ml-1"
-              onClick={() => setCloseConfirm(true)}
-              disabled={closeMeeting.isPending}
-            >
-              <Square className="h-3.5 w-3.5" /> Clôturer
-            </Button>
+            {readOnly ? (
+              <Button
+                size="sm" variant="outline"
+                className="gap-1.5 text-xs ml-1"
+                onClick={() => navigate(report.state === "validated" ? "/rapports" : "/post-reunion/" + report.id)}
+              >
+                <ChevronLeft className="h-3.5 w-3.5" /> Fermer
+              </Button>
+            ) : meetingPhase === "closing" ? (
+              <Button
+                size="sm" variant="outline"
+                className="gap-1.5 text-xs ml-1"
+                onClick={() => navigate("/post-reunion/" + report.id)}
+              >
+                <ChevronLeft className="h-3.5 w-3.5" /> Voir le compte-rendu
+              </Button>
+            ) : (
+              <Button
+                size="sm" variant="outline"
+                className="gap-1.5 text-xs border-destructive text-destructive hover:bg-destructive/10 ml-1"
+                onClick={() => setCloseConfirm(true)}
+                disabled={closeMeeting.isPending}
+              >
+                <Square className="h-3.5 w-3.5" /> Clôturer
+              </Button>
+            )}
           </div>
         </div>
         {/* Progress bar */}
