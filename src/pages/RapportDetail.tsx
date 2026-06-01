@@ -43,12 +43,7 @@ export default function RapportDetail() {
   const navigate = useNavigate();
   const { data: row, isLoading, error } = useReport(id);
 
-  const state = row?.status;
-  useEffect(() => {
-    if (state === "post_meeting_generated" && id) {
-      navigate("/post-reunion/" + id, { replace: true });
-    }
-  }, [state, id, navigate]);
+
 
   if (isLoading) {
     return (
