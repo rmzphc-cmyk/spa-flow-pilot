@@ -204,6 +204,9 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
 
   const handleClose = () => {
     setCloseConfirm(false);
+    if (recorder.status === "recording" || recorder.status === "paused") {
+      recorder.stopRecording();
+    }
     closeMeeting.mutate(
       {
         reportId: report.id,
@@ -214,8 +217,10 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
       {
         onSuccess: (res) => {
           if (res.warning) toast({ title: "Réunion clôturée", description: res.warning });
-          else toast({ title: "Réunion clôturée" });
-          navigate("/post-reunion/" + report.id);
+          else toast({ title: "Réunion clôturée ✓", description: "Génération de la synthèse IA en cours…" });
+          setMeetingPhase("closing");
+          setCurrentSlide(8);
+          generateSummary.mutate({ reportId: report.id });
         },
         onError: (e) =>
           toast({ title: "Erreur", description: (e as Error).message, variant: "destructive" }),
