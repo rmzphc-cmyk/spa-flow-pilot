@@ -1,6 +1,6 @@
-import { useMemo, useCallback, useEffect } from "react";
+import { useMemo, useCallback } from "react";
 import { useIsMutating } from "@tanstack/react-query";
-import { useParams, useOutletContext, useNavigate } from "react-router-dom";
+import { useParams, useOutletContext } from "react-router-dom";
 import { ReportHeader } from "@/components/rapport/ReportHeader";
 import { SectionKpi } from "@/components/rapport/SectionKpi";
 import { SectionCheckin } from "@/components/rapport/SectionCheckin";
@@ -40,15 +40,9 @@ const monthlySections: SectionId[] = ["kpi", "checkin", "responsabilites", "todo
 
 export default function RapportDetail() {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
   const { data: row, isLoading, error } = useReport(id);
 
-  const state = row?.status;
-  useEffect(() => {
-    if (state === "post_meeting_generated" && id) {
-      navigate("/post-reunion/" + id, { replace: true });
-    }
-  }, [state, id, navigate]);
+
 
   if (isLoading) {
     return (
@@ -74,7 +68,12 @@ export default function RapportDetail() {
     return <MeetingView report={report} periodStart={row.period_start} periodEnd={row.period_end} />;
   }
 
-  // PREPARATION MODE (incl. validated read-only) — keep existing editable layout
+  // REPLAY MODE — lecture seule après clôture
+  if (report.state === "post_meeting_generated" || report.state === "validated") {
+    return <MeetingView report={report} periodStart={row.period_start} periodEnd={row.period_end} readOnly />;
+  }
+
+  // PREPARATION MODE — draft_preparation + ready_for_review
   return <PreparationMode report={report} periodStart={row.period_start} periodEnd={row.period_end} />;
 }
 
