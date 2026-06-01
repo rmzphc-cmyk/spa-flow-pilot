@@ -16,8 +16,8 @@ Deno.serve(async (req) => {
     const report = access.report;
 
     if (report.cycle_type !== "monthly") return json({ error: "Rapport non mensuel." }, 400);
-    if (report.status !== "ready_for_review") {
-      return json({ error: "Le rapport n'est pas en état ready_for_review." }, 409);
+    if (!["draft_preparation", "ready_for_review"].includes(report.status)) {
+      return json({ error: "Le rapport doit être en préparation ou prêt pour démarrer la réunion." }, 409);
     }
 
     const now = new Date().toISOString();
