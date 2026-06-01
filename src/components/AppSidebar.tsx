@@ -13,7 +13,7 @@ import {
   X,
   LayoutDashboard,
   ChevronRight,
-  Send,
+  
   Eye,
   ArrowLeft,
   PenLine,
@@ -320,12 +320,6 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
             })}
           </nav>
 
-          <div className="px-3 mt-4">
-            <Button className="w-full gap-1.5 lg:flex hidden" size="sm">
-              <Send className="h-4 w-4" />
-              <span>{isWeekly ? "Valider et envoyer" : t("nav.submitForReview")}</span>
-            </Button>
-          </div>
         </>
       )}
 
