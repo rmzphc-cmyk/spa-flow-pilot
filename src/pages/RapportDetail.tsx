@@ -6,6 +6,7 @@ import { SectionKpi } from "@/components/rapport/SectionKpi";
 import { SectionCheckin } from "@/components/rapport/SectionCheckin";
 import { SectionCheckinWeekly } from "@/components/rapport/SectionCheckinWeekly";
 import { SectionResponsabilites } from "@/components/rapport/SectionResponsabilites";
+import { SectionResponsabilitesWeekly } from "@/components/rapport/SectionResponsabilitesWeekly";
 import { SectionTodo } from "@/components/rapport/SectionTodo";
 import { SectionTodoWeekly } from "@/components/rapport/SectionTodoWeekly";
 import { SectionObjectifs } from "@/components/rapport/SectionObjectifs";
@@ -35,7 +36,7 @@ interface OutletContext {
   reportType: ReportType;
 }
 
-const weeklySections: SectionId[] = ["kpi", "checkin", "todo", "ids", "notes"];
+const weeklySections: SectionId[] = ["kpi", "checkin", "responsabilites", "todo", "ids", "notes"];
 const monthlySections: SectionId[] = ["kpi", "checkin", "responsabilites", "todo", "objectifs", "ids", "notes"];
 
 export default function RapportDetail() {
@@ -232,6 +233,13 @@ function PreparationMode({ report, periodStart, periodEnd }: { report: ReportRec
       )}
       {activeSection === "checkin" && isWeekly && (
         <SectionCheckinWeekly reportId={report.id} onStatusChange={onCheckinStatusChange} isLocked={isLockedForSave} />
+      )}
+      {activeSection === "responsabilites" && isWeekly && (
+        <SectionResponsabilitesWeekly
+          reportId={report.id}
+          isLocked={isLockedForSave}
+          onStatusChange={onResponsabilitesStatusChange}
+        />
       )}
       {activeSection === "responsabilites" && !isWeekly && (
         <SectionResponsabilites reportId={report.id} reportType={report.type} onStatusChange={onResponsabilitesStatusChange} />

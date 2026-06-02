@@ -47,7 +47,7 @@ const allReportSections: ReportSection[] = [
   { id: "cloture", labelKey: "sections.cloture", icon: Lock },
 ];
 
-const weeklySectionIds: SectionId[] = ["kpi", "checkin", "todo", "ids", "notes"];
+const weeklySectionIds: SectionId[] = ["kpi", "checkin", "responsabilites", "todo", "ids", "notes"];
 
 const weeklyLabelOverrides: Partial<Record<SectionId, string>> = {
   checkin: "Check-in rapide",
