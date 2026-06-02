@@ -642,6 +642,30 @@ export default function Dashboard() {
   const { data: objectives = [] } = useObjectives(spaId);
   const { data: respLogs } = useResponsabilityLogs(lastValidatedReportId);
 
+
+  // Responsabilités : moyenne des completion_rate du dernier rapport validé
+  const respCompletionPct = useMemo(() => {
+    if (!respLogs) return null
+    const values = Object.values(respLogs)
+      .map(l => l.completion_rate)
+      .filter((v): v is number => v != null)
+    if (values.length === 0) return null
+    return Math.round(values.reduce((a, b) => a + b, 0) / values.length)
+  }, [respLogs])
+
+  // To-do : faits vs total (hors deferred)
+  const todosDoneCount = useMemo(
+    () => todos.filter(t => t.status === 'done').length,
+    [todos]
+  )
+  const todosActiveCount = useMemo(
+    () => todos.filter(t => t.status !== 'deferred').length,
+    [todos]
+  )
+
+  // Objectifs : actifs (déjà filtrés par le hook) / max 3
+  const objectivesActiveCount = objectives.length
+
   // 1. Overdue todos
   const overdueTodos = useMemo<OverdueTodo[]>(() => {
     const today = new Date();
