@@ -7,6 +7,11 @@ import { useCheckin, parseKeyContext } from "@/hooks/useCheckin";
 import { useIdsItems } from "@/hooks/useIdsItems";
 import { useTodos, parseTodoDescription } from "@/hooks/useTodos";
 import { useMeetingSummary } from "@/hooks/useMeetingSummary";
+import {
+  useResponsabilityTemplates,
+  useResponsabilityLogs,
+  calcWeeklyExpected,
+} from "@/hooks/useResponsabilites";
 
 export interface WeeklyPdfKpi {
   name: string;
