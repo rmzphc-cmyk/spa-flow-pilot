@@ -721,7 +721,12 @@ export default function Dashboard() {
       <OverdueAlert todos={overdueTodos} />
       {currentReport ? <CurrentReportCard report={currentReport} /> : <NoCurrentReportCard />}
       <AiBriefCard items={aiBriefItems} />
-      <QuickMetrics />
+      <QuickMetrics
+        respCompletionPct={respCompletionPct}
+        todosDone={todosDoneCount}
+        todosTotal={todosActiveCount}
+        objectivesActive={objectivesActiveCount}
+      />
       <RecentActivity items={recentActivity} />
     </>
   );
