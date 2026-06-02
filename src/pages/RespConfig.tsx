@@ -39,6 +39,7 @@ import {
   useAddRespTemplate,
   useUpdateRespTemplate,
   useSoftDeleteRespTemplate,
+  calcMonthlyExpected,
   type RespTemplateFullRow,
 } from "@/hooks/useResponsabilites";
 
@@ -52,6 +53,34 @@ const CATEGORIES = [
 ] as const;
 type Category = (typeof CATEGORIES)[number];
 
+const FREQ_LABEL: Record<string, { label: string; cls: string; unit: string }> = {
+  daily: { label: "Journalier", cls: "bg-purple-100 text-purple-700", unit: "jour" },
+  weekly: { label: "Hebdo", cls: "bg-blue-100 text-blue-700", unit: "sem" },
+  biweekly: { label: "Bimensuel", cls: "bg-cyan-100 text-cyan-700", unit: "quinz." },
+  monthly: { label: "Mensuel", cls: "bg-slate-100 text-slate-600", unit: "mois" },
+};
+
+function FreqBadges({ frequency, expectedCount }: { frequency: string | null; expectedCount: number | null }) {
+  const freq = frequency ?? "monthly";
+  const count = expectedCount ?? 1;
+  const meta = FREQ_LABEL[freq] ?? FREQ_LABEL.monthly;
+  const total = calcMonthlyExpected(freq, count);
+  return (
+    <div className="flex gap-1 flex-wrap mt-1">
+      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${meta.cls}`}>
+        {meta.label}
+      </span>
+      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+        × {count}/{meta.unit}
+      </span>
+      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-teal-50 text-teal-700">
+        = {total}/mois
+      </span>
+    </div>
+  );
+}
+
+
 type TabKey = "templates" | "calendrier";
 
 interface EditingTemplate {
@@ -60,6 +89,8 @@ interface EditingTemplate {
   description: string;
   category: Category;
   is_active: boolean;
+  frequency: string;
+  expected_count: number;
 }
 
 const EMPTY_EDIT: EditingTemplate = {
@@ -68,6 +99,8 @@ const EMPTY_EDIT: EditingTemplate = {
   description: "",
   category: "Opérationnel",
   is_active: true,
+  frequency: "monthly",
+  expected_count: 1,
 };
 
 export default function RespConfig() {
@@ -117,6 +150,8 @@ export default function RespConfig() {
       description: t.description ?? "",
       category: (CATEGORIES.includes(t.category as Category) ? t.category : "Opérationnel") as Category,
       is_active: t.is_active,
+      frequency: t.frequency ?? "monthly",
+      expected_count: t.expected_count ?? 1,
     });
     setSheetOpen(true);
   };
@@ -127,6 +162,8 @@ export default function RespConfig() {
       title: editing.title.trim(),
       description: editing.description.trim() || null,
       category: editing.category,
+      frequency: editing.frequency,
+      expected_count: editing.expected_count,
     };
     if (editing.id) {
       updateMut.mutate(
@@ -316,6 +353,7 @@ export default function RespConfig() {
                       <tr key={t.id} className="border-t border-border">
                         <td className="py-2 px-4">
                           <div className="font-medium">{t.title}</div>
+                          <FreqBadges frequency={t.frequency} expectedCount={t.expected_count} />
                           {t.description && (
                             <div className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
                               {t.description}
@@ -585,6 +623,58 @@ export default function RespConfig() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">Fréquence</Label>
+              <Select
+                value={editing.frequency}
+                onValueChange={(v) =>
+                  setEditing((p) => ({ ...p, frequency: v, expected_count: p.expected_count }))
+                }
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="daily">Journalier</SelectItem>
+                  <SelectItem value="weekly">Hebdomadaire</SelectItem>
+                  <SelectItem value="biweekly">Bimensuel</SelectItem>
+                  <SelectItem value="monthly">Mensuel</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">
+                {editing.frequency === "daily"
+                  ? "Nombre par jour"
+                  : editing.frequency === "weekly"
+                    ? "Nombre par semaine"
+                    : editing.frequency === "biweekly"
+                      ? "Nombre par quinzaine"
+                      : "Nombre par mois"}
+              </Label>
+              <Input
+                type="number"
+                min={1}
+                value={editing.expected_count}
+                onChange={(e) =>
+                  setEditing((p) => ({
+                    ...p,
+                    expected_count: Math.max(1, Number(e.target.value) || 1),
+                  }))
+                }
+                className="mt-1"
+              />
+              {(() => {
+                const total = calcMonthlyExpected(editing.frequency, editing.expected_count);
+                return (
+                  <p className="text-xs text-muted-foreground italic mt-1">
+                    = {total} attendu{total > 1 ? "s" : ""} par mois
+                  </p>
+                );
+              })()}
             </div>
 
             <div className="flex items-center justify-between border-t border-border pt-4">
