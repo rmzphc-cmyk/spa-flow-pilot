@@ -7,6 +7,11 @@ import { useCheckin, parseKeyContext } from "@/hooks/useCheckin";
 import { useIdsItems } from "@/hooks/useIdsItems";
 import { useTodos, parseTodoDescription } from "@/hooks/useTodos";
 import { useMeetingSummary } from "@/hooks/useMeetingSummary";
+import {
+  useResponsabilityTemplates,
+  useResponsabilityLogs,
+  calcWeeklyExpected,
+} from "@/hooks/useResponsabilites";
 
 export interface WeeklyPdfKpi {
   name: string;
@@ -20,6 +25,15 @@ export interface WeeklyPdfIds {
   text: string;
   convertedToTodo: boolean;
   convertedToObjectif: boolean;
+}
+
+export interface WeeklyPdfResponsibility {
+  title: string;
+  frequency: string;
+  weeklyExpected: number;
+  actualCount: number | null;
+  completionRate: number | null;
+  comment: string | null;
 }
 
 export interface WeeklyPdfTodoDone {
@@ -60,6 +74,7 @@ export interface WeeklyPdfData {
   kpis: WeeklyPdfKpi[];
   moodScore: number;
   teamNote: string;
+  responsibilities: WeeklyPdfResponsibility[];
   ids: WeeklyPdfIds[];
   todosDone: WeeklyPdfTodoDone[];
   todosActive: WeeklyPdfTodoActive[];
@@ -120,6 +135,8 @@ export function useWeeklyPdfData(
   const idsQ = useIdsItems(reportId);
   const todosQ = useTodos(reportId, spaId);
   const summaryQ = useMeetingSummary(reportId);
+  const templatesQ = useResponsabilityTemplates(spaId);
+  const logsQ = useResponsabilityLogs(reportId);
 
   const isLoading =
     spaQ.isLoading ||
@@ -128,7 +145,9 @@ export function useWeeklyPdfData(
     checkinQ.isLoading ||
     idsQ.isLoading ||
     todosQ.isLoading ||
-    summaryQ.isLoading;
+    summaryQ.isLoading ||
+    templatesQ.isLoading ||
+    logsQ.isLoading;
 
   if (isLoading) return { data: null, isLoading: true };
 
@@ -213,6 +232,21 @@ export function useWeeklyPdfData(
       };
     });
 
+  const responsibilities: WeeklyPdfResponsibility[] = (templatesQ.data ?? [])
+    .filter((t) => t.frequency === "daily" || t.frequency === "weekly")
+    .map((t) => {
+      const weeklyExpected = calcWeeklyExpected(t.frequency, t.expected_count);
+      const log = (logsQ.data ?? {})[t.id];
+      return {
+        title: t.title,
+        frequency: t.frequency,
+        weeklyExpected,
+        actualCount: log?.actual_count ?? null,
+        completionRate: log?.completion_rate ?? null,
+        comment: log?.comment ?? null,
+      };
+    });
+
   const data: WeeklyPdfData = {
     reportLabel,
     reportPeriod,
@@ -228,6 +262,7 @@ export function useWeeklyPdfData(
     kpis,
     moodScore: checkinQ.data?.mood_score ?? 0,
     teamNote: kc.note ?? "",
+    responsibilities,
     ids,
     todosDone,
     todosActive,

@@ -1,5 +1,5 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
-import type { WeeklyPdfData, WeeklyPdfTodoDone, WeeklyPdfTodoActive, WeeklyPdfTodoDeferred } from "@/hooks/useWeeklyPdfData";
+import type { WeeklyPdfData, WeeklyPdfResponsibility, WeeklyPdfTodoDone, WeeklyPdfTodoActive, WeeklyPdfTodoDeferred } from "@/hooks/useWeeklyPdfData";
 
 const TEAL_DARK = "#006B6B";
 const TEAL_LIGHT = "#E0F4F4";
@@ -137,6 +137,31 @@ const styles = StyleSheet.create({
 
   notesBox: { marginTop: 8, backgroundColor: BLUE_BG, padding: 10, borderRadius: 6 },
   notesText: { marginTop: 6, fontSize: 8, color: TEXT_DARK, lineHeight: 1.4 },
+
+  respBox: { marginTop: 8 },
+  respRow: {
+    flexDirection: "row",
+    paddingVertical: 5,
+    paddingHorizontal: 6,
+    alignItems: "center",
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#E5E7EB",
+  },
+  respTitle: { flex: 3, fontSize: 8, color: TEXT_DARK },
+  respBadgeWrap: { flex: 1, flexDirection: "row" },
+  respCount: { flex: 1.5, fontSize: 8, color: TEXT_MUTED },
+  respPercent: {
+    flex: 1,
+    fontSize: 9,
+    fontFamily: "Helvetica-Bold",
+    textAlign: "right",
+  },
+  respEmpty: {
+    fontSize: 8,
+    color: TEXT_MUTED,
+    fontFamily: "Helvetica-Oblique",
+    marginTop: 6,
+  },
 
   footer: {
     position: "absolute",
@@ -320,6 +345,54 @@ export function WeeklyReportPdf({ data }: Props) {
               {data.teamNote || "Aucun commentaire cette semaine."}
             </Text>
           </View>
+
+          {/* RESPONSABILITÉS */}
+          {data.responsibilities.length > 0 && (
+            <View style={styles.respBox}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionHeaderText}>RESPONSABILITÉS</Text>
+              </View>
+              {data.responsibilities.map((r: WeeklyPdfResponsibility, i: number) => {
+                const pctColor =
+                  r.completionRate !== null
+                    ? r.completionRate >= 80
+                      ? BIEN
+                      : r.completionRate >= 50
+                        ? CORRECT
+                        : INSUFFISANT
+                    : TEXT_MUTED;
+                const freqLabel = r.frequency === "daily" ? "Journalier" : "Hebdo";
+                const freqBg = r.frequency === "daily" ? PURPLE_BG : BLUE_BG;
+                const freqText = r.frequency === "daily" ? PURPLE_TEXT : BLUE_TEXT;
+                return (
+                  <View key={i} style={styles.respRow}>
+                    <Text style={styles.respTitle}>{r.title}</Text>
+                    <View style={styles.respBadgeWrap}>
+                      <View style={[styles.badge, { backgroundColor: freqBg }]}>
+                        <Text style={[styles.badgeText, { color: freqText }]}>
+                          {freqLabel}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={styles.respCount}>
+                      {r.actualCount !== null
+                        ? `${r.actualCount} / ${r.weeklyExpected}`
+                        : `— / ${r.weeklyExpected}`}{" "}
+                      cette semaine
+                    </Text>
+                    <Text style={[styles.respPercent, { color: pctColor }]}>
+                      {r.completionRate !== null ? `${r.completionRate}%` : "—%"}
+                    </Text>
+                  </View>
+                );
+              })}
+              {data.responsibilities.every((r) => r.actualCount === null) && (
+                <Text style={styles.respEmpty}>
+                  Aucune donnée saisie cette semaine
+                </Text>
+              )}
+            </View>
+          )}
 
           {/* IDS */}
           {data.ids.length > 0 && (
