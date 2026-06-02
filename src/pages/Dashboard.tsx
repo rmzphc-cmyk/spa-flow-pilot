@@ -221,7 +221,14 @@ function AiBriefCard({ items }: { items: AiBriefItem[] }) {
   );
 }
 
-function QuickMetrics() {
+interface QuickMetricsProps {
+  respCompletionPct: number | null
+  todosDone: number
+  todosTotal: number
+  objectivesActive: number
+}
+
+function QuickMetrics({ respCompletionPct, todosDone, todosTotal, objectivesActive }: QuickMetricsProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
       {/* Responsabilités */}
@@ -232,11 +239,13 @@ function QuickMetrics() {
             <circle
               cx="18" cy="18" r="15.5" fill="none" strokeWidth="3"
               className="stroke-primary"
-              strokeDasharray={`${0.75 * 97.4} ${97.4}`}
+              strokeDasharray={`${((respCompletionPct ?? 0) / 100) * 97.4} ${97.4}`}
               strokeLinecap="round"
             />
           </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-foreground">75%</span>
+          <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-foreground">
+            {respCompletionPct !== null ? `${respCompletionPct}%` : '—'}
+          </span>
         </div>
         <div>
           <p className="text-sm font-medium text-foreground">Responsabilités</p>
@@ -252,34 +261,39 @@ function QuickMetrics() {
             <circle
               cx="18" cy="18" r="15.5" fill="none" strokeWidth="3"
               className="stroke-primary"
-              strokeDasharray={`${(5 / 8) * 97.4} ${97.4}`}
+              strokeDasharray={`${(todosTotal > 0 ? todosDone / todosTotal : 0) * 97.4} ${97.4}`}
               strokeLinecap="round"
             />
           </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-foreground">5/8</span>
+          <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-foreground">
+            {todosTotal > 0 ? `${todosDone}/${todosTotal}` : '0'}
+          </span>
         </div>
         <div>
           <p className="text-sm font-medium text-foreground">To-do actifs</p>
-          <p className="text-xs text-muted-foreground">réalisés ce cycle</p>
+          <p className="text-xs text-muted-foreground">faits / total actifs</p>
         </div>
       </div>
 
       {/* Objectifs */}
       <div className="bg-card rounded-xl shadow-sm border border-border p-5 flex items-center gap-4">
         <div className="flex items-center gap-1.5 shrink-0">
-          {[true, true, false].map((active, i) => (
-            <div
-              key={i}
-              className={`h-10 w-10 rounded-full flex items-center justify-center text-lg ${
-                active ? "bg-emerald-100" : "bg-muted"
-              }`}
-            >
-              <Target className={`h-5 w-5 ${active ? "text-emerald-700" : "text-muted-foreground"}`} />
-            </div>
-          ))}
+          {[0, 1, 2].map((i) => {
+            const active = i < objectivesActive
+            return (
+              <div
+                key={i}
+                className={`h-10 w-10 rounded-full flex items-center justify-center text-lg ${
+                  active ? "bg-emerald-100" : "bg-muted"
+                }`}
+              >
+                <Target className={`h-5 w-5 ${active ? "text-emerald-700" : "text-muted-foreground"}`} />
+              </div>
+            )
+          })}
         </div>
         <div>
-          <p className="text-sm font-medium text-foreground">2/3 objectifs</p>
+          <p className="text-sm font-medium text-foreground">{objectivesActive}/3 objectifs</p>
           <p className="text-xs text-muted-foreground">actifs ce mois</p>
         </div>
       </div>
