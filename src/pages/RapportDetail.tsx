@@ -36,7 +36,7 @@ interface OutletContext {
 }
 
 const weeklySections: SectionId[] = ["kpi", "checkin", "todo", "ids", "notes"];
-const monthlySections: SectionId[] = ["kpi", "checkin", "responsabilites", "todo", "objectifs", "ids", "notes", "cloture"];
+const monthlySections: SectionId[] = ["kpi", "checkin", "responsabilites", "todo", "objectifs", "ids", "notes"];
 
 export default function RapportDetail() {
   const { id } = useParams<{ id: string }>();
