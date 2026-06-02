@@ -242,7 +242,12 @@ function PreparationMode({ report, periodStart, periodEnd }: { report: ReportRec
         />
       )}
       {activeSection === "responsabilites" && !isWeekly && (
-        <SectionResponsabilites reportId={report.id} reportType={report.type} onStatusChange={onResponsabilitesStatusChange} />
+        <SectionResponsabilites
+          reportId={report.id}
+          periodStart={periodStart}
+          isLocked={isLockedForSave}
+          onStatusChange={onResponsabilitesStatusChange}
+        />
       )}
       {activeSection === "todo" && !isWeekly && <SectionTodo reportId={report.id} />}
       {activeSection === "todo" && isWeekly && (
