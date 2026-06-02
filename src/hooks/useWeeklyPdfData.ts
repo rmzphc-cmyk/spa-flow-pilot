@@ -232,6 +232,21 @@ export function useWeeklyPdfData(
       };
     });
 
+  const responsibilities: WeeklyPdfResponsibility[] = (templatesQ.data ?? [])
+    .filter((t) => t.frequency === "daily" || t.frequency === "weekly")
+    .map((t) => {
+      const weeklyExpected = calcWeeklyExpected(t.frequency, t.expected_count);
+      const log = (logsQ.data ?? {})[t.id];
+      return {
+        title: t.title,
+        frequency: t.frequency,
+        weeklyExpected,
+        actualCount: log?.actual_count ?? null,
+        completionRate: log?.completion_rate ?? null,
+        comment: log?.comment ?? null,
+      };
+    });
+
   const data: WeeklyPdfData = {
     reportLabel,
     reportPeriod,
@@ -247,6 +262,7 @@ export function useWeeklyPdfData(
     kpis,
     moodScore: checkinQ.data?.mood_score ?? 0,
     teamNote: kc.note ?? "",
+    responsibilities,
     ids,
     todosDone,
     todosActive,
