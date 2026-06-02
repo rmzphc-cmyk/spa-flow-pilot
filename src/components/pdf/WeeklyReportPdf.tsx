@@ -138,6 +138,31 @@ const styles = StyleSheet.create({
   notesBox: { marginTop: 8, backgroundColor: BLUE_BG, padding: 10, borderRadius: 6 },
   notesText: { marginTop: 6, fontSize: 8, color: TEXT_DARK, lineHeight: 1.4 },
 
+  respBox: { marginTop: 8 },
+  respRow: {
+    flexDirection: "row",
+    paddingVertical: 5,
+    paddingHorizontal: 6,
+    alignItems: "center",
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#E5E7EB",
+  },
+  respTitle: { flex: 3, fontSize: 8, color: TEXT_DARK },
+  respBadgeWrap: { flex: 1, flexDirection: "row" },
+  respCount: { flex: 1.5, fontSize: 8, color: TEXT_MUTED },
+  respPercent: {
+    flex: 1,
+    fontSize: 9,
+    fontFamily: "Helvetica-Bold",
+    textAlign: "right",
+  },
+  respEmpty: {
+    fontSize: 8,
+    color: TEXT_MUTED,
+    fontFamily: "Helvetica-Oblique",
+    marginTop: 6,
+  },
+
   footer: {
     position: "absolute",
     bottom: 0,
