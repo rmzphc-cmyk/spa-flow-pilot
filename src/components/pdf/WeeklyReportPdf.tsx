@@ -346,6 +346,54 @@ export function WeeklyReportPdf({ data }: Props) {
             </Text>
           </View>
 
+          {/* RESPONSABILITÉS */}
+          {data.responsibilities.length > 0 && (
+            <View style={styles.respBox}>
+              <View style={styles.sectionHeader}>
+                <Text style={styles.sectionHeaderText}>RESPONSABILITÉS</Text>
+              </View>
+              {data.responsibilities.map((r: WeeklyPdfResponsibility, i: number) => {
+                const pctColor =
+                  r.completionRate !== null
+                    ? r.completionRate >= 80
+                      ? BIEN
+                      : r.completionRate >= 50
+                        ? CORRECT
+                        : INSUFFISANT
+                    : TEXT_MUTED;
+                const freqLabel = r.frequency === "daily" ? "Journalier" : "Hebdo";
+                const freqBg = r.frequency === "daily" ? PURPLE_BG : BLUE_BG;
+                const freqText = r.frequency === "daily" ? PURPLE_TEXT : BLUE_TEXT;
+                return (
+                  <View key={i} style={styles.respRow}>
+                    <Text style={styles.respTitle}>{r.title}</Text>
+                    <View style={styles.respBadgeWrap}>
+                      <View style={[styles.badge, { backgroundColor: freqBg }]}>
+                        <Text style={[styles.badgeText, { color: freqText }]}>
+                          {freqLabel}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text style={styles.respCount}>
+                      {r.actualCount !== null
+                        ? `${r.actualCount} / ${r.weeklyExpected}`
+                        : `— / ${r.weeklyExpected}`}{" "}
+                      cette semaine
+                    </Text>
+                    <Text style={[styles.respPercent, { color: pctColor }]}>
+                      {r.completionRate !== null ? `${r.completionRate}%` : "—%"}
+                    </Text>
+                  </View>
+                );
+              })}
+              {data.responsibilities.every((r) => r.actualCount === null) && (
+                <Text style={styles.respEmpty}>
+                  Aucune donnée saisie cette semaine
+                </Text>
+              )}
+            </View>
+          )}
+
           {/* IDS */}
           {data.ids.length > 0 && (
             <View style={styles.idsBox}>
