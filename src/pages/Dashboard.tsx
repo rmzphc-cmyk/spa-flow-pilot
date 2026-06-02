@@ -640,6 +640,7 @@ export default function Dashboard() {
   const { data: todos = [] } = useTodos("dashboard-overdue", spaId);
   const { data: kpiEntries = [] } = useKpiEntries(lastValidatedReportId);
   const { data: objectives = [] } = useObjectives(spaId);
+  const { data: respLogs } = useResponsabilityLogs(lastValidatedReportId);
 
   // 1. Overdue todos
   const overdueTodos = useMemo<OverdueTodo[]>(() => {
