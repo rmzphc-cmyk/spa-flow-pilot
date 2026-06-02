@@ -27,6 +27,15 @@ export interface WeeklyPdfIds {
   convertedToObjectif: boolean;
 }
 
+export interface WeeklyPdfResponsibility {
+  title: string;
+  frequency: string;
+  weeklyExpected: number;
+  actualCount: number | null;
+  completionRate: number | null;
+  comment: string | null;
+}
+
 export interface WeeklyPdfTodoDone {
   title: string;
   deadline: string;
@@ -65,6 +74,7 @@ export interface WeeklyPdfData {
   kpis: WeeklyPdfKpi[];
   moodScore: number;
   teamNote: string;
+  responsibilities: WeeklyPdfResponsibility[];
   ids: WeeklyPdfIds[];
   todosDone: WeeklyPdfTodoDone[];
   todosActive: WeeklyPdfTodoActive[];
