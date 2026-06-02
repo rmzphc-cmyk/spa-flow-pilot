@@ -53,6 +53,34 @@ const CATEGORIES = [
 ] as const;
 type Category = (typeof CATEGORIES)[number];
 
+const FREQ_LABEL: Record<string, { label: string; cls: string; unit: string }> = {
+  daily: { label: "Journalier", cls: "bg-purple-100 text-purple-700", unit: "jour" },
+  weekly: { label: "Hebdo", cls: "bg-blue-100 text-blue-700", unit: "sem" },
+  biweekly: { label: "Bimensuel", cls: "bg-cyan-100 text-cyan-700", unit: "quinz." },
+  monthly: { label: "Mensuel", cls: "bg-slate-100 text-slate-600", unit: "mois" },
+};
+
+function FreqBadges({ frequency, expectedCount }: { frequency: string | null; expectedCount: number | null }) {
+  const freq = frequency ?? "monthly";
+  const count = expectedCount ?? 1;
+  const meta = FREQ_LABEL[freq] ?? FREQ_LABEL.monthly;
+  const total = calcMonthlyExpected(freq, count);
+  return (
+    <div className="flex gap-1 flex-wrap mt-1">
+      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${meta.cls}`}>
+        {meta.label}
+      </span>
+      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+        × {count}/{meta.unit}
+      </span>
+      <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-teal-50 text-teal-700">
+        = {total}/mois
+      </span>
+    </div>
+  );
+}
+
+
 type TabKey = "templates" | "calendrier";
 
 interface EditingTemplate {
