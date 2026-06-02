@@ -8,6 +8,8 @@ export interface ResponsabilityTemplateRow {
   description: string | null;
   category: string | null;
   display_order: number;
+  frequency: string;
+  expected_count: number;
 }
 
 export interface ResponsabilityLogRow {
@@ -16,6 +18,7 @@ export interface ResponsabilityLogRow {
   responsibility_template_id: string;
   completion_rate: number;
   comment: string | null;
+  actual_count: number | null;
 }
 
 export function useResponsabilityTemplates(spaId: string | null) {
@@ -25,7 +28,7 @@ export function useResponsabilityTemplates(spaId: string | null) {
     queryFn: async (): Promise<ResponsabilityTemplateRow[]> => {
       const { data, error } = await supabase
         .from("responsibility_templates")
-        .select("id, title, description, category, display_order")
+        .select("id, title, description, category, display_order, frequency, expected_count")
         .eq("spa_id", spaId!)
         .eq("is_active", true)
         .order("display_order", { ascending: true });
@@ -36,7 +39,11 @@ export function useResponsabilityTemplates(spaId: string | null) {
 }
 
 export interface ResponsabilityLogMap {
-  [templateId: string]: { completion_rate: number; comment: string | null };
+  [templateId: string]: {
+    completion_rate: number;
+    comment: string | null;
+    actual_count: number | null;
+  };
 }
 
 export function useResponsabilityLogs(reportId: string | undefined) {
@@ -46,7 +53,7 @@ export function useResponsabilityLogs(reportId: string | undefined) {
     queryFn: async (): Promise<ResponsabilityLogMap> => {
       const { data, error } = await supabase
         .from("responsibility_logs")
-        .select("responsibility_template_id, completion_rate, comment")
+        .select("responsibility_template_id, completion_rate, comment, actual_count")
         .eq("report_id", reportId!);
       if (error) throw error;
       const map: ResponsabilityLogMap = {};
@@ -54,6 +61,7 @@ export function useResponsabilityLogs(reportId: string | undefined) {
         map[(row as ResponsabilityLogRow).responsibility_template_id] = {
           completion_rate: (row as ResponsabilityLogRow).completion_rate,
           comment: (row as ResponsabilityLogRow).comment,
+          actual_count: (row as ResponsabilityLogRow).actual_count ?? null,
         };
       }
       return map;
@@ -66,6 +74,7 @@ export interface UpsertResponsabilityLogInput {
   responsibility_template_id: string;
   completion_rate: number;
   comment: string | null;
+  actual_count?: number | null;
 }
 
 export function useUpsertResponsabilityLog() {
@@ -74,9 +83,16 @@ export function useUpsertResponsabilityLog() {
 
   const mutation = useMutation({
     mutationFn: async (input: UpsertResponsabilityLogInput) => {
+      const payload = {
+        report_id: input.report_id,
+        responsibility_template_id: input.responsibility_template_id,
+        completion_rate: input.completion_rate,
+        comment: input.comment,
+        actual_count: input.actual_count ?? null,
+      };
       const { data, error } = await supabase
         .from("responsibility_logs")
-        .upsert(input, { onConflict: "report_id,responsibility_template_id" })
+        .upsert(payload, { onConflict: "report_id,responsibility_template_id" })
         .select()
         .maybeSingle();
       if (error) throw error;
@@ -111,6 +127,8 @@ export interface RespTemplateFullRow {
   category: string | null;
   display_order: number;
   is_active: boolean;
+  frequency: string;
+  expected_count: number;
 }
 
 export function useAllRespTemplates(spaId: string | null) {
@@ -120,7 +138,7 @@ export function useAllRespTemplates(spaId: string | null) {
     queryFn: async (): Promise<RespTemplateFullRow[]> => {
       const { data, error } = await supabase
         .from("responsibility_templates")
-        .select("id, spa_id, title, description, category, display_order, is_active")
+        .select("id, spa_id, title, description, category, display_order, is_active, frequency, expected_count")
         .eq("spa_id", spaId!)
         .order("display_order", { ascending: true });
       if (error) throw error;
@@ -140,6 +158,8 @@ export interface AddRespTemplateInput {
   description: string | null;
   category: string | null;
   display_order: number;
+  frequency: string;
+  expected_count: number;
 }
 
 export function useAddRespTemplate() {
@@ -155,6 +175,8 @@ export function useAddRespTemplate() {
           category: input.category,
           display_order: input.display_order,
           is_active: true,
+          frequency: input.frequency,
+          expected_count: input.expected_count,
         })
         .select()
         .single();
@@ -173,6 +195,8 @@ export interface UpdateRespTemplateInput {
   category?: string | null;
   is_active?: boolean;
   display_order?: number;
+  frequency?: string;
+  expected_count?: number;
 }
 
 export function useUpdateRespTemplate() {
@@ -202,4 +226,117 @@ export function useSoftDeleteRespTemplate() {
     },
     onSuccess: (_d, vars) => invalidateRespTemplates(qc, vars.spaId),
   });
+}
+
+// ============= Frequency helpers =============
+
+export function calcMonthlyExpected(frequency: string, expectedCount: number): number {
+  switch (frequency) {
+    case "daily":
+      return expectedCount * 22;
+    case "weekly":
+      return expectedCount * 4;
+    case "biweekly":
+      return expectedCount * 2;
+    case "monthly":
+      return expectedCount * 1;
+    default:
+      return expectedCount * 1;
+  }
+}
+
+export function calcWeeklyExpected(frequency: string, expectedCount: number): number {
+  switch (frequency) {
+    case "daily":
+      return expectedCount * 5;
+    case "weekly":
+      return expectedCount * 1;
+    default:
+      return expectedCount * 1;
+  }
+}
+
+// ============= Weekly prefill batch (for monthly reports) =============
+
+export interface WeeklyPrefillResult {
+  prefillValue: number;
+  weeklyReportsWithData: number;
+  totalWeeklyReports: number;
+  hasWeeklyReports: boolean;
+}
+
+const EMPTY_PREFILL: WeeklyPrefillResult = {
+  prefillValue: 0,
+  weeklyReportsWithData: 0,
+  totalWeeklyReports: 0,
+  hasWeeklyReports: false,
+};
+
+function firstOfMonth(iso: string): string {
+  const [y, m] = iso.split("-");
+  return `${y}-${m}-01`;
+}
+
+function firstOfNextMonth(iso: string): string {
+  const [y, m] = iso.split("-");
+  const year = Number(y);
+  const month = Number(m);
+  const nextYear = month === 12 ? year + 1 : year;
+  const nextMonth = month === 12 ? 1 : month + 1;
+  return `${nextYear}-${String(nextMonth).padStart(2, "0")}-01`;
+}
+
+export function useWeeklyPrefillBatch(
+  spaId: string | null,
+  templateIds: string[],
+  monthlyPeriodStart: string | null,
+): Record<string, WeeklyPrefillResult> {
+  const idsKey = templateIds.join(",");
+  const { data } = useQuery({
+    queryKey: ["weekly_prefill_batch", spaId, idsKey, monthlyPeriodStart],
+    enabled: !!spaId && templateIds.length > 0 && !!monthlyPeriodStart,
+    queryFn: async (): Promise<Record<string, WeeklyPrefillResult>> => {
+      const monthStart = firstOfMonth(monthlyPeriodStart!);
+      const monthEnd = firstOfNextMonth(monthlyPeriodStart!);
+
+      const { data: rows, error } = await supabase
+        .from("responsibility_logs")
+        .select(
+          "responsibility_template_id, actual_count, reports!inner(id, cycle_type, period_start, spa_id)",
+        )
+        .in("responsibility_template_id", templateIds)
+        .eq("reports.cycle_type", "weekly")
+        .eq("reports.spa_id", spaId!)
+        .gte("reports.period_start", monthStart)
+        .lt("reports.period_start", monthEnd);
+
+      if (error) throw error;
+
+      const result: Record<string, WeeklyPrefillResult> = {};
+      for (const id of templateIds) {
+        result[id] = { ...EMPTY_PREFILL };
+      }
+
+      for (const row of (rows ?? []) as Array<{
+        responsibility_template_id: string;
+        actual_count: number | null;
+      }>) {
+        const id = row.responsibility_template_id;
+        if (!result[id]) result[id] = { ...EMPTY_PREFILL };
+        result[id].totalWeeklyReports += 1;
+        if (row.actual_count !== null && row.actual_count !== undefined) {
+          result[id].prefillValue += row.actual_count;
+          result[id].weeklyReportsWithData += 1;
+        }
+        result[id].hasWeeklyReports = result[id].totalWeeklyReports > 0;
+      }
+
+      return result;
+    },
+  });
+
+  if (data) return data;
+  const fallback: Record<string, WeeklyPrefillResult> = {};
+  for (const id of templateIds) fallback[id] = { ...EMPTY_PREFILL };
+  return fallback;
 }

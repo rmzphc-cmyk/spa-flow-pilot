@@ -39,6 +39,7 @@ import {
   useAddRespTemplate,
   useUpdateRespTemplate,
   useSoftDeleteRespTemplate,
+  calcMonthlyExpected,
   type RespTemplateFullRow,
 } from "@/hooks/useResponsabilites";
 
@@ -60,6 +61,8 @@ interface EditingTemplate {
   description: string;
   category: Category;
   is_active: boolean;
+  frequency: string;
+  expected_count: number;
 }
 
 const EMPTY_EDIT: EditingTemplate = {
@@ -68,6 +71,8 @@ const EMPTY_EDIT: EditingTemplate = {
   description: "",
   category: "Opérationnel",
   is_active: true,
+  frequency: "monthly",
+  expected_count: 1,
 };
 
 export default function RespConfig() {
@@ -117,6 +122,8 @@ export default function RespConfig() {
       description: t.description ?? "",
       category: (CATEGORIES.includes(t.category as Category) ? t.category : "Opérationnel") as Category,
       is_active: t.is_active,
+      frequency: t.frequency ?? "monthly",
+      expected_count: t.expected_count ?? 1,
     });
     setSheetOpen(true);
   };
@@ -127,6 +134,8 @@ export default function RespConfig() {
       title: editing.title.trim(),
       description: editing.description.trim() || null,
       category: editing.category,
+      frequency: editing.frequency,
+      expected_count: editing.expected_count,
     };
     if (editing.id) {
       updateMut.mutate(
