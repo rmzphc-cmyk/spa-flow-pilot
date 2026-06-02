@@ -135,6 +135,8 @@ export function useWeeklyPdfData(
   const idsQ = useIdsItems(reportId);
   const todosQ = useTodos(reportId, spaId);
   const summaryQ = useMeetingSummary(reportId);
+  const templatesQ = useResponsabilityTemplates(spaId);
+  const logsQ = useResponsabilityLogs(reportId);
 
   const isLoading =
     spaQ.isLoading ||
@@ -143,7 +145,9 @@ export function useWeeklyPdfData(
     checkinQ.isLoading ||
     idsQ.isLoading ||
     todosQ.isLoading ||
-    summaryQ.isLoading;
+    summaryQ.isLoading ||
+    templatesQ.isLoading ||
+    logsQ.isLoading;
 
   if (isLoading) return { data: null, isLoading: true };
 
