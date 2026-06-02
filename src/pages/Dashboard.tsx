@@ -20,6 +20,7 @@ import { useReports, useCreateReport, mapReportRowToRecord, type ReportRow } fro
 import { useAuth } from "@/contexts/AuthContext";
 import { useTodos } from "@/hooks/useTodos";
 import { useObjectives, parseObjectiveDescription } from "@/hooks/useObjectives";
+import { useResponsabilityLogs } from "@/hooks/useResponsabilites"
 import { useKpiEntries } from "@/hooks/useKpiEntries";
 import {
   AlertDialog,
