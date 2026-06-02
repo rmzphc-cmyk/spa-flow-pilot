@@ -805,6 +805,7 @@ export type Database = {
       }
       responsibility_logs: {
         Row: {
+          actual_count: number | null
           comment: string | null
           completion_rate: number
           consecutive_100_count: number
@@ -816,6 +817,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          actual_count?: number | null
           comment?: string | null
           completion_rate?: number
           consecutive_100_count?: number
@@ -827,6 +829,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          actual_count?: number | null
           comment?: string | null
           completion_rate?: number
           consecutive_100_count?: number
@@ -860,6 +863,8 @@ export type Database = {
           created_at: string
           description: string | null
           display_order: number
+          expected_count: number
+          frequency: string
           id: string
           is_active: boolean
           spa_id: string
@@ -873,6 +878,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           display_order?: number
+          expected_count?: number
+          frequency?: string
           id?: string
           is_active?: boolean
           spa_id: string
@@ -886,6 +893,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           display_order?: number
+          expected_count?: number
+          frequency?: string
           id?: string
           is_active?: boolean
           spa_id?: string
