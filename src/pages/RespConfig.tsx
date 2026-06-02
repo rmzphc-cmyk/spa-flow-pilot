@@ -325,6 +325,7 @@ export default function RespConfig() {
                       <tr key={t.id} className="border-t border-border">
                         <td className="py-2 px-4">
                           <div className="font-medium">{t.title}</div>
+                          <FreqBadges frequency={t.frequency} expectedCount={t.expected_count} />
                           {t.description && (
                             <div className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
                               {t.description}
@@ -594,6 +595,58 @@ export default function RespConfig() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">Fréquence</Label>
+              <Select
+                value={editing.frequency}
+                onValueChange={(v) =>
+                  setEditing((p) => ({ ...p, frequency: v, expected_count: p.expected_count }))
+                }
+              >
+                <SelectTrigger className="mt-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="daily">Journalier</SelectItem>
+                  <SelectItem value="weekly">Hebdomadaire</SelectItem>
+                  <SelectItem value="biweekly">Bimensuel</SelectItem>
+                  <SelectItem value="monthly">Mensuel</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label className="text-sm font-medium">
+                {editing.frequency === "daily"
+                  ? "Nombre par jour"
+                  : editing.frequency === "weekly"
+                    ? "Nombre par semaine"
+                    : editing.frequency === "biweekly"
+                      ? "Nombre par quinzaine"
+                      : "Nombre par mois"}
+              </Label>
+              <Input
+                type="number"
+                min={1}
+                value={editing.expected_count}
+                onChange={(e) =>
+                  setEditing((p) => ({
+                    ...p,
+                    expected_count: Math.max(1, Number(e.target.value) || 1),
+                  }))
+                }
+                className="mt-1"
+              />
+              {(() => {
+                const total = calcMonthlyExpected(editing.frequency, editing.expected_count);
+                return (
+                  <p className="text-xs text-muted-foreground italic mt-1">
+                    = {total} attendu{total > 1 ? "s" : ""} par mois
+                  </p>
+                );
+              })()}
             </div>
 
             <div className="flex items-center justify-between border-t border-border pt-4">
