@@ -92,11 +92,12 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
   const isInReport = location.pathname.startsWith("/rapport/");
   const isDirection = location.pathname.startsWith("/direction");
   const { spaId, userRole, user } = useAuth();
+  const isAdmin = userRole === "admin";
   const { data: directionSpas = [] } = useDirectionSpas();
 
   const { data: spaRow } = useQuery({
     queryKey: ["spa", spaId],
-    enabled: !!spaId && userRole !== "direction",
+    enabled: !!spaId && userRole !== "direction" && !isAdmin,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("spas")
@@ -111,7 +112,7 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
 
   const { data: pendingTodosCount = 0 } = useQuery({
     queryKey: ["todos", "pending-count", spaId],
-    enabled: !!spaId && userRole !== "direction",
+    enabled: !!spaId && userRole !== "direction" && !isAdmin,
     queryFn: async () => {
       const { count, error } = await supabase
         .from("todos")
@@ -157,6 +158,11 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
               <h2 className="text-sm font-bold text-foreground">{t("direction.title")}</h2>
             </div>
           </>
+        ) : isAdmin ? (
+          <div className="flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-bold text-foreground">Administration</h2>
+          </div>
         ) : (
           <>
             <h2 className="text-sm font-bold text-foreground">{spaName}</h2>
@@ -250,7 +256,7 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
 
 
       {/* Manager mode — default nav */}
-      {!isInReport && !isDirection && (
+      {!isInReport && !isDirection && !isAdmin && (
         <nav className="px-3 mt-2 space-y-0.5">
           {mainNavItems.map((item) => (
             <NavLink
@@ -279,7 +285,7 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
       )}
 
       {/* Report mode sidebar */}
-      {isInReport && (
+      {isInReport && !isAdmin && (
         <>
           <div className="px-4 mt-3 mb-1">
             <NavLink
@@ -349,7 +355,10 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
           <div className="flex-1" />
           <div className="border-t border-border mx-3 my-2" />
           <nav className="px-3 space-y-0.5 pb-2">
-            {secondaryLinks.map((link) => (
+            {(isAdmin
+              ? secondaryLinks.filter((l) => l.url.startsWith("/admin/"))
+              : secondaryLinks
+            ).map((link) => (
               <NavLink
                 key={link.url}
                 to={link.url}

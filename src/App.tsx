@@ -38,10 +38,19 @@ function RoleGuard({ allow }: { allow: Array<"manager" | "direction" | "admin"> 
   if (isLoading) return null;
   if (!userRole) return <Navigate to="/login" replace />;
   if (!allow.includes(userRole)) {
-    const fallback = userRole === "direction" ? "/direction" : "/";
+    const fallback =
+      userRole === "direction" ? "/direction" : userRole === "admin" ? "/admin/organisation" : "/";
     if (location.pathname !== fallback) return <Navigate to={fallback} replace />;
   }
   return <Outlet />;
+}
+
+function RootRedirect() {
+  const { userRole, isLoading } = useAuth();
+  if (isLoading) return null;
+  if (userRole === "admin") return <Navigate to="/admin/organisation" replace />;
+  if (userRole === "direction") return <Navigate to="/direction" replace />;
+  return <Dashboard />;
 }
 
 const App = () => (
@@ -55,20 +64,28 @@ const App = () => (
             <Route path="/login" element={<Login />} />
 
             <Route element={<ProtectedRoute />}>
-              <Route element={<RoleGuard allow={["manager", "admin"]} />}>
+              <Route element={<AppLayout />}>
+                <Route path="/" element={<RootRedirect />} />
+                <Route path="/parametres" element={<UserSettingsPage />} />
+              </Route>
+
+              <Route element={<RoleGuard allow={["manager"]} />}>
                 <Route element={<AppLayout />}>
-                  <Route path="/" element={<Dashboard />} />
                   <Route path="/rapports" element={<Rapports />} />
                   <Route path="/rapport/:id" element={<RapportDetail />} />
                   <Route path="/todos" element={<Todos />} />
                   <Route path="/objectifs" element={<Objectifs />} />
-                  <Route path="/admin/kpi" element={<KpiConfig />} />
-                  <Route path="/admin/responsabilites" element={<RespConfig />} />
-                  <Route path="/parametres" element={<UserSettingsPage />} />
                 </Route>
                 <Route path="/reunion/:id" element={<MeetingMode />} />
                 <Route path="/post-reunion/:id" element={<PostMeetingMode />} />
                 <Route path="/historique/:spa" element={<SpaHistory />} />
+              </Route>
+
+              <Route element={<RoleGuard allow={["manager", "admin"]} />}>
+                <Route element={<AppLayout />}>
+                  <Route path="/admin/kpi" element={<KpiConfig />} />
+                  <Route path="/admin/responsabilites" element={<RespConfig />} />
+                </Route>
               </Route>
 
               <Route element={<RoleGuard allow={["direction", "admin"]} />}>
