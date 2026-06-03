@@ -112,7 +112,7 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
 
   const { data: pendingTodosCount = 0 } = useQuery({
     queryKey: ["todos", "pending-count", spaId],
-    enabled: !!spaId && userRole !== "direction",
+    enabled: !!spaId && userRole !== "direction" && !isAdmin,
     queryFn: async () => {
       const { count, error } = await supabase
         .from("todos")
