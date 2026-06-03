@@ -142,7 +142,6 @@ export function useCreateSpa() {
       organization_id: string;
       destination_id: string;
       name: string;
-      reporting_cycle_type: "weekly" | "monthly";
       timezone?: string;
       country?: string;
     }) => {
