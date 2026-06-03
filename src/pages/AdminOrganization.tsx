@@ -350,8 +350,7 @@ function SpasTab({ organizationId, readOnly }: { organizationId: string; readOnl
                   <div>
                     <p className="font-medium">{s.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {destById.get(s.destination_id)?.name ?? "—"} ·{" "}
-                      {s.reporting_cycle_type === "weekly" ? "Weekly" : "Monthly"}
+                      {destById.get(s.destination_id)?.name ?? "—"}
                     </p>
                   </div>
                 </div>
