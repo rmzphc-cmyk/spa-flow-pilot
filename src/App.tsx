@@ -20,6 +20,7 @@ import Objectifs from "./pages/Objectifs";
 import KpiConfig from "./pages/KpiConfig";
 import RespConfig from "./pages/RespConfig";
 import UserSettingsPage from "./pages/UserSettings";
+import AdminOrganization from "./pages/AdminOrganization";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -74,6 +75,7 @@ const App = () => (
                 <Route element={<AppLayout />}>
                   <Route path="/direction" element={<DirectionOverview />} />
                   <Route path="/direction/spa/:id" element={<DirectionSpaDetail />} />
+                  <Route path="/admin/organisation" element={<AdminOrganization />} />
                 </Route>
                 <Route path="/direction/:id" element={<DirectionView />} />
               </Route>
