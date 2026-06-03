@@ -106,6 +106,47 @@ export type Database = {
           },
         ]
       }
+      destinations: {
+        Row: {
+          country: string | null
+          created_at: string
+          id: string
+          name: string
+          organization_id: string
+          slug: string
+          timezone: string
+          updated_at: string
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          organization_id: string
+          slug: string
+          timezone?: string
+          updated_at?: string
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          organization_id?: string
+          slug?: string
+          timezone?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "destinations_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       direction_spa_access: {
         Row: {
           granted_at: string
@@ -712,6 +753,30 @@ export type Database = {
           },
         ]
       }
+      organizations: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          slug?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       reports: {
         Row: {
           ai_synthesis_generated_at: string | null
@@ -919,11 +984,13 @@ export type Database = {
           created_at: string
           created_by: string
           default_language: Database["public"]["Enums"]["language_code"]
+          destination_id: string
           id: string
           is_active: boolean
           meeting_schedule: Json | null
           monthly_meeting_day: number | null
           name: string
+          organization_id: string
           reporting_cycle_type: Database["public"]["Enums"]["reporting_cycle_type"]
           slug: string
           timezone: string
@@ -935,11 +1002,13 @@ export type Database = {
           created_at?: string
           created_by: string
           default_language?: Database["public"]["Enums"]["language_code"]
+          destination_id: string
           id?: string
           is_active?: boolean
           meeting_schedule?: Json | null
           monthly_meeting_day?: number | null
           name: string
+          organization_id: string
           reporting_cycle_type?: Database["public"]["Enums"]["reporting_cycle_type"]
           slug: string
           timezone?: string
@@ -951,11 +1020,13 @@ export type Database = {
           created_at?: string
           created_by?: string
           default_language?: Database["public"]["Enums"]["language_code"]
+          destination_id?: string
           id?: string
           is_active?: boolean
           meeting_schedule?: Json | null
           monthly_meeting_day?: number | null
           name?: string
+          organization_id?: string
           reporting_cycle_type?: Database["public"]["Enums"]["reporting_cycle_type"]
           slug?: string
           timezone?: string
@@ -968,6 +1039,20 @@ export type Database = {
             columns: ["created_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spas_destination_id_fkey"
+            columns: ["destination_id"]
+            isOneToOne: false
+            referencedRelation: "destinations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spas_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -1116,10 +1201,13 @@ export type Database = {
         Row: {
           avatar_url: string | null
           created_at: string
+          destination_id: string | null
           email: string
           full_name: string
           id: string
           is_active: boolean
+          manager_id: string | null
+          organization_id: string | null
           preferred_language: Database["public"]["Enums"]["language_code"]
           role: Database["public"]["Enums"]["user_role"]
           spa_id: string | null
@@ -1129,10 +1217,13 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           created_at?: string
+          destination_id?: string | null
           email: string
           full_name?: string
           id: string
           is_active?: boolean
+          manager_id?: string | null
+          organization_id?: string | null
           preferred_language?: Database["public"]["Enums"]["language_code"]
           role?: Database["public"]["Enums"]["user_role"]
           spa_id?: string | null
@@ -1142,10 +1233,13 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           created_at?: string
+          destination_id?: string | null
           email?: string
           full_name?: string
           id?: string
           is_active?: boolean
+          manager_id?: string | null
+          organization_id?: string | null
           preferred_language?: Database["public"]["Enums"]["language_code"]
           role?: Database["public"]["Enums"]["user_role"]
           spa_id?: string | null
@@ -1153,6 +1247,27 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "users_destination_id_fkey"
+            columns: ["destination_id"]
+            isOneToOne: false
+            referencedRelation: "destinations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "users_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "users_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "users_spa_id_fkey"
             columns: ["spa_id"]
@@ -1265,6 +1380,7 @@ export type Database = {
       current_user_role: { Args: never; Returns: string }
       current_user_spa_id: { Args: never; Returns: string }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
+      user_can_access_spa: { Args: { _spa_id: string }; Returns: boolean }
     }
     Enums: {
       comparison_direction: "higher_is_better" | "lower_is_better"
@@ -1303,7 +1419,7 @@ export type Database = {
       todo_priority: "low" | "medium" | "high"
       todo_source: "manual" | "ids_conversion" | "ai_suggestion"
       todo_status: "pending" | "in_progress" | "done" | "deferred"
-      user_role: "spa_manager" | "direction" | "admin"
+      user_role: "spa_manager" | "direction" | "admin" | "employee"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1471,7 +1587,7 @@ export const Constants = {
       todo_priority: ["low", "medium", "high"],
       todo_source: ["manual", "ids_conversion", "ai_suggestion"],
       todo_status: ["pending", "in_progress", "done", "deferred"],
-      user_role: ["spa_manager", "direction", "admin"],
+      user_role: ["spa_manager", "direction", "admin", "employee"],
     },
   },
 } as const
