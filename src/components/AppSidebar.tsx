@@ -158,6 +158,11 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
               <h2 className="text-sm font-bold text-foreground">{t("direction.title")}</h2>
             </div>
           </>
+        ) : isAdmin ? (
+          <div className="flex items-center gap-2">
+            <Building2 className="h-4 w-4 text-primary" />
+            <h2 className="text-sm font-bold text-foreground">Administration</h2>
+          </div>
         ) : (
           <>
             <h2 className="text-sm font-bold text-foreground">{spaName}</h2>
