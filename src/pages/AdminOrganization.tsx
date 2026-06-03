@@ -490,7 +490,6 @@ function SpaEditDialog({
                 await onSubmit({
                   name: name.trim(),
                   destination_id: destinationId,
-                  reporting_cycle_type: cycle,
                   is_active: spa ? isActive : undefined,
                 });
                 onClose();
