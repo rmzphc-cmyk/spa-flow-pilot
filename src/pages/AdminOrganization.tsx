@@ -434,20 +434,17 @@ function SpaEditDialog({
   onSubmit: (values: {
     name: string;
     destination_id: string;
-    reporting_cycle_type: "weekly" | "monthly";
     is_active?: boolean;
   }) => Promise<void>;
 }) {
   const [name, setName] = useState("");
   const [destinationId, setDestinationId] = useState("");
-  const [cycle, setCycle] = useState<"weekly" | "monthly">("monthly");
   const [isActive, setIsActive] = useState(true);
 
   useMemo(() => {
     if (open) {
       setName(spa?.name ?? "");
       setDestinationId(spa?.destination_id ?? destinations[0]?.id ?? "");
-      setCycle(spa?.reporting_cycle_type ?? "monthly");
       setIsActive(spa?.is_active ?? true);
     }
   }, [open, spa, destinations]);
