@@ -256,7 +256,7 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
 
 
       {/* Manager mode — default nav */}
-      {!isInReport && !isDirection && (
+      {!isInReport && !isDirection && !isAdmin && (
         <nav className="px-3 mt-2 space-y-0.5">
           {mainNavItems.map((item) => (
             <NavLink
