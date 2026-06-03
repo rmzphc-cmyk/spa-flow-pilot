@@ -219,6 +219,23 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
           </nav>
 
           <div className="flex-1" />
+          <div className="border-t border-border mx-3 my-2" />
+          <nav className="px-3 space-y-0.5 pb-2">
+            <NavLink
+              to="/admin/organisation"
+              onClick={() => setMobileOpen(false)}
+              className={({ isActive }) =>
+                `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                  isActive
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`
+              }
+            >
+              <Building2 className="h-4 w-4 shrink-0" />
+              <span className="lg:inline hidden">{t("nav.adminOrganization")}</span>
+            </NavLink>
+          </nav>
           <div className="p-3 border-t border-border">
             <NavLink
               to="/"
@@ -230,6 +247,7 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
           </div>
         </>
       )}
+
 
       {/* Manager mode — default nav */}
       {!isInReport && !isDirection && (
