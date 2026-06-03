@@ -285,7 +285,7 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
       )}
 
       {/* Report mode sidebar */}
-      {isInReport && (
+      {isInReport && !isAdmin && (
         <>
           <div className="px-4 mt-3 mb-1">
             <NavLink
