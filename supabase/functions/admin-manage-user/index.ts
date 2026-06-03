@@ -49,7 +49,12 @@ Deno.serve(async (req) => {
         },
       });
       if (createErr || !created?.user) {
-        return json({ error: createErr?.message ?? "createUser failed" }, 400);
+        const msg = createErr?.message ?? "createUser failed";
+        const isDup = /already been registered|already registered|email_exists/i.test(msg);
+        return json(
+          { error: isDup ? "Un utilisateur avec cet email existe déjà." : msg },
+          isDup ? 409 : 400,
+        );
       }
 
       // handle_new_user trigger has already inserted into public.users with role + spa_id.
