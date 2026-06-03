@@ -97,7 +97,7 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
 
   const { data: spaRow } = useQuery({
     queryKey: ["spa", spaId],
-    enabled: !!spaId && userRole !== "direction",
+    enabled: !!spaId && userRole !== "direction" && !isAdmin,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("spas")
