@@ -471,16 +471,6 @@ function SpaEditDialog({
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <Label>Cycle de reporting</Label>
-            <Select value={cycle} onValueChange={(v) => setCycle(v as "weekly" | "monthly")}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="monthly">Monthly</SelectItem>
-                <SelectItem value="weekly">Weekly</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
           {spa && (
             <div className="flex items-center justify-between">
               <Label>Spa actif</Label>
