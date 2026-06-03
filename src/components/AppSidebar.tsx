@@ -17,6 +17,7 @@ import {
   Eye,
   ArrowLeft,
   PenLine,
+  Building2,
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -60,6 +61,7 @@ const secondaryLinks = [
   { labelKey: "nav.spaHistory", url: "/historique", icon: History },
   { labelKey: "nav.configKpi", url: "/admin/kpi", icon: Settings },
   { labelKey: "nav.configResp", url: "/admin/responsabilites", icon: Users },
+  { labelKey: "nav.adminOrganization", url: "/admin/organisation", icon: Building2 },
 ];
 
 const mainNavItems = [
