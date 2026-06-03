@@ -90,7 +90,7 @@ export function useUpdateDestination() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: { id: string; name?: string; country?: string; timezone?: string }) => {
-      const update: Record<string, unknown> = {};
+      const update: { name?: string; slug?: string; country?: string | null; timezone?: string } = {};
       if (input.name) {
         update.name = input.name;
         update.slug = input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -147,6 +147,9 @@ export function useCreateSpa() {
       country?: string;
     }) => {
       const slug = input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+      const { data: userRes } = await supabase.auth.getUser();
+      const created_by = userRes.user?.id;
+      if (!created_by) throw new Error("Not authenticated");
       const { error } = await supabase.from("spas").insert({
         organization_id: input.organization_id,
         destination_id: input.destination_id,
@@ -155,6 +158,7 @@ export function useCreateSpa() {
         reporting_cycle_type: input.reporting_cycle_type,
         timezone: input.timezone ?? "Atlantic/Canary",
         country: input.country ?? null,
+        created_by,
       });
       if (error) throw error;
     },
@@ -172,7 +176,13 @@ export function useUpdateSpa() {
       reporting_cycle_type?: "weekly" | "monthly";
       is_active?: boolean;
     }) => {
-      const update: Record<string, unknown> = {};
+      const update: {
+        name?: string;
+        slug?: string;
+        destination_id?: string;
+        reporting_cycle_type?: "weekly" | "monthly";
+        is_active?: boolean;
+      } = {};
       if (input.name) {
         update.name = input.name;
         update.slug = input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
