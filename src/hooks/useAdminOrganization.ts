@@ -142,7 +142,6 @@ export function useCreateSpa() {
       organization_id: string;
       destination_id: string;
       name: string;
-      reporting_cycle_type: "weekly" | "monthly";
       timezone?: string;
       country?: string;
     }) => {
@@ -155,7 +154,6 @@ export function useCreateSpa() {
         destination_id: input.destination_id,
         name: input.name,
         slug,
-        reporting_cycle_type: input.reporting_cycle_type,
         timezone: input.timezone ?? "Atlantic/Canary",
         country: input.country ?? null,
         created_by,

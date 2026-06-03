@@ -350,8 +350,7 @@ function SpasTab({ organizationId, readOnly }: { organizationId: string; readOnl
                   <div>
                     <p className="font-medium">{s.name}</p>
                     <p className="text-xs text-muted-foreground">
-                      {destById.get(s.destination_id)?.name ?? "—"} ·{" "}
-                      {s.reporting_cycle_type === "weekly" ? "Weekly" : "Monthly"}
+                      {destById.get(s.destination_id)?.name ?? "—"}
                     </p>
                   </div>
                 </div>
@@ -435,20 +434,17 @@ function SpaEditDialog({
   onSubmit: (values: {
     name: string;
     destination_id: string;
-    reporting_cycle_type: "weekly" | "monthly";
     is_active?: boolean;
   }) => Promise<void>;
 }) {
   const [name, setName] = useState("");
   const [destinationId, setDestinationId] = useState("");
-  const [cycle, setCycle] = useState<"weekly" | "monthly">("monthly");
   const [isActive, setIsActive] = useState(true);
 
   useMemo(() => {
     if (open) {
       setName(spa?.name ?? "");
       setDestinationId(spa?.destination_id ?? destinations[0]?.id ?? "");
-      setCycle(spa?.reporting_cycle_type ?? "monthly");
       setIsActive(spa?.is_active ?? true);
     }
   }, [open, spa, destinations]);
@@ -475,16 +471,6 @@ function SpaEditDialog({
               </SelectContent>
             </Select>
           </div>
-          <div>
-            <Label>Cycle de reporting</Label>
-            <Select value={cycle} onValueChange={(v) => setCycle(v as "weekly" | "monthly")}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="monthly">Monthly</SelectItem>
-                <SelectItem value="weekly">Weekly</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
           {spa && (
             <div className="flex items-center justify-between">
               <Label>Spa actif</Label>
@@ -504,7 +490,6 @@ function SpaEditDialog({
                 await onSubmit({
                   name: name.trim(),
                   destination_id: destinationId,
-                  reporting_cycle_type: cycle,
                   is_active: spa ? isActive : undefined,
                 });
                 onClose();
