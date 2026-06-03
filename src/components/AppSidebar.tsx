@@ -355,7 +355,10 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
           <div className="flex-1" />
           <div className="border-t border-border mx-3 my-2" />
           <nav className="px-3 space-y-0.5 pb-2">
-            {secondaryLinks.map((link) => (
+            {(isAdmin
+              ? secondaryLinks.filter((l) => l.url.startsWith("/admin/"))
+              : secondaryLinks
+            ).map((link) => (
               <NavLink
                 key={link.url}
                 to={link.url}
