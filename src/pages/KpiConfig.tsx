@@ -112,6 +112,10 @@ export default function KpiConfig() {
   const [addOpen, setAddOpen] = useState(false);
   const [settingsKpi, setSettingsKpi] = useState<KpiDefinitionFull | null>(null);
 
+  const kpiIds = useMemo(() => items.map((i) => i.id), [items]);
+  const { data: roleAssignments = [] } = useKpiRoleAssignments(kpiIds);
+
+
   const sortedItems = useMemo(
     () => [...items].sort((a, b) => a.display_order - b.display_order),
     [items],
