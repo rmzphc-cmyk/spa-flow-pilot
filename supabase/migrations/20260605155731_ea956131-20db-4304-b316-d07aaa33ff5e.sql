@@ -1,0 +1,1 @@
+ALTER TABLE public.kpi_role_assignments ADD CONSTRAINT kpi_role_assignments_kpi_role_unique UNIQUE (kpi_definition_id, role);
