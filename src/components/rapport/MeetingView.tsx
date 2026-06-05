@@ -392,7 +392,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
         );
       }
 
-        );
+
 
       /* ── 1 : Check-in ── */
       case 1:
