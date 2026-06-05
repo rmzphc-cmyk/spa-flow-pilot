@@ -50,6 +50,19 @@ import {
   type KpiMonthlyTarget,
   type WeeklyMode,
 } from "@/hooks/useKpiMonthlyTargets";
+import {
+  useKpiRoleAssignments,
+  useUpsertKpiRoleAssignment,
+  useDeleteKpiRoleAssignment,
+  ROLE_LABELS,
+  NIVEAU_LABELS,
+  NIVEAU_COLORS,
+  type KpiRole,
+  type KpiNiveau,
+  type KpiRoleAssignment,
+} from "@/hooks/useKpiRoleAssignments";
+
+
 
 const UNIT_OPTIONS = ["€", "%", "nb", "/10", "j", "pts"] as const;
 const CATEGORY_LABELS: Record<KpiCategoryDb, string> = {
