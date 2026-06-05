@@ -737,8 +737,13 @@ function SettingsDialog({
                   >
                     {ROLE_LABELS[a.role]} — {NIVEAU_LABELS[a.niveau]}
                     <button
-                      className="ml-0.5 hover:opacity-70"
-                      onClick={() => deleteRole.mutate(a.id)}
+                      type="button"
+                      className="ml-0.5 hover:opacity-70 cursor-pointer"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        deleteRole.mutate(a.id);
+                      }}
                       aria-label="Supprimer"
                     >
                       ×
