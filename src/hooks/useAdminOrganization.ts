@@ -171,14 +171,12 @@ export function useUpdateSpa() {
       id: string;
       name?: string;
       destination_id?: string;
-      reporting_cycle_type?: "weekly" | "monthly";
       is_active?: boolean;
     }) => {
       const update: {
         name?: string;
         slug?: string;
         destination_id?: string;
-        reporting_cycle_type?: "weekly" | "monthly";
         is_active?: boolean;
       } = {};
       if (input.name) {
@@ -186,7 +184,6 @@ export function useUpdateSpa() {
         update.slug = input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
       }
       if (input.destination_id !== undefined) update.destination_id = input.destination_id;
-      if (input.reporting_cycle_type !== undefined) update.reporting_cycle_type = input.reporting_cycle_type;
       if (input.is_active !== undefined) update.is_active = input.is_active;
       const { error } = await supabase.from("spas").update(update).eq("id", input.id);
       if (error) throw error;
