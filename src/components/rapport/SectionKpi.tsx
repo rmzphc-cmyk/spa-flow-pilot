@@ -17,6 +17,35 @@ import {
   getWeeklyTarget,
   type KpiMonthlyTarget,
 } from "@/hooks/useKpiMonthlyTargets";
+import {
+  useKpiRoleAssignments,
+  ROLE_LABELS,
+  NIVEAU_COLORS,
+  type KpiRoleAssignment,
+  type KpiRole,
+  type KpiNiveau,
+} from "@/hooks/useKpiRoleAssignments";
+
+const NIVEAU_ORDER: Record<KpiNiveau, number> = {
+  prioritaire: 0,
+  secondaire: 1,
+  suivi: 2,
+};
+
+const ROLE_SECTION_ORDER: KpiRole[] = [
+  "spa_manager",
+  "therapist",
+  "spa_concierge",
+  "ambassador",
+];
+
+const ROLE_SECTION_ICONS: Record<KpiRole, string> = {
+  spa_manager: "👤",
+  therapist: "💆",
+  spa_concierge: "🛎️",
+  ambassador: "⭐",
+};
+
 
 interface Props {
   reportId: string;
@@ -113,18 +142,49 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
     });
   }, [definitions, entriesByDef]);
 
-  // Sort: spa first, then manager, then display_order
-  const sortedDefs = useMemo(
-    () =>
-      [...definitions].sort((a, b) => {
-        const ca = mapCategory(a);
-        const cb = mapCategory(b);
+  // Fetch role assignments for all KPIs of this spa
+  const kpiIds = useMemo(() => definitions.map((d) => d.id), [definitions]);
+  const { data: roleAssignments = [] } = useKpiRoleAssignments(kpiIds);
 
-        if (ca !== cb) return ca === "spa" ? -1 : 1;
-        return a.display_order - b.display_order;
-      }),
-    [definitions],
-  );
+  const assignmentsByKpiId = useMemo(() => {
+    const map = new Map<string, KpiRoleAssignment[]>();
+    for (const a of roleAssignments) {
+      if (!map.has(a.kpi_definition_id)) map.set(a.kpi_definition_id, []);
+      map.get(a.kpi_definition_id)!.push(a);
+    }
+    return map;
+  }, [roleAssignments]);
+
+  const groupedByRole = useMemo(() => {
+    const groups = new Map<KpiRole, { def: KpiDefinitionRow; niveau: KpiNiveau }[]>();
+    const unassigned: KpiDefinitionRow[] = [];
+
+    for (const def of definitions) {
+      const assignments = assignmentsByKpiId.get(def.id) ?? [];
+      if (assignments.length === 0) {
+        unassigned.push(def);
+      } else {
+        for (const a of assignments) {
+          if (!groups.has(a.role)) groups.set(a.role, []);
+          groups.get(a.role)!.push({ def, niveau: a.niveau });
+        }
+      }
+    }
+
+    for (const [, items] of groups) {
+      items.sort(
+        (a, b) =>
+          NIVEAU_ORDER[a.niveau] - NIVEAU_ORDER[b.niveau] ||
+          a.def.display_order - b.def.display_order,
+      );
+    }
+
+    return { groups, unassigned };
+  }, [definitions, assignmentsByKpiId]);
+
+  // Fallback flat list for completeness check (order doesn't matter)
+  const sortedDefs = useMemo(() => definitions, [definitions]);
+
 
   // Debounce timers per definition
   const timersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
@@ -281,29 +341,88 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
       </p>
 
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {sortedDefs.map((def) => {
-          const entry = entriesByDef.get(def.id);
-          const liveTarget = liveTargetMap.get(def.id);
-          const data = defToKpiData(def, entry, liveTarget, isWeekly);
-          const cv = local[def.id] ?? entryToCardValue(entry);
-          return isWeekly ? (
-            <KpiCardSaisieWeekly
-              key={def.id}
-              kpi={data}
-              cardValue={cv}
-              onChange={(v) => handleChange(def, v)}
-            />
-          ) : (
-            <KpiCardSaisie
-              key={def.id}
-              kpi={data}
-              cardValue={cv}
-              onChange={(v) => handleChange(def, v)}
-            />
+      <div className="space-y-8">
+        {ROLE_SECTION_ORDER.map((role) => {
+          const items = groupedByRole.groups.get(role);
+          if (!items || items.length === 0) return null;
+          return (
+            <div key={role}>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-base">{ROLE_SECTION_ICONS[role]}</span>
+                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                  {ROLE_LABELS[role]}
+                </h3>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {items.map(({ def, niveau }) => {
+                  const entry = entriesByDef.get(def.id);
+                  const liveTarget = liveTargetMap.get(def.id);
+                  const data = defToKpiData(def, entry, liveTarget, isWeekly);
+                  const cv = local[def.id] ?? entryToCardValue(entry);
+                  return (
+                    <div key={`${role}-${def.id}`} className="relative">
+                      <span
+                        className={`absolute top-2 right-2 z-10 text-[10px] font-medium px-1.5 py-0.5 rounded-full border ${NIVEAU_COLORS[niveau]}`}
+                      >
+                        {niveau === "prioritaire" ? "●" : niveau === "secondaire" ? "◐" : "○"}
+                      </span>
+                      {isWeekly ? (
+                        <KpiCardSaisieWeekly
+                          kpi={data}
+                          cardValue={cv}
+                          onChange={(v) => handleChange(def, v)}
+                        />
+                      ) : (
+                        <KpiCardSaisie
+                          kpi={data}
+                          cardValue={cv}
+                          onChange={(v) => handleChange(def, v)}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           );
         })}
+
+        {groupedByRole.unassigned.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                Autres KPIs
+              </h3>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {groupedByRole.unassigned.map((def) => {
+                const entry = entriesByDef.get(def.id);
+                const liveTarget = liveTargetMap.get(def.id);
+                const data = defToKpiData(def, entry, liveTarget, isWeekly);
+                const cv = local[def.id] ?? entryToCardValue(entry);
+                return isWeekly ? (
+                  <KpiCardSaisieWeekly
+                    key={def.id}
+                    kpi={data}
+                    cardValue={cv}
+                    onChange={(v) => handleChange(def, v)}
+                  />
+                ) : (
+                  <KpiCardSaisie
+                    key={def.id}
+                    kpi={data}
+                    cardValue={cv}
+                    onChange={(v) => handleChange(def, v)}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
+
     </section>
   );
 }
