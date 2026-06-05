@@ -315,7 +315,7 @@ export default function KpiConfig() {
         </div>
       ) : (
         <div className="border border-border rounded-xl overflow-hidden shadow-sm overflow-x-auto">
-          <table className="w-full table-fixed text-sm">
+          <table className="w-full min-w-[760px] table-fixed text-sm">
             <thead>
               <tr>
                 <th colSpan={4} className="bg-muted/60 p-0" />
@@ -329,15 +329,15 @@ export default function KpiConfig() {
                 <th className="bg-muted/60 p-0" />
               </tr>
               <tr>
-                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60 min-w-[180px]" style={{ minWidth: "180px" }}>Nom</th>
-                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "60px" }}>Unité</th>
-                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "80px" }}>Groupe</th>
-                <th className="text-center px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "48px" }}>Actif</th>
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "200px", minWidth: "180px" }}>Nom</th>
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "70px", minWidth: "60px" }}>Unité</th>
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "90px", minWidth: "80px" }}>Groupe</th>
+                <th className="text-center px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "52px", minWidth: "48px" }}>Actif</th>
                 <th className="p-0 bg-border" style={{ width: "1px" }} />
-                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "100px" }}>Mensuel</th>
-                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "68px" }}>Mode</th>
-                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "100px" }}>Hebdo</th>
-                <th className="text-center px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "80px" }} />
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "110px", minWidth: "100px" }}>Mensuel</th>
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "76px", minWidth: "68px" }}>Mode</th>
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "110px", minWidth: "100px" }}>Hebdo</th>
+                <th className="text-center px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "88px", minWidth: "80px" }} />
 
 
               </tr>
