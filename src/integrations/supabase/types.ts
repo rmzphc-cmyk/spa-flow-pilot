@@ -503,6 +503,38 @@ export type Database = {
           },
         ]
       }
+      kpi_role_assignments: {
+        Row: {
+          created_at: string
+          id: string
+          kpi_definition_id: string
+          niveau: string
+          role: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          kpi_definition_id: string
+          niveau: string
+          role: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          kpi_definition_id?: string
+          niveau?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kpi_role_assignments_kpi_definition_id_fkey"
+            columns: ["kpi_definition_id"]
+            isOneToOne: false
+            referencedRelation: "kpi_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_summaries: {
         Row: {
           created_at: string
@@ -991,7 +1023,6 @@ export type Database = {
           monthly_meeting_day: number | null
           name: string
           organization_id: string
-          reporting_cycle_type: Database["public"]["Enums"]["reporting_cycle_type"]
           slug: string
           timezone: string
           updated_at: string
@@ -1009,7 +1040,6 @@ export type Database = {
           monthly_meeting_day?: number | null
           name: string
           organization_id: string
-          reporting_cycle_type?: Database["public"]["Enums"]["reporting_cycle_type"]
           slug: string
           timezone?: string
           updated_at?: string
@@ -1027,7 +1057,6 @@ export type Database = {
           monthly_meeting_day?: number | null
           name?: string
           organization_id?: string
-          reporting_cycle_type?: Database["public"]["Enums"]["reporting_cycle_type"]
           slug?: string
           timezone?: string
           updated_at?: string
