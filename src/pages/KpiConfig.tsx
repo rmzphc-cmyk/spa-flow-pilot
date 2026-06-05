@@ -330,6 +330,7 @@ export default function KpiConfig() {
 
       <SettingsDialog
         kpi={settingsKpi}
+        assignments={roleAssignments.filter((a) => a.kpi_definition_id === settingsKpi?.id)}
         onClose={() => setSettingsKpi(null)}
         onSave={(fields) => {
           if (!settingsKpi) return;
@@ -337,6 +338,7 @@ export default function KpiConfig() {
           setSettingsKpi(null);
         }}
       />
+
     </div>
   );
 }
