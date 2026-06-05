@@ -315,45 +315,69 @@ export function WeeklyReportPdf({ data }: Props) {
             </View>
           )}
 
-          {/* KPI */}
+          {/* KPI par rôle */}
           <View style={styles.sectionWrap}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionHeaderText}>INDICATEURS</Text>
             </View>
-            <View style={styles.tableHeader}>
-              <Text style={[styles.tableHeaderCell, { flex: 3 }]}>KPI</Text>
-              <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Valeur</Text>
-              <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Objectif</Text>
-              <Text style={[styles.tableHeaderCell, { flex: 1.5 }]}>Palier</Text>
-            </View>
-            {data.kpis.map((k, i) => {
-              const sb = statusBadgeColor(k.status);
+
+            {ROLE_SECTION_ORDER_PDF.map((role) => {
+              const roleKpis = role === null
+                ? data.kpis.filter((k) => !k.role)
+                : data.kpis.filter((k) => k.role === role);
+
+              if (roleKpis.length === 0) return null;
+
+              const meta = role
+                ? ROLE_META_PDF[role]
+                : { label: "Autres", bg: ROLE_GRAY_BG, text: ROLE_GRAY_TEXT };
+
               return (
-                <View
-                  key={i}
-                  style={[
-                    styles.tableRow,
-                    { backgroundColor: i % 2 === 0 ? WHITE : "#F8FFFE" },
-                  ]}
-                >
-                  <Text style={styles.cellName}>
-                    {k.name}
-                    {k.unit ? " (" + k.unit + ")" : ""}
-                  </Text>
-                  <Text style={styles.cellValue}>
-                    {k.value !== null ? String(k.value) : "—"}
-                  </Text>
-                  <Text style={styles.cellTarget}>
-                    {k.target !== null ? String(k.target) : "—"}
-                  </Text>
-                  <View style={styles.cellBadge}>
-                    <View style={[styles.badge, { backgroundColor: sb.bg }]}>
-                      <Text style={styles.badgeText}>{sb.label}</Text>
-                    </View>
+                <View key={role ?? "other"} style={styles.roleSection}>
+                  <View style={[styles.roleSectionHeader, { backgroundColor: meta.bg }]}>
+                    <Text style={[styles.roleSectionLabel, { color: meta.text }]}>
+                      {meta.label}
+                    </Text>
                   </View>
+
+                  <View style={styles.tableHeader}>
+                    <Text style={[styles.tableHeaderCell, { flex: 3 }]}>KPI</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Valeur</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Objectif</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 1.5 }]}>Palier</Text>
+                  </View>
+
+                  {roleKpis.map((k, i) => {
+                    const sb = statusBadgeColor(k.status);
+                    return (
+                      <View
+                        key={i}
+                        style={[
+                          styles.tableRow,
+                          { backgroundColor: i % 2 === 0 ? WHITE : meta.bg },
+                        ]}
+                      >
+                        <Text style={styles.cellName}>
+                          {k.name}{k.unit ? " (" + k.unit + ")" : ""}
+                        </Text>
+                        <Text style={styles.cellValue}>
+                          {k.value !== null ? String(k.value) : "—"}
+                        </Text>
+                        <Text style={styles.cellTarget}>
+                          {k.target !== null ? String(k.target) : "—"}
+                        </Text>
+                        <View style={styles.cellBadge}>
+                          <View style={[styles.badge, { backgroundColor: sb.bg }]}>
+                            <Text style={styles.badgeText}>{sb.label}</Text>
+                          </View>
+                        </View>
+                      </View>
+                    );
+                  })}
                 </View>
               );
             })}
+
             {data.kpis.length === 0 && (
               <View style={styles.tableRow}>
                 <Text style={[styles.cellName, { color: TEXT_MUTED }]}>
@@ -362,6 +386,7 @@ export function WeeklyReportPdf({ data }: Props) {
               </View>
             )}
           </View>
+
 
           {/* EQUIPE */}
           <View style={styles.teamBox}>
