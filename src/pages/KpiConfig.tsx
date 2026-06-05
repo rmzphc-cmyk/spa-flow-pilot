@@ -314,7 +314,7 @@ export default function KpiConfig() {
           Chargement…
         </div>
       ) : (
-        <div className="border border-border rounded-xl overflow-hidden shadow-sm">
+        <div className="border border-border rounded-xl overflow-hidden shadow-sm overflow-x-auto">
           <table className="w-full table-fixed text-sm">
             <thead>
               <tr>
@@ -329,15 +329,15 @@ export default function KpiConfig() {
                 <th className="bg-muted/60 p-0" />
               </tr>
               <tr>
-                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60">Nom</th>
-                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "68px" }}>Unité</th>
-                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "92px" }}>Groupe</th>
-                <th className="text-center px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "52px" }}>Actif</th>
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60 min-w-[180px]" style={{ minWidth: "180px" }}>Nom</th>
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "60px" }}>Unité</th>
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "80px" }}>Groupe</th>
+                <th className="text-center px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "48px" }}>Actif</th>
                 <th className="p-0 bg-border" style={{ width: "1px" }} />
-                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "120px" }}>Mensuel</th>
-                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "80px" }}>Mode</th>
-                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "120px" }}>Hebdo</th>
-                <th className="text-center px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "96px" }} />
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "100px" }}>Mensuel</th>
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "68px" }}>Mode</th>
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "100px" }}>Hebdo</th>
+                <th className="text-center px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "80px" }} />
 
 
               </tr>
@@ -516,7 +516,7 @@ function UnifiedKpiRow({
           onBlur={() => {
             if (name !== kpi.name) onUpdate({ name });
           }}
-          className="h-8 text-sm w-full"
+          className="h-8 text-sm w-full min-w-40"
           placeholder="Nom du KPI"
         />
       </td>
