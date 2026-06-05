@@ -22,7 +22,7 @@ export interface AdminSpa {
   slug: string;
   organization_id: string;
   destination_id: string;
-  reporting_cycle_type: "weekly" | "monthly";
+  
   is_active: boolean;
   timezone: string;
   country: string | null;
