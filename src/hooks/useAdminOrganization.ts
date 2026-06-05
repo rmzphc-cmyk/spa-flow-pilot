@@ -126,7 +126,7 @@ export function useAdminSpas(organizationId?: string) {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("spas")
-        .select("id, name, slug, organization_id, destination_id, reporting_cycle_type, is_active, timezone, country")
+        .select("id, name, slug, organization_id, destination_id, is_active, timezone, country")
         .eq("organization_id", organizationId!)
         .order("name");
       if (error) throw error;
