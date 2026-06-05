@@ -1,4 +1,10 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
+import {
+  useKpiRoleAssignments,
+  ROLE_LABELS,
+  type KpiRole,
+} from "@/hooks/useKpiRoleAssignments";
+
 import { useNavigate } from "react-router-dom";
 import {
   ChevronLeft, ChevronRight, Mic, MicOff, Pause, Square,
