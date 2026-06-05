@@ -322,42 +322,76 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
     switch (currentSlide) {
 
       /* ── 0 : KPI ── */
-      case 0:
+      case 0: {
+        const ROLE_COLORS_VIEW: Record<KpiRole | "other", { bg: string; text: string; border: string; icon: string }> = {
+          spa_manager:   { bg: "bg-teal-50",   text: "text-teal-800",   border: "border-teal-200",   icon: "👤" },
+          therapist:     { bg: "bg-violet-50", text: "text-violet-800", border: "border-violet-200", icon: "💆" },
+          spa_concierge: { bg: "bg-amber-50",  text: "text-amber-800",  border: "border-amber-200",  icon: "🛎️" },
+          ambassador:    { bg: "bg-rose-50",   text: "text-rose-800",   border: "border-rose-200",   icon: "⭐" },
+          other:         { bg: "bg-gray-50",   text: "text-gray-600",   border: "border-gray-200",   icon: "📊" },
+        };
+        const ROLE_LABELS_VIEW: Record<KpiRole | "other", string> = {
+          ...ROLE_LABELS,
+          other: "Autres KPIs",
+        };
+        const allSections: (KpiRole | "other")[] = [...ROLE_SECTION_ORDER_VIEW, "other"];
+
         return (
-          <div className="space-y-4">
-            {kpiRows.length === 0
-              ? <p className="text-muted-foreground">Aucun KPI renseigné.</p>
-              : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-base">
-                    <thead>
-                      <tr className="text-left text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                        <th className="pb-3 pr-4">Indicateur</th>
-                        <th className="pb-3 px-4 text-right">N-1</th>
-                        <th className="pb-3 px-4 text-right">Réel</th>
-                        <th className="pb-3 pl-4 text-right">Évolution</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {kpiRows.map(({ entry, def }) => (
-                        <tr key={entry.id}>
-                          <td className="py-4 pr-4 font-medium text-foreground">
-                            <span className="inline-flex items-center gap-2">
-                              <span className={`h-2.5 w-2.5 rounded-full ${statusDotClass(entry.status)}`} />
-                              {def!.name}
-                              {def!.unit && <span className="text-muted-foreground text-sm">({def!.unit})</span>}
-                            </span>
-                          </td>
-                          <td className="py-4 px-4 text-right text-muted-foreground tabular-nums">{entry.value_n1 ?? "—"}</td>
-                          <td className="py-4 px-4 text-right font-semibold text-foreground tabular-nums text-lg">{entry.value_current ?? "—"}</td>
-                          <td className="py-4 pl-4 text-right font-semibold tabular-nums text-muted-foreground">{formatDelta(entry.value_current, entry.value_n1)}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+          <div className="space-y-6">
+            {kpiRows.length === 0 ? (
+              <p className="text-muted-foreground">Aucun KPI renseigné.</p>
+            ) : (
+              allSections.map((role) => {
+                const rows = kpiRowsByRole.get(role) ?? [];
+                if (rows.length === 0) return null;
+                const colors = ROLE_COLORS_VIEW[role];
+                return (
+                  <div key={role}>
+                    <div className={`flex items-center gap-2 px-3 py-2 rounded-lg mb-3 ${colors.bg} border ${colors.border}`}>
+                      <span>{colors.icon}</span>
+                      <span className={`text-xs font-bold uppercase tracking-wide ${colors.text}`}>
+                        {ROLE_LABELS_VIEW[role]}
+                      </span>
+                      <span className={`ml-auto text-xs font-medium px-2 py-0.5 rounded-full ${colors.bg} ${colors.text} border ${colors.border}`}>
+                        {rows.length} KPI{rows.length > 1 ? "s" : ""}
+                      </span>
+                    </div>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-base">
+                        <thead>
+                          <tr className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            <th className="pb-2 pr-4">Indicateur</th>
+                            <th className="pb-2 px-4 text-right">N-1</th>
+                            <th className="pb-2 px-4 text-right">Réel</th>
+                            <th className="pb-2 pl-4 text-right">Évolution</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {rows.map(({ entry, def }) => (
+                            <tr key={entry.id} className="hover:bg-muted/30 transition-colors">
+                              <td className="py-3 pr-4 font-medium text-foreground">
+                                <span className="inline-flex items-center gap-2">
+                                  <span className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${statusDotClass(entry.status)}`} />
+                                  {def!.name}
+                                  {def!.unit && <span className="text-muted-foreground text-sm">({def!.unit})</span>}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-right text-muted-foreground tabular-nums">{entry.value_n1 ?? "—"}</td>
+                              <td className="py-3 px-4 text-right font-semibold text-foreground tabular-nums text-lg">{entry.value_current ?? "—"}</td>
+                              <td className="py-3 pl-4 text-right font-semibold tabular-nums text-muted-foreground">{formatDelta(entry.value_current, entry.value_n1)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
+        );
+      }
+
         );
 
       /* ── 1 : Check-in ── */
