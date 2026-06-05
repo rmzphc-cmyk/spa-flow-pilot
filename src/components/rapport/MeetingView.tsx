@@ -172,6 +172,42 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
     .filter((r) => r.def)
     .sort((a, b) => (a.def!.display_order ?? 0) - (b.def!.display_order ?? 0));
 
+  // Role assignments
+  const kpiDefIds = useMemo(
+    () => (kpiDefsQ.data ?? []).map((d) => d.id),
+    [kpiDefsQ.data]
+  );
+  const { data: roleAssignments = [] } = useKpiRoleAssignments(kpiDefIds);
+
+  const ROLE_PRIORITY: KpiRole[] = ["spa_manager", "therapist", "spa_concierge", "ambassador"];
+  const primaryRoleByKpiId = useMemo(() => {
+    const map = new Map<string, KpiRole>();
+    for (const role of ROLE_PRIORITY) {
+      for (const a of roleAssignments) {
+        if (a.role === role && !map.has(a.kpi_definition_id)) {
+          map.set(a.kpi_definition_id, a.role);
+        }
+      }
+    }
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roleAssignments]);
+
+  const ROLE_SECTION_ORDER_VIEW: KpiRole[] = ["spa_manager", "therapist", "spa_concierge", "ambassador"];
+  const kpiRowsByRole = useMemo(() => {
+    const groups = new Map<KpiRole | "other", typeof kpiRows>();
+    groups.set("other", []);
+    for (const r of ROLE_SECTION_ORDER_VIEW) groups.set(r, []);
+    for (const row of kpiRows) {
+      const role = primaryRoleByKpiId.get(row.entry.kpi_definition_id);
+      if (role) groups.get(role)!.push(row);
+      else groups.get("other")!.push(row);
+    }
+    return groups;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [kpiRows, primaryRoleByKpiId]);
+
+
   const checkin        = checkinQ.data;
   const checkinKc      = parseKeyContext(checkin?.key_context);
   const reportTodos    = (todosQ.data ?? []).filter((t) => t.status !== "done");
