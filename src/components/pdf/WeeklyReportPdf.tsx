@@ -130,6 +130,22 @@ const styles = StyleSheet.create({
   },
   badgeText: { color: WHITE, fontSize: 7, fontFamily: "Helvetica-Bold" },
 
+  roleSection: { marginBottom: 10 },
+  roleSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+    marginBottom: 4,
+  },
+  roleSectionLabel: {
+    fontSize: 8,
+    fontFamily: "Helvetica-Bold",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+
   teamBox: {
     marginTop: 8,
     backgroundColor: PURPLE_BG,
