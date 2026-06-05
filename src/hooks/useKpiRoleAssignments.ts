@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 export type KpiRole = "therapist" | "spa_concierge" | "spa_manager" | "ambassador";
 export type KpiNiveau = "prioritaire" | "secondaire" | "suivi";
