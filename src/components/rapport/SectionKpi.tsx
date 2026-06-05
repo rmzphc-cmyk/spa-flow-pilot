@@ -333,12 +333,18 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
 
   return (
     <section className="mb-8">
-      <h2 className="text-lg font-semibold text-foreground">
-        {isWeekly ? "KPI de la semaine" : t("kpi.title")}
-      </h2>
-      <p className="text-sm text-muted-foreground mb-4">
-        {isWeekly ? "Comparaison vs objectif hebdomadaire planifié (Config KPI)" : t("kpi.subtitle")}
-      </p>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-xl font-bold text-foreground">
+            {isWeekly ? "📅 KPI de la semaine" : `📊 ${t("kpi.title")}`}
+          </h2>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {isWeekly
+              ? "Comparaison vs objectif hebdomadaire (÷4 ou fixe selon config)"
+              : t("kpi.subtitle")}
+          </p>
+        </div>
+      </div>
 
 
       <div className="space-y-8">
@@ -347,12 +353,46 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
           if (!items || items.length === 0) return null;
           return (
             <div key={role}>
-              <div className="flex items-center gap-2 mb-3">
-                <span className="text-base">{ROLE_SECTION_ICONS[role]}</span>
-                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
-                  {ROLE_LABELS[role]}
-                </h3>
-                <div className="h-px flex-1 bg-border" />
+              <div
+                className={`flex items-center gap-3 px-4 py-2.5 rounded-lg mb-4 ${
+                  role === "spa_manager"
+                    ? "bg-teal-50 border border-teal-200"
+                    : role === "therapist"
+                    ? "bg-violet-50 border border-violet-200"
+                    : role === "spa_concierge"
+                    ? "bg-amber-50 border border-amber-200"
+                    : "bg-rose-50 border border-rose-200"
+                }`}
+              >
+                <span className="text-lg">{ROLE_SECTION_ICONS[role]}</span>
+                <div className="flex-1">
+                  <h3
+                    className={`text-sm font-bold uppercase tracking-wide ${
+                      role === "spa_manager"
+                        ? "text-teal-800"
+                        : role === "therapist"
+                        ? "text-violet-800"
+                        : role === "spa_concierge"
+                        ? "text-amber-800"
+                        : "text-rose-800"
+                    }`}
+                  >
+                    {ROLE_LABELS[role]}
+                  </h3>
+                </div>
+                <span
+                  className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                    role === "spa_manager"
+                      ? "bg-teal-200 text-teal-800"
+                      : role === "therapist"
+                      ? "bg-violet-200 text-violet-800"
+                      : role === "spa_concierge"
+                      ? "bg-amber-200 text-amber-800"
+                      : "bg-rose-200 text-rose-800"
+                  }`}
+                >
+                  {items.length} KPI{items.length > 1 ? "s" : ""}
+                </span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
                 {items.map(({ def, niveau }) => {
@@ -361,25 +401,41 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
                   const data = defToKpiData(def, entry, liveTarget, isWeekly);
                   const cv = local[def.id] ?? entryToCardValue(entry);
                   return (
-                    <div key={`${role}-${def.id}`} className="relative">
-                      <span
-                        className={`absolute top-2 right-2 z-10 text-[10px] font-medium px-1.5 py-0.5 rounded-full border ${NIVEAU_COLORS[niveau]}`}
+                    <div key={`${role}-${def.id}`} className="flex flex-col gap-0">
+                      <div
+                        className={`text-[10px] font-semibold uppercase tracking-widest px-3 py-0.5 rounded-t-md w-fit ${
+                          niveau === "prioritaire"
+                            ? "bg-teal-600 text-white"
+                            : niveau === "secondaire"
+                            ? "bg-blue-500 text-white"
+                            : "bg-gray-400 text-white"
+                        }`}
                       >
-                        {niveau === "prioritaire" ? "●" : niveau === "secondaire" ? "◐" : "○"}
-                      </span>
-                      {isWeekly ? (
-                        <KpiCardSaisieWeekly
-                          kpi={data}
-                          cardValue={cv}
-                          onChange={(v) => handleChange(def, v)}
-                        />
-                      ) : (
-                        <KpiCardSaisie
-                          kpi={data}
-                          cardValue={cv}
-                          onChange={(v) => handleChange(def, v)}
-                        />
-                      )}
+                        {niveau}
+                      </div>
+                      <div
+                        className={`rounded-tl-none border-l-4 ${
+                          niveau === "prioritaire"
+                            ? "border-l-teal-500"
+                            : niveau === "secondaire"
+                            ? "border-l-blue-400"
+                            : "border-l-gray-300"
+                        }`}
+                      >
+                        {isWeekly ? (
+                          <KpiCardSaisieWeekly
+                            kpi={data}
+                            cardValue={cv}
+                            onChange={(v) => handleChange(def, v)}
+                          />
+                        ) : (
+                          <KpiCardSaisie
+                            kpi={data}
+                            cardValue={cv}
+                            onChange={(v) => handleChange(def, v)}
+                          />
+                        )}
+                      </div>
                     </div>
                   );
                 })}
@@ -390,11 +446,14 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
 
         {groupedByRole.unassigned.length > 0 && (
           <div>
-            <div className="flex items-center gap-2 mb-3">
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+            <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg mb-4 bg-gray-50 border border-gray-200">
+              <span className="text-lg">📊</span>
+              <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 flex-1">
                 Autres KPIs
               </h3>
-              <div className="h-px flex-1 bg-border" />
+              <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">
+                {groupedByRole.unassigned.length} KPI{groupedByRole.unassigned.length > 1 ? "s" : ""}
+              </span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {groupedByRole.unassigned.map((def) => {
@@ -426,6 +485,7 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
     </section>
   );
 }
+
 
 // Re-export for backwards-compat with any importers
 export { getKpiStatus };
