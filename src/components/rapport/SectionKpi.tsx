@@ -17,6 +17,35 @@ import {
   getWeeklyTarget,
   type KpiMonthlyTarget,
 } from "@/hooks/useKpiMonthlyTargets";
+import {
+  useKpiRoleAssignments,
+  ROLE_LABELS,
+  NIVEAU_COLORS,
+  type KpiRoleAssignment,
+  type KpiRole,
+  type KpiNiveau,
+} from "@/hooks/useKpiRoleAssignments";
+
+const NIVEAU_ORDER: Record<KpiNiveau, number> = {
+  prioritaire: 0,
+  secondaire: 1,
+  suivi: 2,
+};
+
+const ROLE_SECTION_ORDER: KpiRole[] = [
+  "spa_manager",
+  "therapist",
+  "spa_concierge",
+  "ambassador",
+];
+
+const ROLE_SECTION_ICONS: Record<KpiRole, string> = {
+  spa_manager: "👤",
+  therapist: "💆",
+  spa_concierge: "🛎️",
+  ambassador: "⭐",
+};
+
 
 interface Props {
   reportId: string;
