@@ -71,14 +71,23 @@ export function useDeleteKpiRoleAssignment() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
+      const { error, count } = await supabase
         .from("kpi_role_assignments")
-        .delete()
+        .delete({ count: "exact" })
         .eq("id", id);
       if (error) throw error;
+      if (!count) {
+        throw new Error(
+          "Suppression refusée : seul un administrateur peut modifier les assignations de rôles."
+        );
+      }
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["kpi_role_assignments"] });
+      toast.success("Assignation supprimée");
+    },
+    onError: (e: Error) => {
+      toast.error(e.message || "Impossible de supprimer l'assignation");
     },
   });
 }
