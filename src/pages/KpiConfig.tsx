@@ -670,7 +670,72 @@ function SettingsDialog({
           <p className="text-xs text-muted-foreground">
             En dessous de "Correct" → <span className="text-red-500 font-medium">Insuffisant</span>
           </p>
+
+          {/* Section Rôles */}
+          <div className="border-t pt-4">
+            <label className="text-xs font-medium text-muted-foreground block mb-2">
+              Assignation par rôle
+            </label>
+
+            {assignments.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {assignments.map((a) => (
+                  <span
+                    key={a.id}
+                    className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium ${NIVEAU_COLORS[a.niveau]}`}
+                  >
+                    {ROLE_LABELS[a.role]} — {NIVEAU_LABELS[a.niveau]}
+                    <button
+                      className="ml-0.5 hover:opacity-70"
+                      onClick={() => deleteRole.mutate(a.id)}
+                      aria-label="Supprimer"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="flex gap-2 items-center">
+              <Select value={newRole} onValueChange={(v) => setNewRole(v as KpiRole)}>
+                <SelectTrigger className="h-8 text-xs flex-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(ROLE_LABELS) as KpiRole[]).map((r) => (
+                    <SelectItem key={r} value={r} className="text-xs">
+                      {ROLE_LABELS[r]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={newNiveau} onValueChange={(v) => setNewNiveau(v as KpiNiveau)}>
+                <SelectTrigger className="h-8 text-xs flex-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(NIVEAU_LABELS) as KpiNiveau[]).map((n) => (
+                    <SelectItem key={n} value={n} className="text-xs">
+                      {NIVEAU_LABELS[n]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Button
+                size="sm"
+                className="h-8 text-xs bg-teal-600 hover:bg-teal-700 text-white px-3"
+                onClick={handleAddAssignment}
+                disabled={upsertRole.isPending}
+              >
+                + Ajouter
+              </Button>
+            </div>
+          </div>
         </div>
+
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Annuler</Button>
           <Button
