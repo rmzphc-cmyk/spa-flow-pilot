@@ -314,8 +314,8 @@ export default function KpiConfig() {
           Chargement…
         </div>
       ) : (
-        <div className="border border-border rounded-xl overflow-hidden shadow-sm overflow-x-auto">
-          <table className="w-full min-w-[760px] table-fixed text-sm">
+        <div className="border border-border rounded-xl overflow-x-auto shadow-sm">
+          <table className="w-full min-w-[760px] table-auto text-sm">
             <thead>
               <tr>
                 <th colSpan={4} className="bg-muted/60 p-0" />
@@ -329,7 +329,7 @@ export default function KpiConfig() {
                 <th className="bg-muted/60 p-0" />
               </tr>
               <tr>
-                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "200px", minWidth: "180px" }}>Nom</th>
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ minWidth: "200px" }}>Nom</th>
                 <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "70px", minWidth: "60px" }}>Unité</th>
                 <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "90px", minWidth: "80px" }}>Groupe</th>
                 <th className="text-center px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "52px", minWidth: "48px" }}>Actif</th>
