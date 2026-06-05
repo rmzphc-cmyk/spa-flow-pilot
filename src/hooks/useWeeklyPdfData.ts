@@ -12,6 +12,7 @@ import {
   useResponsabilityLogs,
   calcWeeklyExpected,
 } from "@/hooks/useResponsabilites";
+import { useKpiRoleAssignments } from "@/hooks/useKpiRoleAssignments";
 
 export interface WeeklyPdfKpi {
   name: string;
@@ -19,7 +20,11 @@ export interface WeeklyPdfKpi {
   value: number | null;
   target: number | null;
   status: string;
+  role: string | null;
+  niveau: string | null;
+  kpiDefinitionId: string;
 }
+
 
 export interface WeeklyPdfIds {
   text: string;
@@ -137,6 +142,8 @@ export function useWeeklyPdfData(
   const summaryQ = useMeetingSummary(reportId);
   const templatesQ = useResponsabilityTemplates(spaId);
   const logsQ = useResponsabilityLogs(reportId);
+  const kpiDefIds = (defsQ.data ?? []).map((d) => d.id);
+  const roleAssignmentsQ = useKpiRoleAssignments(kpiDefIds);
 
   const isLoading =
     spaQ.isLoading ||
@@ -147,7 +154,8 @@ export function useWeeklyPdfData(
     todosQ.isLoading ||
     summaryQ.isLoading ||
     templatesQ.isLoading ||
-    logsQ.isLoading;
+    logsQ.isLoading ||
+    roleAssignmentsQ.isLoading;
 
   if (isLoading) return { data: null, isLoading: true };
 
@@ -159,18 +167,34 @@ export function useWeeklyPdfData(
     "";
 
   const defsById = new Map((defsQ.data ?? []).map((d) => [d.id, d]));
+
+  const ROLE_PRIORITY_PDF = ["spa_manager", "therapist", "spa_concierge", "ambassador"];
+  const primaryAssignmentByKpiId = new Map<string, { role: string; niveau: string }>();
+  for (const role of ROLE_PRIORITY_PDF) {
+    for (const a of (roleAssignmentsQ.data ?? [])) {
+      if (a.role === role && !primaryAssignmentByKpiId.has(a.kpi_definition_id)) {
+        primaryAssignmentByKpiId.set(a.kpi_definition_id, { role: a.role, niveau: a.niveau });
+      }
+    }
+  }
+
   const kpis: WeeklyPdfKpi[] = (entriesQ.data ?? [])
     .filter((e) => e.value_current !== null)
     .map((e) => {
       const def = defsById.get(e.kpi_definition_id);
+      const assignment = primaryAssignmentByKpiId.get(e.kpi_definition_id);
       return {
         name: def?.name ?? "—",
         unit: def?.unit ?? "",
         value: e.value_current,
         target: e.target_value,
         status: e.status,
+        role: assignment?.role ?? null,
+        niveau: assignment?.niveau ?? null,
+        kpiDefinitionId: e.kpi_definition_id,
       };
     });
+
 
   const kc = parseKeyContext(checkinQ.data?.key_context);
 

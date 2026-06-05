@@ -22,6 +22,28 @@ const WHITE = "#FFFFFF";
 const AMBER_BG = "#FFF7ED";
 const AMBER_TEXT = "#C2410C";
 
+// Couleurs sections rôle
+const ROLE_TEAL_BG = "#F0FDFA";
+const ROLE_TEAL_TEXT = "#0F766E";
+const ROLE_VIOLET_BG = "#F5F3FF";
+const ROLE_VIOLET_TEXT = "#6D28D9";
+const ROLE_AMBER_BG = "#FFFBEB";
+const ROLE_AMBER_TEXT_ROLE = "#B45309";
+const ROLE_ROSE_BG = "#FFF1F2";
+const ROLE_ROSE_TEXT = "#BE123C";
+const ROLE_GRAY_BG = "#F9FAFB";
+const ROLE_GRAY_TEXT = "#4B5563";
+
+const ROLE_SECTION_ORDER_PDF: (string | null)[] = ["spa_manager", "therapist", "spa_concierge", "ambassador", null];
+
+const ROLE_META_PDF: Record<string, { label: string; bg: string; text: string }> = {
+  spa_manager:   { label: "Manager",     bg: ROLE_TEAL_BG,   text: ROLE_TEAL_TEXT },
+  therapist:     { label: "Thérapeute",  bg: ROLE_VIOLET_BG, text: ROLE_VIOLET_TEXT },
+  spa_concierge: { label: "Concierge",   bg: ROLE_AMBER_BG,  text: ROLE_AMBER_TEXT_ROLE },
+  ambassador:    { label: "Ambassadeur", bg: ROLE_ROSE_BG,   text: ROLE_ROSE_TEXT },
+};
+
+
 const styles = StyleSheet.create({
   page: {
     paddingTop: 0,
@@ -107,6 +129,22 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   badgeText: { color: WHITE, fontSize: 7, fontFamily: "Helvetica-Bold" },
+
+  roleSection: { marginBottom: 10 },
+  roleSectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 5,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+    marginBottom: 4,
+  },
+  roleSectionLabel: {
+    fontSize: 8,
+    fontFamily: "Helvetica-Bold",
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
 
   teamBox: {
     marginTop: 8,
@@ -277,45 +315,69 @@ export function WeeklyReportPdf({ data }: Props) {
             </View>
           )}
 
-          {/* KPI */}
+          {/* KPI par rôle */}
           <View style={styles.sectionWrap}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionHeaderText}>INDICATEURS</Text>
             </View>
-            <View style={styles.tableHeader}>
-              <Text style={[styles.tableHeaderCell, { flex: 3 }]}>KPI</Text>
-              <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Valeur</Text>
-              <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Objectif</Text>
-              <Text style={[styles.tableHeaderCell, { flex: 1.5 }]}>Palier</Text>
-            </View>
-            {data.kpis.map((k, i) => {
-              const sb = statusBadgeColor(k.status);
+
+            {ROLE_SECTION_ORDER_PDF.map((role) => {
+              const roleKpis = role === null
+                ? data.kpis.filter((k) => !k.role)
+                : data.kpis.filter((k) => k.role === role);
+
+              if (roleKpis.length === 0) return null;
+
+              const meta = role
+                ? ROLE_META_PDF[role]
+                : { label: "Autres", bg: ROLE_GRAY_BG, text: ROLE_GRAY_TEXT };
+
               return (
-                <View
-                  key={i}
-                  style={[
-                    styles.tableRow,
-                    { backgroundColor: i % 2 === 0 ? WHITE : "#F8FFFE" },
-                  ]}
-                >
-                  <Text style={styles.cellName}>
-                    {k.name}
-                    {k.unit ? " (" + k.unit + ")" : ""}
-                  </Text>
-                  <Text style={styles.cellValue}>
-                    {k.value !== null ? String(k.value) : "—"}
-                  </Text>
-                  <Text style={styles.cellTarget}>
-                    {k.target !== null ? String(k.target) : "—"}
-                  </Text>
-                  <View style={styles.cellBadge}>
-                    <View style={[styles.badge, { backgroundColor: sb.bg }]}>
-                      <Text style={styles.badgeText}>{sb.label}</Text>
-                    </View>
+                <View key={role ?? "other"} style={styles.roleSection}>
+                  <View style={[styles.roleSectionHeader, { backgroundColor: meta.bg }]}>
+                    <Text style={[styles.roleSectionLabel, { color: meta.text }]}>
+                      {meta.label}
+                    </Text>
                   </View>
+
+                  <View style={styles.tableHeader}>
+                    <Text style={[styles.tableHeaderCell, { flex: 3 }]}>KPI</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Valeur</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Objectif</Text>
+                    <Text style={[styles.tableHeaderCell, { flex: 1.5 }]}>Palier</Text>
+                  </View>
+
+                  {roleKpis.map((k, i) => {
+                    const sb = statusBadgeColor(k.status);
+                    return (
+                      <View
+                        key={i}
+                        style={[
+                          styles.tableRow,
+                          { backgroundColor: i % 2 === 0 ? WHITE : meta.bg },
+                        ]}
+                      >
+                        <Text style={styles.cellName}>
+                          {k.name}{k.unit ? " (" + k.unit + ")" : ""}
+                        </Text>
+                        <Text style={styles.cellValue}>
+                          {k.value !== null ? String(k.value) : "—"}
+                        </Text>
+                        <Text style={styles.cellTarget}>
+                          {k.target !== null ? String(k.target) : "—"}
+                        </Text>
+                        <View style={styles.cellBadge}>
+                          <View style={[styles.badge, { backgroundColor: sb.bg }]}>
+                            <Text style={styles.badgeText}>{sb.label}</Text>
+                          </View>
+                        </View>
+                      </View>
+                    );
+                  })}
                 </View>
               );
             })}
+
             {data.kpis.length === 0 && (
               <View style={styles.tableRow}>
                 <Text style={[styles.cellName, { color: TEXT_MUTED }]}>
@@ -324,6 +386,7 @@ export function WeeklyReportPdf({ data }: Props) {
               </View>
             )}
           </View>
+
 
           {/* EQUIPE */}
           <View style={styles.teamBox}>
