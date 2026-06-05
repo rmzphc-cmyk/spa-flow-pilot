@@ -283,6 +283,17 @@ export default function KpiConfig() {
               </SelectContent>
             </Select>
           )}
+          {userRole === "admin" && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 border-orange-500 text-orange-600 hover:bg-orange-50 hover:text-orange-700"
+              onClick={seedTestRoleAssignments}
+              disabled={!spaId || items.length === 0}
+            >
+              🧪 Seed rôles test
+            </Button>
+          )}
           <Button
             size="sm"
             className="gap-1.5 bg-teal-600 hover:bg-teal-700 text-white"
