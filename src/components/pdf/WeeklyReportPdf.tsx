@@ -22,6 +22,28 @@ const WHITE = "#FFFFFF";
 const AMBER_BG = "#FFF7ED";
 const AMBER_TEXT = "#C2410C";
 
+// Couleurs sections rôle
+const ROLE_TEAL_BG = "#F0FDFA";
+const ROLE_TEAL_TEXT = "#0F766E";
+const ROLE_VIOLET_BG = "#F5F3FF";
+const ROLE_VIOLET_TEXT = "#6D28D9";
+const ROLE_AMBER_BG = "#FFFBEB";
+const ROLE_AMBER_TEXT_ROLE = "#B45309";
+const ROLE_ROSE_BG = "#FFF1F2";
+const ROLE_ROSE_TEXT = "#BE123C";
+const ROLE_GRAY_BG = "#F9FAFB";
+const ROLE_GRAY_TEXT = "#4B5563";
+
+const ROLE_SECTION_ORDER_PDF: (string | null)[] = ["spa_manager", "therapist", "spa_concierge", "ambassador", null];
+
+const ROLE_META_PDF: Record<string, { label: string; bg: string; text: string }> = {
+  spa_manager:   { label: "Manager",     bg: ROLE_TEAL_BG,   text: ROLE_TEAL_TEXT },
+  therapist:     { label: "Thérapeute",  bg: ROLE_VIOLET_BG, text: ROLE_VIOLET_TEXT },
+  spa_concierge: { label: "Concierge",   bg: ROLE_AMBER_BG,  text: ROLE_AMBER_TEXT_ROLE },
+  ambassador:    { label: "Ambassadeur", bg: ROLE_ROSE_BG,   text: ROLE_ROSE_TEXT },
+};
+
+
 const styles = StyleSheet.create({
   page: {
     paddingTop: 0,
