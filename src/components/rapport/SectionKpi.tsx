@@ -142,18 +142,49 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
     });
   }, [definitions, entriesByDef]);
 
-  // Sort: spa first, then manager, then display_order
-  const sortedDefs = useMemo(
-    () =>
-      [...definitions].sort((a, b) => {
-        const ca = mapCategory(a);
-        const cb = mapCategory(b);
+  // Fetch role assignments for all KPIs of this spa
+  const kpiIds = useMemo(() => definitions.map((d) => d.id), [definitions]);
+  const { data: roleAssignments = [] } = useKpiRoleAssignments(kpiIds);
 
-        if (ca !== cb) return ca === "spa" ? -1 : 1;
-        return a.display_order - b.display_order;
-      }),
-    [definitions],
-  );
+  const assignmentsByKpiId = useMemo(() => {
+    const map = new Map<string, KpiRoleAssignment[]>();
+    for (const a of roleAssignments) {
+      if (!map.has(a.kpi_definition_id)) map.set(a.kpi_definition_id, []);
+      map.get(a.kpi_definition_id)!.push(a);
+    }
+    return map;
+  }, [roleAssignments]);
+
+  const groupedByRole = useMemo(() => {
+    const groups = new Map<KpiRole, { def: KpiDefinitionRow; niveau: KpiNiveau }[]>();
+    const unassigned: KpiDefinitionRow[] = [];
+
+    for (const def of definitions) {
+      const assignments = assignmentsByKpiId.get(def.id) ?? [];
+      if (assignments.length === 0) {
+        unassigned.push(def);
+      } else {
+        for (const a of assignments) {
+          if (!groups.has(a.role)) groups.set(a.role, []);
+          groups.get(a.role)!.push({ def, niveau: a.niveau });
+        }
+      }
+    }
+
+    for (const [, items] of groups) {
+      items.sort(
+        (a, b) =>
+          NIVEAU_ORDER[a.niveau] - NIVEAU_ORDER[b.niveau] ||
+          a.def.display_order - b.def.display_order,
+      );
+    }
+
+    return { groups, unassigned };
+  }, [definitions, assignmentsByKpiId]);
+
+  // Fallback flat list for completeness check (order doesn't matter)
+  const sortedDefs = useMemo(() => definitions, [definitions]);
+
 
   // Debounce timers per definition
   const timersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
