@@ -50,6 +50,19 @@ import {
   type KpiMonthlyTarget,
   type WeeklyMode,
 } from "@/hooks/useKpiMonthlyTargets";
+import {
+  useKpiRoleAssignments,
+  useUpsertKpiRoleAssignment,
+  useDeleteKpiRoleAssignment,
+  ROLE_LABELS,
+  NIVEAU_LABELS,
+  NIVEAU_COLORS,
+  type KpiRole,
+  type KpiNiveau,
+  type KpiRoleAssignment,
+} from "@/hooks/useKpiRoleAssignments";
+
+
 
 const UNIT_OPTIONS = ["€", "%", "nb", "/10", "j", "pts"] as const;
 const CATEGORY_LABELS: Record<KpiCategoryDb, string> = {
@@ -98,6 +111,10 @@ export default function KpiConfig() {
   const [showInactive, setShowInactive] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [settingsKpi, setSettingsKpi] = useState<KpiDefinitionFull | null>(null);
+
+  const kpiIds = useMemo(() => items.map((i) => i.id), [items]);
+  const { data: roleAssignments = [] } = useKpiRoleAssignments(kpiIds);
+
 
   const sortedItems = useMemo(
     () => [...items].sort((a, b) => a.display_order - b.display_order),
@@ -313,6 +330,7 @@ export default function KpiConfig() {
 
       <SettingsDialog
         kpi={settingsKpi}
+        assignments={roleAssignments.filter((a) => a.kpi_definition_id === settingsKpi?.id)}
         onClose={() => setSettingsKpi(null)}
         onSave={(fields) => {
           if (!settingsKpi) return;
@@ -320,6 +338,7 @@ export default function KpiConfig() {
           setSettingsKpi(null);
         }}
       />
+
     </div>
   );
 }
@@ -565,16 +584,27 @@ function SettingsDialog({
   kpi,
   onClose,
   onSave,
+  assignments,
 }: {
   kpi: KpiDefinitionFull | null;
   onClose: () => void;
   onSave: (fields: Partial<KpiDefinitionFull>) => void;
+  assignments: KpiRoleAssignment[];
 }) {
   const [category, setCategory] = useState<KpiCategoryDb>("operational");
   const [direction, setDirection] = useState<ComparisonDirection>("higher_is_better");
   const [amber, setAmber] = useState("");
   const [red, setRed] = useState("");
   const [excellent, setExcellent] = useState("");
+  const [newRole, setNewRole] = useState<KpiRole>("therapist");
+  const [newNiveau, setNewNiveau] = useState<KpiNiveau>("prioritaire");
+  const upsertRole = useUpsertKpiRoleAssignment();
+  const deleteRole = useDeleteKpiRoleAssignment();
+
+  const handleAddAssignment = () => {
+    if (!kpi) return;
+    upsertRole.mutate({ kpi_definition_id: kpi.id, role: newRole, niveau: newNiveau });
+  };
 
   useEffect(() => {
     if (kpi) {
@@ -585,6 +615,7 @@ function SettingsDialog({
       setExcellent(kpi.threshold_excellent != null ? String(kpi.threshold_excellent) : "");
     }
   }, [kpi]);
+
 
   return (
     <Dialog open={!!kpi} onOpenChange={(v) => !v && onClose()}>
@@ -639,7 +670,72 @@ function SettingsDialog({
           <p className="text-xs text-muted-foreground">
             En dessous de "Correct" → <span className="text-red-500 font-medium">Insuffisant</span>
           </p>
+
+          {/* Section Rôles */}
+          <div className="border-t pt-4">
+            <label className="text-xs font-medium text-muted-foreground block mb-2">
+              Assignation par rôle
+            </label>
+
+            {assignments.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {assignments.map((a) => (
+                  <span
+                    key={a.id}
+                    className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium ${NIVEAU_COLORS[a.niveau]}`}
+                  >
+                    {ROLE_LABELS[a.role]} — {NIVEAU_LABELS[a.niveau]}
+                    <button
+                      className="ml-0.5 hover:opacity-70"
+                      onClick={() => deleteRole.mutate(a.id)}
+                      aria-label="Supprimer"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+
+            <div className="flex gap-2 items-center">
+              <Select value={newRole} onValueChange={(v) => setNewRole(v as KpiRole)}>
+                <SelectTrigger className="h-8 text-xs flex-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(ROLE_LABELS) as KpiRole[]).map((r) => (
+                    <SelectItem key={r} value={r} className="text-xs">
+                      {ROLE_LABELS[r]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={newNiveau} onValueChange={(v) => setNewNiveau(v as KpiNiveau)}>
+                <SelectTrigger className="h-8 text-xs flex-1">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {(Object.keys(NIVEAU_LABELS) as KpiNiveau[]).map((n) => (
+                    <SelectItem key={n} value={n} className="text-xs">
+                      {NIVEAU_LABELS[n]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Button
+                size="sm"
+                className="h-8 text-xs bg-teal-600 hover:bg-teal-700 text-white px-3"
+                onClick={handleAddAssignment}
+                disabled={upsertRole.isPending}
+              >
+                + Ajouter
+              </Button>
+            </div>
+          </div>
         </div>
+
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>Annuler</Button>
           <Button
