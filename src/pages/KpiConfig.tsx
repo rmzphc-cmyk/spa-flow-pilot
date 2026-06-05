@@ -584,16 +584,27 @@ function SettingsDialog({
   kpi,
   onClose,
   onSave,
+  assignments,
 }: {
   kpi: KpiDefinitionFull | null;
   onClose: () => void;
   onSave: (fields: Partial<KpiDefinitionFull>) => void;
+  assignments: KpiRoleAssignment[];
 }) {
   const [category, setCategory] = useState<KpiCategoryDb>("operational");
   const [direction, setDirection] = useState<ComparisonDirection>("higher_is_better");
   const [amber, setAmber] = useState("");
   const [red, setRed] = useState("");
   const [excellent, setExcellent] = useState("");
+  const [newRole, setNewRole] = useState<KpiRole>("therapist");
+  const [newNiveau, setNewNiveau] = useState<KpiNiveau>("prioritaire");
+  const upsertRole = useUpsertKpiRoleAssignment();
+  const deleteRole = useDeleteKpiRoleAssignment();
+
+  const handleAddAssignment = () => {
+    if (!kpi) return;
+    upsertRole.mutate({ kpi_definition_id: kpi.id, role: newRole, niveau: newNiveau });
+  };
 
   useEffect(() => {
     if (kpi) {
@@ -604,6 +615,7 @@ function SettingsDialog({
       setExcellent(kpi.threshold_excellent != null ? String(kpi.threshold_excellent) : "");
     }
   }, [kpi]);
+
 
   return (
     <Dialog open={!!kpi} onOpenChange={(v) => !v && onClose()}>
