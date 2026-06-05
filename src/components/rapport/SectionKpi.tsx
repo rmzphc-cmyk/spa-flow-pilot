@@ -341,29 +341,88 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
       </p>
 
 
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        {sortedDefs.map((def) => {
-          const entry = entriesByDef.get(def.id);
-          const liveTarget = liveTargetMap.get(def.id);
-          const data = defToKpiData(def, entry, liveTarget, isWeekly);
-          const cv = local[def.id] ?? entryToCardValue(entry);
-          return isWeekly ? (
-            <KpiCardSaisieWeekly
-              key={def.id}
-              kpi={data}
-              cardValue={cv}
-              onChange={(v) => handleChange(def, v)}
-            />
-          ) : (
-            <KpiCardSaisie
-              key={def.id}
-              kpi={data}
-              cardValue={cv}
-              onChange={(v) => handleChange(def, v)}
-            />
+      <div className="space-y-8">
+        {ROLE_SECTION_ORDER.map((role) => {
+          const items = groupedByRole.groups.get(role);
+          if (!items || items.length === 0) return null;
+          return (
+            <div key={role}>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-base">{ROLE_SECTION_ICONS[role]}</span>
+                <h3 className="text-sm font-semibold text-foreground uppercase tracking-wide">
+                  {ROLE_LABELS[role]}
+                </h3>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                {items.map(({ def, niveau }) => {
+                  const entry = entriesByDef.get(def.id);
+                  const liveTarget = liveTargetMap.get(def.id);
+                  const data = defToKpiData(def, entry, liveTarget, isWeekly);
+                  const cv = local[def.id] ?? entryToCardValue(entry);
+                  return (
+                    <div key={`${role}-${def.id}`} className="relative">
+                      <span
+                        className={`absolute top-2 right-2 z-10 text-[10px] font-medium px-1.5 py-0.5 rounded-full border ${NIVEAU_COLORS[niveau]}`}
+                      >
+                        {niveau === "prioritaire" ? "●" : niveau === "secondaire" ? "◐" : "○"}
+                      </span>
+                      {isWeekly ? (
+                        <KpiCardSaisieWeekly
+                          kpi={data}
+                          cardValue={cv}
+                          onChange={(v) => handleChange(def, v)}
+                        />
+                      ) : (
+                        <KpiCardSaisie
+                          kpi={data}
+                          cardValue={cv}
+                          onChange={(v) => handleChange(def, v)}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           );
         })}
+
+        {groupedByRole.unassigned.length > 0 && (
+          <div>
+            <div className="flex items-center gap-2 mb-3">
+              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
+                Autres KPIs
+              </h3>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {groupedByRole.unassigned.map((def) => {
+                const entry = entriesByDef.get(def.id);
+                const liveTarget = liveTargetMap.get(def.id);
+                const data = defToKpiData(def, entry, liveTarget, isWeekly);
+                const cv = local[def.id] ?? entryToCardValue(entry);
+                return isWeekly ? (
+                  <KpiCardSaisieWeekly
+                    key={def.id}
+                    kpi={data}
+                    cardValue={cv}
+                    onChange={(v) => handleChange(def, v)}
+                  />
+                ) : (
+                  <KpiCardSaisie
+                    key={def.id}
+                    kpi={data}
+                    cardValue={cv}
+                    onChange={(v) => handleChange(def, v)}
+                  />
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
+
     </section>
   );
 }
