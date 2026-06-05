@@ -12,6 +12,7 @@ import {
   useResponsabilityLogs,
   calcWeeklyExpected,
 } from "@/hooks/useResponsabilites";
+import { useKpiRoleAssignments } from "@/hooks/useKpiRoleAssignments";
 
 export interface WeeklyPdfKpi {
   name: string;
@@ -19,7 +20,11 @@ export interface WeeklyPdfKpi {
   value: number | null;
   target: number | null;
   status: string;
+  role: string | null;
+  niveau: string | null;
+  kpiDefinitionId: string;
 }
+
 
 export interface WeeklyPdfIds {
   text: string;
