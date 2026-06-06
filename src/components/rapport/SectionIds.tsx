@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Lightbulb, Plus, Check, AlertCircle, Loader2 } from "lucide-react";
@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/AuthContext";
+import type { SectionStatus } from "@/pages/RapportDetail";
 import {
   useIdsItems,
   useAddIdsItem,
@@ -26,6 +27,7 @@ interface Props {
   reportType: "monthly" | "weekly";
   periodStart?: string;
   periodEnd?: string;
+  onStatusChange?: (status: SectionStatus) => void;
 }
 
 const TRIAGE_SORT_ORDER: Record<string, number> = {
@@ -35,9 +37,9 @@ const TRIAGE_SORT_ORDER: Record<string, number> = {
   veille: 3,
 };
 
-export function SectionIds({ reportId, reportType, periodStart, periodEnd }: Props) {
+export function SectionIds({ reportId, reportType, periodStart, periodEnd, onStatusChange }: Props) {
   const { spaId } = useAuth();
-  const { data: rawIssues = [] } = useIdsItems(reportId);
+  const { data: rawIssues = [], isLoading: isLoadingWeekly } = useIdsItems(reportId);
   const { data: monthlyPreviewItems, isLoading: isLoadingPreview } = useIdsItemsForMonthlyPeriod(
     reportType === "monthly" ? spaId ?? undefined : undefined,
     periodStart,
@@ -53,10 +55,22 @@ export function SectionIds({ reportId, reportType, periodStart, periodEnd }: Pro
   const [triageStep, setTriageStep] = useState<"select" | "confirm">("select");
   const [selectedMode, setSelectedMode] = useState<TriageMode | null>(null);
 
+  useEffect(() => {
+    if (reportType === "weekly" && !isLoadingWeekly) {
+      onStatusChange?.("complete");
+    }
+  }, [reportType, isLoadingWeekly, onStatusChange]);
+
   const issues = [...rawIssues].sort((a, b) => {
     const oa = a.triage_mode ? (TRIAGE_SORT_ORDER[a.triage_mode] ?? 4) : 5;
     const ob = b.triage_mode ? (TRIAGE_SORT_ORDER[b.triage_mode] ?? 4) : 5;
     return oa - ob || a.display_order - b.display_order;
+  });
+
+  const sortedMonthlyItems = [...(monthlyPreviewItems ?? [])].sort((a, b) => {
+    const oa = a.triage_mode ? (TRIAGE_SORT_ORDER[a.triage_mode] ?? 4) : 5;
+    const ob = b.triage_mode ? (TRIAGE_SORT_ORDER[b.triage_mode] ?? 4) : 5;
+    return oa - ob;
   });
 
   const addIssue = () => {
@@ -266,7 +280,7 @@ export function SectionIds({ reportId, reportType, periodStart, periodEnd }: Pro
           <div className="flex items-center justify-center py-10 text-muted-foreground">
             <Loader2 className="h-5 w-5 animate-spin" />
           </div>
-        ) : monthlyPreviewItems.length === 0 ? (
+        ) : sortedMonthlyItems.length === 0 ? (
           <div className="bg-muted/50 border border-border rounded-xl p-8 text-center">
             <Lightbulb className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
             <p className="text-foreground font-medium">Aucun problème signalé ce mois</p>
@@ -276,7 +290,7 @@ export function SectionIds({ reportId, reportType, periodStart, periodEnd }: Pro
           </div>
         ) : (
           <div className="space-y-2">
-            {monthlyPreviewItems.map((item) => {
+            {sortedMonthlyItems.map((item) => {
               const isUnresolved =
                 item.converted_to_todo_id === null && item.converted_to_objective_id === null;
               return (

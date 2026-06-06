@@ -11,7 +11,6 @@ import { SectionTodo } from "@/components/rapport/SectionTodo";
 import { SectionTodoWeekly } from "@/components/rapport/SectionTodoWeekly";
 import { SectionObjectifs } from "@/components/rapport/SectionObjectifs";
 import { SectionIds } from "@/components/rapport/SectionIds";
-import { SectionIdsWeekly } from "@/components/rapport/SectionIdsWeekly";
 import { SectionNotes } from "@/components/rapport/SectionNotes";
 import { SectionCloture } from "@/components/rapport/SectionCloture";
 
@@ -268,7 +267,7 @@ function PreparationMode({ report, periodStart, periodEnd }: { report: ReportRec
         />
       )}
       {activeSection === "ids" && isWeekly && (
-        <SectionIdsWeekly reportId={report.id} onStatusChange={onIdsStatusChange} />
+        <SectionIds reportId={report.id} reportType="weekly" onStatusChange={onIdsStatusChange} />
       )}
       {activeSection === "notes" && (
         <SectionNotes reportId={report.id} onStatusChange={onNotesStatusChange} isLocked={isLockedForSave} />

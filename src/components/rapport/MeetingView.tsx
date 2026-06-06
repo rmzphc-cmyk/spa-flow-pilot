@@ -195,6 +195,19 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [roleAssignments]);
 
+  const primaryNiveauByKpiId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const role of ROLE_PRIORITY) {
+      for (const a of roleAssignments) {
+        if (a.role === role && !map.has(a.kpi_definition_id)) {
+          map.set(a.kpi_definition_id, a.niveau);
+        }
+      }
+    }
+    return map;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roleAssignments]);
+
   const ROLE_SECTION_ORDER_VIEW: KpiRole[] = ["spa_manager", "therapist", "spa_concierge", "ambassador"];
   const kpiRowsByRole = useMemo(() => {
     const groups = new Map<KpiRole | "other", typeof kpiRows>();
@@ -372,10 +385,21 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                           {rows.map(({ entry, def }) => (
                             <tr key={entry.id} className="hover:bg-muted/30 transition-colors">
                               <td className="py-3 pr-4 font-medium text-foreground">
-                                <span className="inline-flex items-center gap-2">
+                                <span className="inline-flex items-center gap-2 flex-wrap">
                                   <span className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${statusDotClass(entry.status)}`} />
                                   {def!.name}
                                   {def!.unit && <span className="text-muted-foreground text-sm">({def!.unit})</span>}
+                                  {(() => {
+                                    const niveau = primaryNiveauByKpiId.get(entry.kpi_definition_id);
+                                    if (!niveau) return null;
+                                    return (
+                                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${
+                                        niveau === "prioritaire" ? "bg-teal-100 text-teal-700" :
+                                        niveau === "secondaire"  ? "bg-blue-100 text-blue-700" :
+                                        "bg-gray-100 text-gray-600"
+                                      }`}>{niveau}</span>
+                                    );
+                                  })()}
                                 </span>
                               </td>
                               <td className="py-3 px-4 text-right text-muted-foreground tabular-nums">{entry.value_n1 ?? "—"}</td>

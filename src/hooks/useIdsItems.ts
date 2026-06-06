@@ -183,6 +183,7 @@ export function useConvertIdsToTodo(reportId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ids_items", reportId] });
       qc.invalidateQueries({ queryKey: ["todos", reportId] });
+      qc.invalidateQueries({ queryKey: ["ids_items_monthly_preview"] });
     },
   });
 }
@@ -221,6 +222,7 @@ export function useConvertIdsToObjective(reportId: string) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ids_items", reportId] });
       qc.invalidateQueries({ queryKey: ["objectives", spaId] });
+      qc.invalidateQueries({ queryKey: ["ids_items_monthly_preview"] });
     },
   });
 }
@@ -290,11 +292,10 @@ export function useUpdateIdsTriage(reportId: string) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ids_items", reportId] });
+      qc.invalidateQueries({ queryKey: ["ids_items_monthly_preview"] });
     },
   });
 }
-
-
 
 export interface DbIdsItemWithReport extends DbIdsItem {
   report_cycle_label: string;
