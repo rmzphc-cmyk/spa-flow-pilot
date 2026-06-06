@@ -286,6 +286,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
 
   const handleClose = () => {
     setCloseConfirm(false);
+    setCloseAck(false);
     if (recorder.status === "recording" || recorder.status === "paused") {
       recorder.stopRecording();
     }
