@@ -96,6 +96,7 @@ export interface DbIdsItem {
   resolution_notes?: string | null;
   resolution_type?: string | null;
   requires_solution?: boolean;
+  triage_mode: TriageMode | null;
   created_by: string;
   created_at: string;
   updated_at: string;
