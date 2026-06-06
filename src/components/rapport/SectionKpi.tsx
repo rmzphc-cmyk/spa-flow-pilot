@@ -473,6 +473,7 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
                   const liveTarget = liveTargetMap.get(def.id);
                   const data = defToKpiData(def, entry, liveTarget, isWeekly);
                   const cv = local[def.id] ?? entryToCardValue(entry);
+                  const needsComment = kpiNeedsComment(def, cv, isWeekly, entriesByDef, liveTargetMap);
                   return (
                     <div key={`${role}-${def.id}`} className="flex flex-col gap-0">
                       <div
@@ -509,6 +510,12 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
                           />
                         )}
                       </div>
+                      {needsComment && (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-b-md bg-amber-50 border border-amber-200 border-t-0">
+                          <span>⚠️</span>
+                          <span className="text-xs text-amber-600 font-medium">Commentaire requis</span>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
