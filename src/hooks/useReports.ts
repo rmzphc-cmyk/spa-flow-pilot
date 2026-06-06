@@ -32,6 +32,8 @@ export function useReports() {
 
   return useQuery({
     queryKey: ["reports", userRole === "admin" ? "all" : spaId],
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     queryFn: async () => {
       let query = supabase.from("reports").select("*").order("created_at", { ascending: false });
       if (userRole !== "admin" && spaId) {
@@ -48,6 +50,8 @@ export function useReports() {
 export function useReport(id: string | undefined) {
   return useQuery({
     queryKey: ["report", id],
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     queryFn: async () => {
       if (!id) return null;
       const { data, error } = await supabase.from("reports").select("*").eq("id", id).maybeSingle();

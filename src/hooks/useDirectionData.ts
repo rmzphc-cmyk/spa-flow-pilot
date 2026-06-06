@@ -40,66 +40,71 @@ async function fetchAccessibleSpaIds(userId: string): Promise<string[]> {
   return (data ?? []).map((r) => r.spa_id as string);
 }
 
-async function fetchSpaOverview(spaId: string): Promise<SpaOverview | null> {
-  const [{ data: spa }, { data: manager }, { data: report }] = await Promise.all([
-    supabase.from("spas").select("id, name").eq("id", spaId).maybeSingle(),
-    supabase
-      .from("users")
-      .select("full_name")
-      .eq("spa_id", spaId)
-      .eq("role", "spa_manager")
-      .limit(1)
-      .maybeSingle(),
-    supabase
-      .from("reports")
-      .select("id, cycle_label, status, updated_at")
-      .eq("spa_id", spaId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(),
-  ]);
-
-  if (!spa) return null;
-
-  let alerts: SpaAlert[] = [];
-  if (report?.id) {
-    const { data: entries } = await supabase
-      .from("kpi_entries")
-      .select("status, kpi_definitions(name)")
-      .eq("report_id", report.id)
-      .in("status", ["red", "amber"]);
-    alerts = (entries ?? []).slice(0, 3).map((e: any) => ({
-      level: e.status === "red" ? "red" : "orange",
-      text: `${e.kpi_definitions?.name ?? "KPI"} en alerte`,
-    }));
-  }
-
-  const prog = progressFromStatus(report?.status);
-
-  return {
-    id: spa.id,
-    name: spa.name,
-    manager: manager?.full_name ?? "—",
-    report: report?.cycle_label ?? "Aucun rapport",
-    status: mapReportStatus(report?.status),
-    progress: prog.text,
-    alerts,
-    kpis: { ca: "—", nps: "—", responsabilites: "—" },
-    lastReport: report?.updated_at
-      ? new Intl.DateTimeFormat("fr-FR").format(new Date(report.updated_at))
-      : "—",
-  };
-}
-
 export function useDirectionSpas() {
   const { user } = useAuth();
   return useQuery({
     queryKey: ["direction_spas", user?.id],
     enabled: !!user?.id,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     queryFn: async (): Promise<SpaOverview[]> => {
       const spaIds = await fetchAccessibleSpaIds(user!.id);
-      const results = await Promise.all(spaIds.map((id) => fetchSpaOverview(id)));
-      return results.filter((r): r is SpaOverview => r !== null);
+      if (spaIds.length === 0) return [];
+
+      const [spasRes, managersRes] = await Promise.all([
+        supabase
+          .from("spas")
+          .select(
+            "id, name, reports(id, cycle_label, status, updated_at, created_at, kpi_entries(id, status), ids_items(id, triage_mode))",
+          )
+          .in("id", spaIds),
+        supabase
+          .from("users")
+          .select("spa_id, full_name")
+          .in("spa_id", spaIds)
+          .eq("role", "spa_manager"),
+      ]);
+
+      if (spasRes.error) throw spasRes.error;
+      if (managersRes.error) throw managersRes.error;
+
+      const managerBySpa = new Map<string, string>();
+      for (const m of (managersRes.data ?? []) as any[]) {
+        if (m.spa_id && !managerBySpa.has(m.spa_id)) {
+          managerBySpa.set(m.spa_id, m.full_name);
+        }
+      }
+
+      return ((spasRes.data ?? []) as any[]).map((spa) => {
+        const reports = (spa.reports ?? []) as any[];
+        const latestReport = reports
+          .slice()
+          .sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""))[0];
+
+        const alertEntries = ((latestReport?.kpi_entries ?? []) as any[]).filter(
+          (e) => e.status === "red" || e.status === "amber",
+        );
+        const alerts: SpaAlert[] = alertEntries.slice(0, 3).map((e: any) => ({
+          level: e.status === "red" ? "red" : "orange",
+          text: "KPI en alerte",
+        }));
+
+        const prog = progressFromStatus(latestReport?.status);
+
+        return {
+          id: spa.id,
+          name: spa.name,
+          manager: managerBySpa.get(spa.id) ?? "—",
+          report: latestReport?.cycle_label ?? "Aucun rapport",
+          status: mapReportStatus(latestReport?.status),
+          progress: prog.text,
+          alerts,
+          kpis: { ca: "—", nps: "—", responsabilites: "—" },
+          lastReport: latestReport?.updated_at
+            ? new Intl.DateTimeFormat("fr-FR").format(new Date(latestReport.updated_at))
+            : "—",
+        } as SpaOverview;
+      });
     },
   });
 }

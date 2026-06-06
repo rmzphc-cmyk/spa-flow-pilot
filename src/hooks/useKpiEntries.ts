@@ -19,6 +19,8 @@ export function useKpiEntries(reportId: string | undefined) {
   return useQuery({
     queryKey: ["kpi_entries", reportId],
     enabled: !!reportId,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     queryFn: async (): Promise<KpiEntryRow[]> => {
       const { data, error } = await supabase
         .from("kpi_entries")
