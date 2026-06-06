@@ -113,7 +113,7 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
           toast({ title: "Action reportée" });
         },
         onError: (e) =>
-          toast({ title: "Erreur", description: (e as Error).message, variant: "destructive" }),
+          toast({ title: "Erreur", description: friendlyError(e), variant: "destructive" }),
       },
     );
   };
