@@ -6,6 +6,80 @@ import { useAuth } from "@/contexts/AuthContext";
 export type IdsStatus = "captured" | "structured" | "converted" | "closed_no_action";
 export type IdsCycleType = "weekly" | "monthly";
 
+export type TriageMode = "bloquant" | "priorite" | "deleguer" | "veille";
+
+export const TRIAGE_CONFIG: Record<TriageMode, {
+  label: string;
+  icon: string;
+  color: string;
+  textColor: string;
+  borderColor: string;
+  sentence: string;
+  examples: string[];
+  conversionHint: string;
+}> = {
+  bloquant: {
+    label: "Bloquant",
+    icon: "🔴",
+    color: "bg-red-100",
+    textColor: "text-red-800",
+    borderColor: "border-red-300",
+    sentence: "Ça impacte mes résultats directement et ça se passe maintenant",
+    examples: [
+      "Chute brutale d'un KPI prioritaire",
+      "Cabine hors service",
+      "Conflit ou absence équipe",
+      "Plainte client non résolue",
+    ],
+    conversionHint: "Créer une To-Do urgente ?",
+  },
+  deleguer: {
+    label: "Déléguer",
+    icon: "🔵",
+    color: "bg-blue-100",
+    textColor: "text-blue-800",
+    borderColor: "border-blue-300",
+    sentence: "C'est pressant mais ce n'est pas à moi de le traiter",
+    examples: [
+      "Coordination avec l'hôtel",
+      "Problème stock ou commande",
+      "Demande RH ou administrative",
+      "Tâche opérationnelle à assigner",
+    ],
+    conversionHint: "Créer une To-Do et assigner ?",
+  },
+  priorite: {
+    label: "Priorité",
+    icon: "🟡",
+    color: "bg-amber-100",
+    textColor: "text-amber-800",
+    borderColor: "border-amber-300",
+    sentence: "C'est important pour la performance mais ça se construit dans le temps",
+    examples: [
+      "Améliorer la captation",
+      "Revoir l'offre ou le pricing",
+      "Former l'équipe sur un process",
+      "Développer un nouveau service",
+    ],
+    conversionHint: "Transformer en Objectif ?",
+  },
+  veille: {
+    label: "Veille",
+    icon: "⚫",
+    color: "bg-gray-100",
+    textColor: "text-gray-700",
+    borderColor: "border-gray-300",
+    sentence: "Utile à noter, aucune action immédiate nécessaire",
+    examples: [
+      "Tendance à surveiller sur la durée",
+      "Retour client isolé",
+      "Idée à creuser plus tard",
+      "Signal faible à garder en mémoire",
+    ],
+    conversionHint: "",
+  },
+};
+
 export interface DbIdsItem {
   id: string;
   report_id: string;
