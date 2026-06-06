@@ -411,6 +411,14 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
         </div>
       </div>
 
+      {missingCommentKpis.length > 0 && (
+        <div className="mb-6 p-3 rounded-lg bg-amber-50 border border-amber-200 flex items-center gap-2">
+          <span className="text-amber-600">⚠️</span>
+          <span className="text-sm text-amber-700 font-medium">
+            {missingCommentKpis.length} KPI{missingCommentKpis.length > 1 ? "s" : ""} nécessitent un commentaire pour continuer
+          </span>
+        </div>
+      )}
 
       <div className="space-y-8">
         {ROLE_SECTION_ORDER.map((role) => {
