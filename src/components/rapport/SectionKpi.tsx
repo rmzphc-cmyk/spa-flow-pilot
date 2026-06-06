@@ -541,20 +541,29 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
                 const liveTarget = liveTargetMap.get(def.id);
                 const data = defToKpiData(def, entry, liveTarget, isWeekly);
                 const cv = local[def.id] ?? entryToCardValue(entry);
-                return isWeekly ? (
-                  <KpiCardSaisieWeekly
-                    key={def.id}
-                    kpi={data}
-                    cardValue={cv}
-                    onChange={(v) => handleChange(def, v)}
-                  />
-                ) : (
-                  <KpiCardSaisie
-                    key={def.id}
-                    kpi={data}
-                    cardValue={cv}
-                    onChange={(v) => handleChange(def, v)}
-                  />
+                const needsComment = kpiNeedsComment(def, cv, isWeekly, entriesByDef, liveTargetMap);
+                return (
+                  <div key={def.id} className="flex flex-col">
+                    {isWeekly ? (
+                      <KpiCardSaisieWeekly
+                        kpi={data}
+                        cardValue={cv}
+                        onChange={(v) => handleChange(def, v)}
+                      />
+                    ) : (
+                      <KpiCardSaisie
+                        kpi={data}
+                        cardValue={cv}
+                        onChange={(v) => handleChange(def, v)}
+                      />
+                    )}
+                    {needsComment && (
+                      <div className="mt-1 flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-amber-50 border border-amber-200">
+                        <span>⚠️</span>
+                        <span className="text-xs text-amber-600 font-medium">Commentaire requis</span>
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
