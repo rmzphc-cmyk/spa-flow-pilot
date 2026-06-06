@@ -1233,34 +1233,61 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
       </div>
 
       {/* ── Confirm close dialog ── */}
-      {closeConfirm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-card rounded-2xl border border-border shadow-lg p-6 max-w-sm w-full space-y-4">
-            <h2 className="text-lg font-bold text-foreground">Clôturer la réunion ?</h2>
-            <p className="text-sm text-muted-foreground">
+      <Dialog
+        open={closeConfirm}
+        onOpenChange={(open) => {
+          setCloseConfirm(open);
+          if (!open) setCloseAck(false);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Clôturer la réunion ?</DialogTitle>
+            <DialogDescription>
               {(idsQ.data ?? []).length} nouveau{(idsQ.data ?? []).length !== 1 ? "x" : ""} IDS
               {" · "}{totalDecisions} décision{totalDecisions !== 1 ? "s" : ""}
               {recorder.blob ? ` · Enregistré (${formatDuration(recorder.durationSeconds)})` : ""}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              La synthèse IA sera générée automatiquement après la clôture.
-            </p>
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setCloseConfirm(false)}>Annuler</Button>
-              <Button
-                className="bg-teal-600 hover:bg-teal-700 text-white gap-1.5"
-                disabled={closeMeeting.isPending}
-                onClick={handleClose}
-              >
-                {closeMeeting.isPending
-                  ? <Loader2 className="h-4 w-4 animate-spin" />
-                  : <CheckCircle className="h-4 w-4" />}
-                Confirmer la clôture
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <Alert className="border-red-300 bg-red-50 text-red-900">
+            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertDescription>
+              <strong>⚠️ Cette action est irréversible.</strong> Toutes les slides doivent être complètes avant de continuer. Une fois clôturée, vous ne pourrez plus modifier les données saisies (KPI, check-in, todos, objectifs, IDS…).
+            </AlertDescription>
+          </Alert>
+
+          <p className="text-sm text-muted-foreground">
+            La synthèse IA sera générée automatiquement après la clôture.
+          </p>
+
+          <label className="flex items-start gap-2 text-sm text-foreground cursor-pointer select-none">
+            <Checkbox
+              checked={closeAck}
+              onCheckedChange={(v) => setCloseAck(v === true)}
+              className="mt-0.5"
+            />
+            <span>Je confirme avoir vérifié toutes les slides et comprendre que cette action est irréversible.</span>
+          </label>
+
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => { setCloseConfirm(false); setCloseAck(false); }}>
+              Annuler
+            </Button>
+            <Button
+              className="bg-teal-600 hover:bg-teal-700 text-white gap-1.5"
+              disabled={closeMeeting.isPending || !closeAck}
+              onClick={handleClose}
+            >
+              {closeMeeting.isPending
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <CheckCircle className="h-4 w-4" />}
+              Confirmer la clôture
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
