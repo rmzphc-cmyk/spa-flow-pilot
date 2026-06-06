@@ -119,18 +119,18 @@ export function useUpdateMeetingSummary() {
     onSuccess: (input) => {
       qc.invalidateQueries({ queryKey: ["meeting_summary", input.reportId] });
     },
-    onError: (e: Error) => {
-      toast({ title: "Erreur enregistrement synthèse", description: e.message, variant: "destructive" });
+    onError: () => {
+      toast({ title: "Erreur", description: "Une erreur est survenue. Réessayez.", variant: "destructive" });
     },
   });
 
   const debouncedMutate = useCallback(
-    (input: UpdateSummaryInput) => {
+    (input: UpdateSummaryInput, options?: Parameters<typeof mutation.mutate>[1]) => {
       if (timer.current) clearTimeout(timer.current);
       timer.current = setTimeout(() => {
-        mutation.mutate(input);
+        mutation.mutate(input, options);
         timer.current = null;
-      }, 1200);
+      }, 1000);
     },
     [mutation],
   );
