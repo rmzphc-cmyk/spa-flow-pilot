@@ -49,6 +49,7 @@ import {
   useValidateMonthlySummary,
 } from "@/hooks/useMeetingSummary";
 import { toast } from "@/hooks/use-toast";
+import { friendlyError } from "@/lib/errorMessages";
 
 /* ── helpers ── */
 
