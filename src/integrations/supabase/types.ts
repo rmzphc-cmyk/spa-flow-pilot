@@ -215,6 +215,7 @@ export type Database = {
           root_cause: string | null
           spa_id: string
           status: Database["public"]["Enums"]["ids_status"]
+          triage_mode: string | null
           updated_at: string
         }
         Insert: {
@@ -238,6 +239,7 @@ export type Database = {
           root_cause?: string | null
           spa_id: string
           status?: Database["public"]["Enums"]["ids_status"]
+          triage_mode?: string | null
           updated_at?: string
         }
         Update: {
@@ -261,6 +263,7 @@ export type Database = {
           root_cause?: string | null
           spa_id?: string
           status?: Database["public"]["Enums"]["ids_status"]
+          triage_mode?: string | null
           updated_at?: string
         }
         Relationships: [
