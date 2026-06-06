@@ -50,6 +50,8 @@ export function useReports() {
 export function useReport(id: string | undefined) {
   return useQuery({
     queryKey: ["report", id],
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     queryFn: async () => {
       if (!id) return null;
       const { data, error } = await supabase.from("reports").select("*").eq("id", id).maybeSingle();
