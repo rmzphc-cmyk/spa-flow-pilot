@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import {
   useKpiRoleAssignments,
   ROLE_LABELS,
@@ -144,6 +144,22 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
   const updateSummary   = useUpdateMeetingSummary();
   const validateMonthly = useValidateMonthlySummary();
   const updateIdsStructure = useUpdateIdsStructure();
+
+  /* debounced summary update */
+  const summaryDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const debouncedUpdateSummary = useCallback((newSummary: string, newKeyActions: string[]) => {
+    if (summaryDebounceRef.current) clearTimeout(summaryDebounceRef.current);
+    summaryDebounceRef.current = setTimeout(() => {
+      updateSummary.mutate(
+        { reportId: report.id, newSummary, newKeyActions },
+        {
+          onError: () => {
+            toast({ title: "Erreur", description: "Une erreur est survenue. Réessayez.", variant: "destructive" });
+          },
+        },
+      );
+    }, 1000);
+  }, [report.id, updateSummary]);
 
   /* auto-start enregistrement dès le lancement de la réunion */
   useEffect(() => {
@@ -721,7 +737,17 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                       const ext = mime.includes("mp4") ? "mp4" : mime.includes("ogg") ? "ogg" : "webm";
                       uploadAudio.mutate(
                         { reportId: report.id, spaId: spaId ?? "", blob: recorder.blob!, mimeType: mime, durationSeconds: recorder.durationSeconds, filename: `audio.${ext}` },
-                        { onSuccess: (res) => { setAudioStoragePath(res.storagePath); setAudioMimeType(res.mimeType); setAudioDurationS(res.durationSeconds); } },
+                        {
+                          onSuccess: (res) => {
+                            setAudioStoragePath(res.storagePath);
+                            setAudioMimeType(res.mimeType);
+                            setAudioDurationS(res.durationSeconds);
+                            toast({ title: "Audio sauvegardé ✓" });
+                          },
+                          onError: () => {
+                            toast({ title: "Erreur", description: "Une erreur est survenue. Réessayez.", variant: "destructive" });
+                          },
+                        },
                       );
                     }}
                   >
@@ -747,7 +773,17 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                       const filename = `import_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
                       uploadAudio.mutate(
                         { reportId: report.id, spaId: spaId ?? "", blob: file, mimeType: mime, durationSeconds: 0, filename },
-                        { onSuccess: (res) => { setAudioStoragePath(res.storagePath); setAudioMimeType(res.mimeType); setAudioDurationS(res.durationSeconds); } },
+                        {
+                          onSuccess: (res) => {
+                            setAudioStoragePath(res.storagePath);
+                            setAudioMimeType(res.mimeType);
+                            setAudioDurationS(res.durationSeconds);
+                            toast({ title: "Audio sauvegardé ✓" });
+                          },
+                          onError: () => {
+                            toast({ title: "Erreur", description: "Une erreur est survenue. Réessayez.", variant: "destructive" });
+                          },
+                        },
                       );
                       e.target.value = "";
                     }}
@@ -812,7 +848,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                     value={editedSummary}
                     onChange={(e) => {
                       setEditedSummary(e.target.value);
-                      updateSummary.mutate({ reportId: report.id, newSummary: e.target.value, newKeyActions: editedDecisions });
+                      debouncedUpdateSummary(e.target.value, editedDecisions);
                     }}
                     placeholder="Résumé de la réunion…"
                   />
