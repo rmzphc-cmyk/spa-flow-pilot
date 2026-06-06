@@ -29,7 +29,9 @@ import {
   useConvertIdsToObjective,
   useIdsItemsForMonthlyPeriod,
   useUpdateIdsStructure,
+  TRIAGE_CONFIG,
   type DbIdsItem,
+  type TriageMode,
 } from "@/hooks/useIdsItems";
 import { useResponsabilityTemplates, useResponsabilityLogs } from "@/hooks/useResponsabilites";
 import { useCloseMeeting } from "@/hooks/useReports";
