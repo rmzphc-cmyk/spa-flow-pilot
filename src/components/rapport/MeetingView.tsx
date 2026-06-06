@@ -15,6 +15,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
+} from "@/components/ui/dialog";
 import type { ReportRecord } from "@/lib/reportsStore";
 import { useAuth } from "@/contexts/AuthContext";
 import { useKpiEntries } from "@/hooks/useKpiEntries";
@@ -113,6 +118,8 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
   const [newDecision, setNewDecision] = useState("");
   const [newIdsText, setNewIdsText] = useState("");
   const [closeConfirm, setCloseConfirm] = useState(false);
+  const [closeAck, setCloseAck] = useState(false);
+  const [summaryTimedOut, setSummaryTimedOut] = useState(false);
   const [audioStoragePath, setAudioStoragePath] = useState<string | null>(null);
   const [audioMimeType, setAudioMimeType] = useState<string | null>(null);
   const [audioDurationS, setAudioDurationS] = useState<number | null>(null);
@@ -167,6 +174,23 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [summaryQ.data]);
+
+  /* timeout 30s sur la génération de synthèse IA */
+  const summaryReady = !!summaryQ.data?.executive_summary;
+  const summaryLoading = generateSummary.isPending || summaryQ.isLoading;
+  useEffect(() => {
+    if (meetingPhase !== "closing") return;
+    if (summaryReady) { setSummaryTimedOut(false); return; }
+    if (!summaryLoading) return;
+    const t = setTimeout(() => setSummaryTimedOut(true), 30000);
+    return () => clearTimeout(t);
+  }, [meetingPhase, summaryReady, summaryLoading]);
+
+  const retrySummary = useCallback(() => {
+    setSummaryTimedOut(false);
+    generateSummary.mutate({ reportId: report.id });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [report.id]);
 
   /* derived */
   const defsById = new Map((kpiDefsQ.data ?? []).map((d) => [d.id, d]));
@@ -262,6 +286,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
 
   const handleClose = () => {
     setCloseConfirm(false);
+    setCloseAck(false);
     if (recorder.status === "recording" || recorder.status === "paused") {
       recorder.stopRecording();
     }
@@ -813,13 +838,23 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
       case 8:
         return (
           <div className="space-y-6">
-            {(generateSummary.isPending || summaryQ.isLoading || !summaryQ.data?.executive_summary) ? (
-              <div className="flex flex-col items-center justify-center py-16 gap-4">
-                <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                <p className="text-sm font-medium text-foreground">Génération de la synthèse IA en cours…</p>
-                <p className="text-xs text-muted-foreground">~10–15 secondes</p>
-              </div>
-            ) : (
+            {/* Navigation lecture seule vers les slides de phase 1 */}
+            <div className="flex flex-wrap items-center gap-1.5 text-xs bg-muted/40 border border-border rounded-lg p-2">
+              <span className="text-muted-foreground font-medium px-1">← Revoir :</span>
+              {LIVE_SLIDE_META.map((m, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => goTo(idx)}
+                  className="px-2 py-0.5 rounded-md hover:bg-background border border-transparent hover:border-border text-foreground transition-colors"
+                  title={`Revoir la slide ${idx + 1} — ${m.label} (lecture seule)`}
+                >
+                  {idx + 1}. {m.label}
+                </button>
+              ))}
+            </div>
+
+            {summaryReady ? (
               <>
                 <div>
                   <div className="flex items-center justify-between mb-2">
@@ -855,9 +890,27 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                   <CheckSquare className="h-4 w-4" /> Passer à la structuration IDS →
                 </Button>
               </>
+            ) : summaryTimedOut ? (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="flex flex-col gap-3">
+                  <span>La synthèse n'a pas pu être générée. Vérifiez votre connexion puis réessayez.</span>
+                  <Button size="sm" variant="outline" className="gap-1.5 self-start" onClick={retrySummary}>
+                    <Sparkles className="h-3.5 w-3.5" /> Réessayer
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16 gap-4">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <p className="text-sm font-medium text-foreground">Génération de la synthèse IA en cours…</p>
+                <p className="text-xs text-muted-foreground">~10–15 secondes (timeout 30s)</p>
+              </div>
             )}
           </div>
         );
+
+
 
       /* ── 9 : IDS Structuration collaborative (Phase 2) ── */
       case 9: {
@@ -1114,7 +1167,20 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
             </div>
             <h2 className="text-2xl font-bold text-foreground">{currentMeta.label}</h2>
           </div>
-          {renderSlide()}
+          {meetingPhase === "closing" && currentSlide < 8 && (
+            <Alert className="mb-5 border-amber-300 bg-amber-50 text-amber-900">
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="flex items-center justify-between gap-3">
+                <span>Lecture seule — vous consultez une slide de la phase 1. Les modifications ne sont plus prises en compte.</span>
+                <Button size="sm" variant="outline" className="gap-1.5 shrink-0" onClick={() => goTo(8)}>
+                  Retour à la synthèse →
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+          <div className={meetingPhase === "closing" && currentSlide < 8 ? "pointer-events-none opacity-70 select-none" : ""}>
+            {renderSlide()}
+          </div>
         </div>
       </main>
 
@@ -1168,34 +1234,61 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
       </div>
 
       {/* ── Confirm close dialog ── */}
-      {closeConfirm && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-card rounded-2xl border border-border shadow-lg p-6 max-w-sm w-full space-y-4">
-            <h2 className="text-lg font-bold text-foreground">Clôturer la réunion ?</h2>
-            <p className="text-sm text-muted-foreground">
+      <Dialog
+        open={closeConfirm}
+        onOpenChange={(open) => {
+          setCloseConfirm(open);
+          if (!open) setCloseAck(false);
+        }}
+      >
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Clôturer la réunion ?</DialogTitle>
+            <DialogDescription>
               {(idsQ.data ?? []).length} nouveau{(idsQ.data ?? []).length !== 1 ? "x" : ""} IDS
               {" · "}{totalDecisions} décision{totalDecisions !== 1 ? "s" : ""}
               {recorder.blob ? ` · Enregistré (${formatDuration(recorder.durationSeconds)})` : ""}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              La synthèse IA sera générée automatiquement après la clôture.
-            </p>
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={() => setCloseConfirm(false)}>Annuler</Button>
-              <Button
-                className="bg-teal-600 hover:bg-teal-700 text-white gap-1.5"
-                disabled={closeMeeting.isPending}
-                onClick={handleClose}
-              >
-                {closeMeeting.isPending
-                  ? <Loader2 className="h-4 w-4 animate-spin" />
-                  : <CheckCircle className="h-4 w-4" />}
-                Confirmer la clôture
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <Alert className="border-red-300 bg-red-50 text-red-900">
+            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertDescription>
+              <strong>⚠️ Cette action est irréversible.</strong> Toutes les slides doivent être complètes avant de continuer. Une fois clôturée, vous ne pourrez plus modifier les données saisies (KPI, check-in, todos, objectifs, IDS…).
+            </AlertDescription>
+          </Alert>
+
+          <p className="text-sm text-muted-foreground">
+            La synthèse IA sera générée automatiquement après la clôture.
+          </p>
+
+          <label className="flex items-start gap-2 text-sm text-foreground cursor-pointer select-none">
+            <Checkbox
+              checked={closeAck}
+              onCheckedChange={(v) => setCloseAck(v === true)}
+              className="mt-0.5"
+            />
+            <span>Je confirme avoir vérifié toutes les slides et comprendre que cette action est irréversible.</span>
+          </label>
+
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={() => { setCloseConfirm(false); setCloseAck(false); }}>
+              Annuler
+            </Button>
+            <Button
+              className="bg-teal-600 hover:bg-teal-700 text-white gap-1.5"
+              disabled={closeMeeting.isPending || !closeAck}
+              onClick={handleClose}
+            >
+              {closeMeeting.isPending
+                ? <Loader2 className="h-4 w-4 animate-spin" />
+                : <CheckCircle className="h-4 w-4" />}
+              Confirmer la clôture
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
