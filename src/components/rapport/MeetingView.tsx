@@ -1166,7 +1166,20 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
             </div>
             <h2 className="text-2xl font-bold text-foreground">{currentMeta.label}</h2>
           </div>
-          {renderSlide()}
+          {meetingPhase === "closing" && currentSlide < 8 && (
+            <Alert className="mb-5 border-amber-300 bg-amber-50 text-amber-900">
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="flex items-center justify-between gap-3">
+                <span>Lecture seule — vous consultez une slide de la phase 1. Les modifications ne sont plus prises en compte.</span>
+                <Button size="sm" variant="outline" className="gap-1.5 shrink-0" onClick={() => goTo(8)}>
+                  Retour à la synthèse →
+                </Button>
+              </AlertDescription>
+            </Alert>
+          )}
+          <div className={meetingPhase === "closing" && currentSlide < 8 ? "pointer-events-none opacity-70 select-none" : ""}>
+            {renderSlide()}
+          </div>
         </div>
       </main>
 
