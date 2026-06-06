@@ -756,7 +756,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                             toast({ title: "Audio sauvegardé ✓" });
                           },
                           onError: () => {
-                            toast({ title: "Erreur", description: "Une erreur est survenue. Réessayez.", variant: "destructive" });
+                            toast({ title: "Erreur", description: friendlyError(err), variant: "destructive" });
                           },
                         },
                       );
