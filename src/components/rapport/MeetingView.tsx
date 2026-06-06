@@ -175,6 +175,23 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [summaryQ.data]);
 
+  /* timeout 30s sur la génération de synthèse IA */
+  const summaryReady = !!summaryQ.data?.executive_summary;
+  const summaryLoading = generateSummary.isPending || summaryQ.isLoading;
+  useEffect(() => {
+    if (meetingPhase !== "closing") return;
+    if (summaryReady) { setSummaryTimedOut(false); return; }
+    if (!summaryLoading) return;
+    const t = setTimeout(() => setSummaryTimedOut(true), 30000);
+    return () => clearTimeout(t);
+  }, [meetingPhase, summaryReady, summaryLoading]);
+
+  const retrySummary = useCallback(() => {
+    setSummaryTimedOut(false);
+    generateSummary.mutate({ reportId: report.id });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [report.id]);
+
   /* derived */
   const defsById = new Map((kpiDefsQ.data ?? []).map((d) => [d.id, d]));
   const kpiRows  = (kpiEntriesQ.data ?? [])
