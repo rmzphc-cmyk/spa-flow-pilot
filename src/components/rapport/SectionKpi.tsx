@@ -384,6 +384,18 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
     onStatusChange(isComplete ? "complete" : "incomplete");
   }, [isComplete, onStatusChange]);
 
+  const missingCommentKpis = useMemo(() => {
+    const missing: { id: string; label: string }[] = [];
+    for (const def of sortedDefs) {
+      const cv = local[def.id];
+      if (!cv) continue;
+      if (kpiNeedsComment(def, cv, isWeekly, entriesByDef, liveTargetMap)) {
+        missing.push({ id: def.id, label: def.name });
+      }
+    }
+    return missing;
+  }, [local, sortedDefs, isWeekly, entriesByDef, liveTargetMap]);
+
   return (
     <section className="mb-8">
       <div className="flex items-center justify-between mb-6">
