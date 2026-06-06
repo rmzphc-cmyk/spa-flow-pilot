@@ -19,6 +19,7 @@ import { useAddTodoFromIds } from "@/hooks/useTodos";
 import { useAddObjectiveFromIds } from "@/hooks/useObjectives";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { friendlyError } from "@/lib/errorMessages";
 
 interface Props {
   reportId: string;
