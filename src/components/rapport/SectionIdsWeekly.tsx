@@ -129,10 +129,10 @@ export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
             description: "Visible dans la section Objectifs du rapport Monthly",
           });
         },
-        onError: () => {
+        onError: (e) => {
           toast({
             title: "Erreur",
-            description: "Une erreur est survenue. Réessayez.",
+            description: friendlyError(e),
             variant: "destructive",
           });
         },
