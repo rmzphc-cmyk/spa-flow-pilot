@@ -74,7 +74,7 @@ Deno.serve(async (req) => {
     for (const ids of allIds) {
       if (ids.converted_to_todo_id) continue;
       if (!ids.proposed_solution?.trim()) continue;
-      await admin.from("todos").insert({
+      await admin.from("todos").upsert({
         spa_id: spaId,
         report_id: report_id,
         title: ids.capture_text,
@@ -86,7 +86,7 @@ Deno.serve(async (req) => {
         created_by: userId,
         created_at: now,
         updated_at: now,
-      }).select().maybeSingle();
+      }, { onConflict: 'ids_item_id' }).select().maybeSingle();
     }
 
     // Récupérer le rapport final

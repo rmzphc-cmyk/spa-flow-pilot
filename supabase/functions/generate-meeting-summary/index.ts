@@ -101,7 +101,7 @@ Génère un JSON avec exactement ces clés: executive_summary (200-250 mots), kp
       const avgResp = respsList.length
         ? Math.round(respsList.reduce((s: number, r: any) => s + (r.completion_rate ?? 0), 0) / respsList.length)
         : 0;
-      const idsOpen = idsList.filter((i: any) => i.status !== "solved" && i.status !== "resolved").length;
+      const idsOpen = idsList.filter((i: any) => i.status !== "converted" && i.status !== "closed_no_action").length;
 
       const executive_summary =
         `Réunion ${report.cycle_label} (${report.period_start} → ${report.period_end}). ` +
