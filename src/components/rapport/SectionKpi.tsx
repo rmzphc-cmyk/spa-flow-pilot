@@ -109,6 +109,59 @@ function entryToCardValue(entry: KpiEntryRow | undefined): KpiCardValue {
   };
 }
 
+function kpiNeedsComment(
+  def: KpiDefinitionRow,
+  cv: KpiCardValue,
+  isWeekly: boolean,
+  entriesByDef: Map<string, KpiEntryRow>,
+  liveTargetMap: Map<string, KpiMonthlyTarget>,
+): boolean {
+  if (cv.isNa) return false;
+  if (cv.value === "") return false;
+
+  const n = Number(cv.value);
+  if (isNaN(n)) return false;
+
+  if (isWeekly) {
+    const entryData = entriesByDef.get(def.id);
+    const liveTarget = liveTargetMap.get(def.id);
+    const divisor =
+      liveTarget?.weekly_mode === "divide" && liveTarget?.weekly_override === null ? 4 : 1;
+    const tExcellent = def.threshold_excellent != null ? def.threshold_excellent / divisor : null;
+    const tAmber = def.threshold_amber != null ? def.threshold_amber / divisor : null;
+    const tRed = def.threshold_red != null ? def.threshold_red / divisor : null;
+
+    let wStatus: ReturnType<typeof computeKpiStatus> | "excellent" | "green" | "amber" | "red";
+    if (tAmber !== null || tRed !== null) {
+      wStatus = computeKpiStatus(n, tExcellent, tAmber, tRed, def.comparison_direction);
+    } else {
+      const ref = liveTarget
+        ? (getWeeklyTarget(liveTarget) ?? entryData?.value_n1 ?? 0)
+        : (entryData?.target_value ?? entryData?.value_n1 ?? 0);
+      if (ref === 0) {
+        wStatus = "green";
+      } else {
+        const ratio = n / ref;
+        if (ratio >= 1.15) wStatus = "excellent";
+        else if (ratio >= 1) wStatus = "green";
+        else if (ratio >= 0.85) wStatus = "amber";
+        else wStatus = "red";
+      }
+    }
+    return (wStatus === "amber" || wStatus === "red") && !cv.comment.trim();
+  } else {
+    const status = computeKpiStatus(
+      n,
+      def.threshold_excellent,
+      def.threshold_amber,
+      def.threshold_red,
+      def.comparison_direction,
+    );
+    return (status === "amber" || status === "red") && !cv.comment.trim();
+  }
+}
+
+
 export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: Props) {
   const { t } = useTranslation();
   const { spaId } = useAuth();
