@@ -145,6 +145,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
   const validateMonthly = useValidateMonthlySummary();
   const updateIdsStructure = useUpdateIdsStructure();
 
+
   /* auto-start enregistrement dès le lancement de la réunion */
   useEffect(() => {
     if (!readOnly && recorder.status === "idle") {
@@ -721,7 +722,17 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                       const ext = mime.includes("mp4") ? "mp4" : mime.includes("ogg") ? "ogg" : "webm";
                       uploadAudio.mutate(
                         { reportId: report.id, spaId: spaId ?? "", blob: recorder.blob!, mimeType: mime, durationSeconds: recorder.durationSeconds, filename: `audio.${ext}` },
-                        { onSuccess: (res) => { setAudioStoragePath(res.storagePath); setAudioMimeType(res.mimeType); setAudioDurationS(res.durationSeconds); } },
+                        {
+                          onSuccess: (res) => {
+                            setAudioStoragePath(res.storagePath);
+                            setAudioMimeType(res.mimeType);
+                            setAudioDurationS(res.durationSeconds);
+                            toast({ title: "Audio sauvegardé ✓" });
+                          },
+                          onError: () => {
+                            toast({ title: "Erreur", description: "Une erreur est survenue. Réessayez.", variant: "destructive" });
+                          },
+                        },
                       );
                     }}
                   >
@@ -747,7 +758,17 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                       const filename = `import_${Date.now()}_${file.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
                       uploadAudio.mutate(
                         { reportId: report.id, spaId: spaId ?? "", blob: file, mimeType: mime, durationSeconds: 0, filename },
-                        { onSuccess: (res) => { setAudioStoragePath(res.storagePath); setAudioMimeType(res.mimeType); setAudioDurationS(res.durationSeconds); } },
+                        {
+                          onSuccess: (res) => {
+                            setAudioStoragePath(res.storagePath);
+                            setAudioMimeType(res.mimeType);
+                            setAudioDurationS(res.durationSeconds);
+                            toast({ title: "Audio sauvegardé ✓" });
+                          },
+                          onError: () => {
+                            toast({ title: "Erreur", description: "Une erreur est survenue. Réessayez.", variant: "destructive" });
+                          },
+                        },
                       );
                       e.target.value = "";
                     }}

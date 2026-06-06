@@ -94,6 +94,13 @@ export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
             description: "Visible dans la section Actions du rapport Monthly",
           });
         },
+        onError: () => {
+          toast({
+            title: "Erreur",
+            description: "Une erreur est survenue. Réessayez.",
+            variant: "destructive",
+          });
+        },
       },
     );
   };
@@ -119,6 +126,13 @@ export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
           toast({
             title: "Objectif créé",
             description: "Visible dans la section Objectifs du rapport Monthly",
+          });
+        },
+        onError: () => {
+          toast({
+            title: "Erreur",
+            description: "Une erreur est survenue. Réessayez.",
+            variant: "destructive",
           });
         },
       },
