@@ -100,7 +100,13 @@ function defToKpiData(
 
 function entryToCardValue(entry: KpiEntryRow | undefined): KpiCardValue {
   if (!entry) return { value: "", comment: "", isNa: false, naReason: "" };
-  const isNa = entry.status === "not_applicable" && entry.value_current === null;
+  // N/A réel = statut not_applicable AVEC une raison saisie. Une entrée pré-créée
+  // par create-report-cycle (not_applicable, sans valeur ni commentaire) est un
+  // simple état "vierge" → on affiche la saisie chiffrée par défaut, pas le mode N/A.
+  const isNa =
+    entry.status === "not_applicable" &&
+    entry.value_current === null &&
+    !!(entry.comment && entry.comment.trim());
   return {
     value: entry.value_current !== null ? String(entry.value_current) : "",
     comment: isNa ? "" : entry.comment ?? "",
@@ -241,6 +247,8 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
 
   // Debounce timers per definition
   const timersRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+  // Changements saisis mais pas encore persistés (pour flush au démontage)
+  const pendingRef = useRef<Record<string, { def: KpiDefinitionRow; cv: KpiCardValue }>>({});
 
   const persist = useCallback(
     (def: KpiDefinitionRow, cv: KpiCardValue) => {
@@ -308,13 +316,19 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
         comment,
         status,
       });
+      delete pendingRef.current[def.id];
     },
     [reportId, upsert, entriesByDef, isWeekly, liveTargetMap],
   );
 
+  // Garde une réf vers le dernier persist pour pouvoir flusher au démontage
+  const persistRef = useRef(persist);
+  persistRef.current = persist;
+
   const handleChange = useCallback(
     (def: KpiDefinitionRow, cv: KpiCardValue) => {
       userEditedRef.current.add(def.id);
+      pendingRef.current[def.id] = { def, cv };
       setLocal((p) => ({ ...p, [def.id]: cv }));
       const t = timersRef.current[def.id];
       if (t) clearTimeout(t);
@@ -325,7 +339,14 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
 
   useEffect(() => {
     return () => {
+      // Au démontage : annuler les timers ET flusher les changements en attente
+      // (sinon une saisie faite < 800ms avant de quitter la section est perdue)
       for (const t of Object.values(timersRef.current)) clearTimeout(t);
+      const pending = pendingRef.current;
+      pendingRef.current = {};
+      for (const { def, cv } of Object.values(pending)) {
+        persistRef.current(def, cv);
+      }
     };
   }, []);
 

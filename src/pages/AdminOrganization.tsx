@@ -104,9 +104,10 @@ export default function AdminOrganization() {
         </Card>
       ) : (
         <Tabs defaultValue="destinations" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 max-w-md">
+          <TabsList className="grid w-full grid-cols-4 max-w-2xl">
             <TabsTrigger value="destinations">Destinations</TabsTrigger>
             <TabsTrigger value="spas">Spas</TabsTrigger>
+            <TabsTrigger value="managers">Managers</TabsTrigger>
             <TabsTrigger value="directors">Directions</TabsTrigger>
           </TabsList>
 
@@ -116,6 +117,10 @@ export default function AdminOrganization() {
 
           <TabsContent value="spas" className="mt-6">
             <SpasTab organizationId={currentOrgId} readOnly={readOnly} />
+          </TabsContent>
+
+          <TabsContent value="managers" className="mt-6">
+            <ManagersTab organizationId={currentOrgId} readOnly={readOnly} />
           </TabsContent>
 
           <TabsContent value="directors" className="mt-6">
@@ -714,6 +719,221 @@ function DirectorEditDialog({
             }}
           >
             {director ? "Enregistrer" : "Inviter"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// =================== Managers ===================
+function ManagersTab({ organizationId, readOnly }: { organizationId: string; readOnly: boolean }) {
+  const { data: users = [], isLoading } = useAdminUsers(organizationId);
+  const { data: spas = [] } = useAdminSpas(organizationId);
+  const inviteMut = useInviteUser();
+  const updateMut = useUpdateUser();
+  const deleteMut = useDeleteUser();
+
+  const spaById = useMemo(() => new Map(spas.map((s) => [s.id, s])), [spas]);
+  const managers = users.filter((u) => u.role === "spa_manager");
+
+  const [inviting, setInviting] = useState(false);
+  const [editing, setEditing] = useState<AdminUser | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
+  const [tempCredentials, setTempCredentials] = useState<{ email: string; password: string } | null>(null);
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="text-base">{managers.length} manager(s)</CardTitle>
+        {!readOnly && (
+          <Button size="sm" onClick={() => setInviting(true)} disabled={spas.length === 0}>
+            <UserPlus className="h-4 w-4 mr-2" /> Inviter un manager
+          </Button>
+        )}
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">Chargement…</p>
+        ) : managers.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Aucun manager.</p>
+        ) : (
+          <div className="divide-y divide-border">
+            {managers.map((u) => (
+              <div key={u.id} className="flex items-center justify-between py-3">
+                <div>
+                  <p className="font-medium">{u.full_name || u.email}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {u.email} · {u.spa_id ? (spaById.get(u.spa_id)?.name ?? "Spa inconnu") : "Aucun spa"}
+                  </p>
+                </div>
+                {!readOnly && (
+                  <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" onClick={() => setEditing(u)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(u)}>
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+
+      <ManagerEditDialog
+        open={inviting || !!editing}
+        manager={editing}
+        spas={spas}
+        onClose={() => {
+          setInviting(false);
+          setEditing(null);
+        }}
+        onSubmit={async (values) => {
+          if (editing) {
+            await updateMut.mutateAsync({
+              user_id: editing.id,
+              full_name: values.full_name,
+              spa_id: values.spa_id,
+            });
+            toast.success("Manager mis à jour");
+          } else {
+            const res = await inviteMut.mutateAsync({
+              email: values.email!,
+              full_name: values.full_name,
+              role: "spa_manager",
+              spa_id: values.spa_id,
+              organization_id: organizationId,
+            });
+            toast.success("Manager invité");
+            if (res?.temp_password) {
+              setTempCredentials({ email: values.email!, password: res.temp_password });
+            }
+          }
+        }}
+      />
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Supprimer ce manager ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget?.full_name || deleteTarget?.email} perdra l'accès à l'application.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!deleteTarget) return;
+                try {
+                  await deleteMut.mutateAsync(deleteTarget.id);
+                  toast.success("Manager supprimé");
+                  setDeleteTarget(null);
+                } catch (e: any) {
+                  toast.error(e.message ?? "Erreur");
+                }
+              }}
+            >
+              Supprimer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <TempCredentialsDialog
+        credentials={tempCredentials}
+        onClose={() => setTempCredentials(null)}
+      />
+    </Card>
+  );
+}
+
+function ManagerEditDialog({
+  open,
+  manager,
+  spas,
+  onClose,
+  onSubmit,
+}: {
+  open: boolean;
+  manager: AdminUser | null;
+  spas: AdminSpa[];
+  onClose: () => void;
+  onSubmit: (values: { email?: string; full_name: string; spa_id: string }) => Promise<void>;
+}) {
+  const [email, setEmail] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [spaId, setSpaId] = useState<string>("");
+
+  useMemo(() => {
+    if (open) {
+      setEmail(manager?.email ?? "");
+      setFullName(manager?.full_name ?? "");
+      setSpaId(manager?.spa_id ?? spas[0]?.id ?? "");
+    }
+  }, [open, manager, spas]);
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{manager ? "Modifier le manager" : "Inviter un manager"}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label>Email</Label>
+            <Input
+              type="email"
+              value={email}
+              disabled={!!manager}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="manager@exemple.com"
+            />
+          </div>
+          <div>
+            <Label>Nom complet</Label>
+            <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Sophie Marchand" />
+          </div>
+          <div>
+            <Label>Spa rattaché</Label>
+            <Select value={spaId} onValueChange={setSpaId}>
+              <SelectTrigger><SelectValue placeholder="Sélectionner un spa" /></SelectTrigger>
+              <SelectContent>
+                {spas.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Annuler</Button>
+          <Button
+            onClick={async () => {
+              if (!manager && !email.trim()) {
+                toast.error("Email requis");
+                return;
+              }
+              if (!spaId) {
+                toast.error("Spa requis");
+                return;
+              }
+              try {
+                await onSubmit({
+                  email: manager ? undefined : email.trim(),
+                  full_name: fullName.trim(),
+                  spa_id: spaId,
+                });
+                onClose();
+              } catch (e: any) {
+                toast.error(e.message ?? "Erreur");
+              }
+            }}
+          >
+            {manager ? "Enregistrer" : "Inviter"}
           </Button>
         </DialogFooter>
       </DialogContent>
