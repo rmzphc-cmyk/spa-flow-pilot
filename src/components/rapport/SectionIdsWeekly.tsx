@@ -19,6 +19,7 @@ import { useAddTodoFromIds } from "@/hooks/useTodos";
 import { useAddObjectiveFromIds } from "@/hooks/useObjectives";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
+import { friendlyError } from "@/lib/errorMessages";
 
 interface Props {
   reportId: string;
@@ -94,10 +95,10 @@ export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
             description: "Visible dans la section Actions du rapport Monthly",
           });
         },
-        onError: () => {
+        onError: (e) => {
           toast({
             title: "Erreur",
-            description: "Une erreur est survenue. Réessayez.",
+            description: friendlyError(e),
             variant: "destructive",
           });
         },
@@ -128,10 +129,10 @@ export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
             description: "Visible dans la section Objectifs du rapport Monthly",
           });
         },
-        onError: () => {
+        onError: (e) => {
           toast({
             title: "Erreur",
-            description: "Une erreur est survenue. Réessayez.",
+            description: friendlyError(e),
             variant: "destructive",
           });
         },

@@ -49,6 +49,7 @@ import {
   useValidateMonthlySummary,
 } from "@/hooks/useMeetingSummary";
 import { toast } from "@/hooks/use-toast";
+import { friendlyError } from "@/lib/errorMessages";
 
 /* ── helpers ── */
 
@@ -306,7 +307,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
           generateSummary.mutate({ reportId: report.id });
         },
         onError: (e) =>
-          toast({ title: "Erreur", description: (e as Error).message, variant: "destructive" }),
+          toast({ title: "Erreur", description: friendlyError(e), variant: "destructive" }),
       },
     );
   };
@@ -754,8 +755,8 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                             setAudioDurationS(res.durationSeconds);
                             toast({ title: "Audio sauvegardé ✓" });
                           },
-                          onError: () => {
-                            toast({ title: "Erreur", description: "Une erreur est survenue. Réessayez.", variant: "destructive" });
+                          onError: (err) => {
+                            toast({ title: "Erreur", description: friendlyError(err), variant: "destructive" });
                           },
                         },
                       );
@@ -776,7 +777,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                       const file = e.target.files?.[0];
                       if (!file) return;
                       if (file.size > 20 * 1024 * 1024) {
-                        toast({ title: "Fichier trop volumineux", description: "Recommandé < 20 Mo (limite Whisper : 25 Mo)", variant: "destructive" });
+                        toast({ title: "Fichier trop volumineux", description: "Fichier audio trop volumineux (max 20 Mo).", variant: "destructive" });
                         e.target.value = ""; return;
                       }
                       const mime = file.type || "audio/mpeg";
@@ -790,8 +791,8 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                             setAudioDurationS(res.durationSeconds);
                             toast({ title: "Audio sauvegardé ✓" });
                           },
-                          onError: () => {
-                            toast({ title: "Erreur", description: "Une erreur est survenue. Réessayez.", variant: "destructive" });
+                          onError: (err) => {
+                            toast({ title: "Erreur", description: friendlyError(err), variant: "destructive" });
                           },
                         },
                       );
