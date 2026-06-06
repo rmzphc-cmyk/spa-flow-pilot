@@ -308,7 +308,7 @@ export function useWeeklyPrefillBatch(
         .eq("reports.cycle_type", "weekly")
         .eq("reports.spa_id", spaId!)
         .gte("reports.period_start", monthStart)
-        .lt("reports.period_start", monthEnd);
+        .lte("reports.period_start", monthEnd);
 
       if (error) throw error;
 
