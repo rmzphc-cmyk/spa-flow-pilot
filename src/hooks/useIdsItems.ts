@@ -272,6 +272,30 @@ export function useUpdateIdsStructure() {
   return { mutate: debouncedMutate, isPending: mutation.isPending };
 }
 
+export function useUpdateIdsTriage(reportId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      triage_mode,
+    }: {
+      id: string;
+      triage_mode: TriageMode | null;
+    }) => {
+      const { error } = await supabase
+        .from("ids_items")
+        .update({ triage_mode, updated_at: new Date().toISOString() })
+        .eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["ids_items", reportId] });
+    },
+  });
+}
+
+
+
 export interface DbIdsItemWithReport extends DbIdsItem {
   report_cycle_label: string;
   report_period_start: string;
