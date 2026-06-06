@@ -817,87 +817,99 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
       /* ── 9 : IDS Structuration collaborative (Phase 2) ── */
       case 9: {
         const idsItems = (idsQ.data ?? []) as DbIdsItem[];
-        const incomplete = idsItems.filter((i) => !i.proposed_solution?.trim()).length;
+        const TRIAGE_ORDER: (TriageMode | null)[] = ["bloquant", "deleguer", "priorite", "veille", null];
+        const grouped = new Map<TriageMode | null, DbIdsItem[]>([
+          ["bloquant", []],
+          ["deleguer", []],
+          ["priorite", []],
+          ["veille", []],
+          [null, []],
+        ]);
+        for (const item of idsItems) {
+          const mode = (item.triage_mode ?? null) as TriageMode | null;
+          grouped.get(mode)!.push(item);
+        }
+        const untriaged = grouped.get(null) ?? [];
+        const hasUntriaged = untriaged.length > 0;
+
         return (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                {idsItems.length} point{idsItems.length !== 1 ? "s" : ""} soulevé{idsItems.length !== 1 ? "s" : ""} en réunion
-              </p>
-              {incomplete > 0 && (
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-                  <AlertCircle className="h-3 w-3" /> {incomplete} sans solution
-                </span>
-              )}
-            </div>
-            {idsItems.length === 0 ? (
-              <p className="text-sm text-muted-foreground italic">Aucun IDS capturé pendant la réunion.</p>
-            ) : (
-              <div className="space-y-4">
-                {idsItems.map((item, i) => (
-                  <div key={item.id} className="rounded-xl border border-border p-4 bg-card space-y-3">
-                    <div className="flex items-start gap-2">
-                      <span className="text-xs font-bold text-muted-foreground shrink-0 mt-0.5">#{i + 1}</span>
-                      <p className="text-sm font-medium text-foreground">{item.capture_text}</p>
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-foreground mb-1 block">Cause</label>
-                      <Textarea
-                        className="text-sm min-h-[50px]"
-                        placeholder="Cause principale (facultatif)"
-                        maxLength={300}
-                        defaultValue={item.root_cause ?? ""}
-                        onBlur={(e) => updateIdsStructure.mutate({ idsItemId: item.id, reportId: report.id, cause: e.target.value, solution: item.proposed_solution ?? "" })}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-xs font-medium text-foreground mb-1 block">
-                        Solution <span className="text-amber-500">*</span>
-                      </label>
-                      <Textarea
-                        className="text-sm min-h-[50px]"
-                        placeholder="Solution retenue"
-                        maxLength={300}
-                        defaultValue={item.proposed_solution ?? ""}
-                        onBlur={(e) => updateIdsStructure.mutate({ idsItemId: item.id, reportId: report.id, cause: item.root_cause ?? "", solution: e.target.value })}
-                      />
-                    </div>
-                    <div className="flex gap-2 flex-wrap">
-                      {!item.converted_to_todo_id && (
-                        <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
-                          disabled={convertToTodo.isPending}
-                          onClick={() => convertToTodo.mutate(item)}>
-                          <CheckSquare className="h-3 w-3" /> → Todo
-                        </Button>
-                      )}
-                      {item.converted_to_todo_id && (
-                        <span className="inline-flex items-center gap-1 text-xs text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full font-medium">
-                          <Check className="h-3 w-3" /> Todo créé
-                        </span>
-                      )}
-                      {!item.converted_to_objective_id && (
-                        <Button size="sm" variant="outline" className="h-7 text-xs gap-1"
-                          disabled={convertToObjective.isPending}
-                          onClick={() => convertToObjective.mutate(item)}>
-                          <Target className="h-3 w-3" /> → Objectif
-                        </Button>
-                      )}
-                      {item.converted_to_objective_id && (
-                        <span className="inline-flex items-center gap-1 text-xs text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full font-medium">
-                          <Check className="h-3 w-3" /> Objectif créé
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
+          <div className="space-y-5">
+            {hasUntriaged && (
+              <div className="flex items-center gap-2 px-4 py-2.5 bg-orange-50 border border-orange-200 rounded-lg">
+                <AlertCircle className="h-4 w-4 text-orange-500 shrink-0" />
+                <p className="text-sm text-orange-800 font-medium">
+                  {untriaged.length} IDS non qualifié{untriaged.length > 1 ? "s" : ""} — à trier avant de clôturer
+                </p>
               </div>
             )}
+
+            {TRIAGE_ORDER.map((mode) => {
+              const items = grouped.get(mode) ?? [];
+              if (items.length === 0) return null;
+              const cfg = mode ? TRIAGE_CONFIG[mode] : null;
+              const sectionLabel = cfg ? `${cfg.icon} ${cfg.label.toUpperCase()}` : "❓ À TRIER";
+              const sectionBg = cfg ? cfg.color : "bg-orange-50";
+              const sectionText = cfg ? cfg.textColor : "text-orange-800";
+              const sectionBorder = cfg ? cfg.borderColor : "border-orange-300";
+
+              return (
+                <div key={mode ?? "untriaged"}>
+                  <div className={`flex items-center justify-between px-3 py-2 rounded-lg mb-2 ${sectionBg} border ${sectionBorder}`}>
+                    <span className={`text-xs font-bold uppercase tracking-wide ${sectionText}`}>
+                      {sectionLabel}
+                    </span>
+                    <span className={`text-xs font-medium px-2 py-0.5 rounded-full bg-white/60 ${sectionText}`}>
+                      {items.length} item{items.length > 1 ? "s" : ""}
+                    </span>
+                  </div>
+                  <div className="space-y-1.5 pl-2">
+                    {items.map((item) => {
+                      const hasTodo = item.converted_to_todo_id !== null;
+                      const hasObj = item.converted_to_objective_id !== null;
+                      return (
+                        <div key={item.id} className="flex items-start gap-3 bg-card border border-border rounded-lg p-2.5">
+                          <Lightbulb className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm text-foreground">{item.capture_text}</p>
+                            <div className="flex flex-wrap gap-1.5 mt-1">
+                              {hasTodo && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full">
+                                  <Check className="h-2.5 w-2.5" /> To-Do ✓
+                                </span>
+                              )}
+                              {hasObj && (
+                                <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full">
+                                  <Check className="h-2.5 w-2.5" /> Objectif ✓
+                                </span>
+                              )}
+                              {!hasTodo && !hasObj && mode && mode !== "veille" && (
+                                <span className="text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-200">
+                                  À convertir
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              );
+            })}
+
+            {idsItems.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                Aucun IDS remonté ce mois.
+              </p>
+            )}
+
             <Button className="w-full gap-2" onClick={() => goTo(10)}>
               <CheckCircle className="h-4 w-4" /> Passer à la validation →
             </Button>
           </div>
         );
       }
+
 
       /* ── 10 : Validation (Phase 2) ── */
       case 10: {
