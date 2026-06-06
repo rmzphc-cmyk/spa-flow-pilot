@@ -755,7 +755,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                             setAudioDurationS(res.durationSeconds);
                             toast({ title: "Audio sauvegardé ✓" });
                           },
-                          onError: () => {
+                          onError: (err) => {
                             toast({ title: "Erreur", description: friendlyError(err), variant: "destructive" });
                           },
                         },
