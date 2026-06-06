@@ -837,13 +837,23 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
       case 8:
         return (
           <div className="space-y-6">
-            {(generateSummary.isPending || summaryQ.isLoading || !summaryQ.data?.executive_summary) ? (
-              <div className="flex flex-col items-center justify-center py-16 gap-4">
-                <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                <p className="text-sm font-medium text-foreground">Génération de la synthèse IA en cours…</p>
-                <p className="text-xs text-muted-foreground">~10–15 secondes</p>
-              </div>
-            ) : (
+            {/* Navigation lecture seule vers les slides de phase 1 */}
+            <div className="flex flex-wrap items-center gap-1.5 text-xs bg-muted/40 border border-border rounded-lg p-2">
+              <span className="text-muted-foreground font-medium px-1">← Revoir :</span>
+              {LIVE_SLIDE_META.map((m, idx) => (
+                <button
+                  key={idx}
+                  type="button"
+                  onClick={() => goTo(idx)}
+                  className="px-2 py-0.5 rounded-md hover:bg-background border border-transparent hover:border-border text-foreground transition-colors"
+                  title={`Revoir la slide ${idx + 1} — ${m.label} (lecture seule)`}
+                >
+                  {idx + 1}. {m.label}
+                </button>
+              ))}
+            </div>
+
+            {summaryReady ? (
               <>
                 <div>
                   <div className="flex items-center justify-between mb-2">
@@ -879,9 +889,27 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                   <CheckSquare className="h-4 w-4" /> Passer à la structuration IDS →
                 </Button>
               </>
+            ) : summaryTimedOut ? (
+              <Alert variant="destructive">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="flex flex-col gap-3">
+                  <span>La synthèse n'a pas pu être générée. Vérifiez votre connexion puis réessayez.</span>
+                  <Button size="sm" variant="outline" className="gap-1.5 self-start" onClick={retrySummary}>
+                    <Sparkles className="h-3.5 w-3.5" /> Réessayer
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-16 gap-4">
+                <Loader2 className="h-10 w-10 animate-spin text-primary" />
+                <p className="text-sm font-medium text-foreground">Génération de la synthèse IA en cours…</p>
+                <p className="text-xs text-muted-foreground">~10–15 secondes (timeout 30s)</p>
+              </div>
             )}
           </div>
         );
+
+
 
       /* ── 9 : IDS Structuration collaborative (Phase 2) ── */
       case 9: {
