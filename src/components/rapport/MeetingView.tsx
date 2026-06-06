@@ -307,7 +307,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
           generateSummary.mutate({ reportId: report.id });
         },
         onError: (e) =>
-          toast({ title: "Erreur", description: (e as Error).message, variant: "destructive" }),
+          toast({ title: "Erreur", description: friendlyError(e), variant: "destructive" }),
       },
     );
   };
