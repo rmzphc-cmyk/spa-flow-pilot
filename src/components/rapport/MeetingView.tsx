@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import {
   useKpiRoleAssignments,
   ROLE_LABELS,
@@ -145,21 +145,6 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
   const validateMonthly = useValidateMonthlySummary();
   const updateIdsStructure = useUpdateIdsStructure();
 
-  /* debounced summary update */
-  const summaryDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const debouncedUpdateSummary = useCallback((newSummary: string, newKeyActions: string[]) => {
-    if (summaryDebounceRef.current) clearTimeout(summaryDebounceRef.current);
-    summaryDebounceRef.current = setTimeout(() => {
-      updateSummary.mutate(
-        { reportId: report.id, newSummary, newKeyActions },
-        {
-          onError: () => {
-            toast({ title: "Erreur", description: "Une erreur est survenue. Réessayez.", variant: "destructive" });
-          },
-        },
-      );
-    }, 1000);
-  }, [report.id, updateSummary]);
 
   /* auto-start enregistrement dès le lancement de la réunion */
   useEffect(() => {
@@ -848,7 +833,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                     value={editedSummary}
                     onChange={(e) => {
                       setEditedSummary(e.target.value);
-                      debouncedUpdateSummary(e.target.value, editedDecisions);
+                      updateSummary.mutate({ reportId: report.id, newSummary: e.target.value, newKeyActions: editedDecisions });
                     }}
                     placeholder="Résumé de la réunion…"
                   />
