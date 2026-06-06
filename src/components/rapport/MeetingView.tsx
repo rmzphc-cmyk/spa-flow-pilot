@@ -777,7 +777,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                       const file = e.target.files?.[0];
                       if (!file) return;
                       if (file.size > 20 * 1024 * 1024) {
-                        toast({ title: "Fichier trop volumineux", description: "Recommandé < 20 Mo (limite Whisper : 25 Mo)", variant: "destructive" });
+                        toast({ title: "Fichier trop volumineux", description: "Fichier audio trop volumineux (max 20 Mo).", variant: "destructive" });
                         e.target.value = ""; return;
                       }
                       const mime = file.type || "audio/mpeg";
