@@ -132,7 +132,7 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
         .update({ due_date: enCoursForm.newDate, updated_at: new Date().toISOString() })
         .eq("id", t.id);
       if (error) {
-        toast({ title: "Erreur", description: error.message, variant: "destructive" });
+        toast({ title: "Erreur", description: friendlyError(error), variant: "destructive" });
       }
     }
     setEnCoursForm(null);
