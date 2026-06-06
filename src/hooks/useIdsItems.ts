@@ -106,6 +106,8 @@ export function useIdsItems(reportId: string | undefined) {
   return useQuery({
     queryKey: ["ids_items", reportId],
     enabled: !!reportId,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("ids_items")
