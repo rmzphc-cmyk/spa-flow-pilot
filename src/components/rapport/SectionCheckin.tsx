@@ -50,12 +50,15 @@ function Field({
             Commentaire requis <span className="text-destructive">*</span>
           </label>
           <Textarea
-            className={`text-sm min-h-[60px] ${missing ? "border-destructive" : ""}`}
+            className={`text-sm min-h-[60px] ${missing ? "border-red-500 ring-1 ring-red-500" : ""}`}
             placeholder={commentPlaceholder}
             maxLength={150}
             value={comment}
             onChange={(e) => onCommentChange(e.target.value)}
           />
+          {missing && (
+            <p className="text-xs text-red-500 mt-1">Un commentaire est requis pour un score ≤ 2</p>
+          )}
           <div className="text-xs text-muted-foreground text-right mt-0.5">{comment.length}/150</div>
         </div>
       )}

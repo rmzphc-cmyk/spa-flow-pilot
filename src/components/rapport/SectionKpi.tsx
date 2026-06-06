@@ -109,6 +109,59 @@ function entryToCardValue(entry: KpiEntryRow | undefined): KpiCardValue {
   };
 }
 
+function kpiNeedsComment(
+  def: KpiDefinitionRow,
+  cv: KpiCardValue,
+  isWeekly: boolean,
+  entriesByDef: Map<string, KpiEntryRow>,
+  liveTargetMap: Map<string, KpiMonthlyTarget>,
+): boolean {
+  if (cv.isNa) return false;
+  if (cv.value === "") return false;
+
+  const n = Number(cv.value);
+  if (isNaN(n)) return false;
+
+  if (isWeekly) {
+    const entryData = entriesByDef.get(def.id);
+    const liveTarget = liveTargetMap.get(def.id);
+    const divisor =
+      liveTarget?.weekly_mode === "divide" && liveTarget?.weekly_override === null ? 4 : 1;
+    const tExcellent = def.threshold_excellent != null ? def.threshold_excellent / divisor : null;
+    const tAmber = def.threshold_amber != null ? def.threshold_amber / divisor : null;
+    const tRed = def.threshold_red != null ? def.threshold_red / divisor : null;
+
+    let wStatus: ReturnType<typeof computeKpiStatus> | "excellent" | "green" | "amber" | "red";
+    if (tAmber !== null || tRed !== null) {
+      wStatus = computeKpiStatus(n, tExcellent, tAmber, tRed, def.comparison_direction);
+    } else {
+      const ref = liveTarget
+        ? (getWeeklyTarget(liveTarget) ?? entryData?.value_n1 ?? 0)
+        : (entryData?.target_value ?? entryData?.value_n1 ?? 0);
+      if (ref === 0) {
+        wStatus = "green";
+      } else {
+        const ratio = n / ref;
+        if (ratio >= 1.15) wStatus = "excellent";
+        else if (ratio >= 1) wStatus = "green";
+        else if (ratio >= 0.85) wStatus = "amber";
+        else wStatus = "red";
+      }
+    }
+    return (wStatus === "amber" || wStatus === "red") && !cv.comment.trim();
+  } else {
+    const status = computeKpiStatus(
+      n,
+      def.threshold_excellent,
+      def.threshold_amber,
+      def.threshold_red,
+      def.comparison_direction,
+    );
+    return (status === "amber" || status === "red") && !cv.comment.trim();
+  }
+}
+
+
 export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: Props) {
   const { t } = useTranslation();
   const { spaId } = useAuth();
@@ -331,6 +384,18 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
     onStatusChange(isComplete ? "complete" : "incomplete");
   }, [isComplete, onStatusChange]);
 
+  const missingCommentKpis = useMemo(() => {
+    const missing: { id: string; label: string }[] = [];
+    for (const def of sortedDefs) {
+      const cv = local[def.id];
+      if (!cv) continue;
+      if (kpiNeedsComment(def, cv, isWeekly, entriesByDef, liveTargetMap)) {
+        missing.push({ id: def.id, label: def.name });
+      }
+    }
+    return missing;
+  }, [local, sortedDefs, isWeekly, entriesByDef, liveTargetMap]);
+
   return (
     <section className="mb-8">
       <div className="flex items-center justify-between mb-6">
@@ -346,6 +411,14 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
         </div>
       </div>
 
+      {missingCommentKpis.length > 0 && (
+        <div className="mb-6 p-3 rounded-lg bg-amber-50 border border-amber-200 flex items-center gap-2">
+          <span className="text-amber-600">⚠️</span>
+          <span className="text-sm text-amber-700 font-medium">
+            {missingCommentKpis.length} KPI{missingCommentKpis.length > 1 ? "s" : ""} nécessitent un commentaire pour continuer
+          </span>
+        </div>
+      )}
 
       <div className="space-y-8">
         {ROLE_SECTION_ORDER.map((role) => {
@@ -400,6 +473,7 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
                   const liveTarget = liveTargetMap.get(def.id);
                   const data = defToKpiData(def, entry, liveTarget, isWeekly);
                   const cv = local[def.id] ?? entryToCardValue(entry);
+                  const needsComment = kpiNeedsComment(def, cv, isWeekly, entriesByDef, liveTargetMap);
                   return (
                     <div key={`${role}-${def.id}`} className="flex flex-col gap-0">
                       <div
@@ -436,6 +510,12 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
                           />
                         )}
                       </div>
+                      {needsComment && (
+                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-b-md bg-amber-50 border border-amber-200 border-t-0">
+                          <span>⚠️</span>
+                          <span className="text-xs text-amber-600 font-medium">Commentaire requis</span>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -461,20 +541,29 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
                 const liveTarget = liveTargetMap.get(def.id);
                 const data = defToKpiData(def, entry, liveTarget, isWeekly);
                 const cv = local[def.id] ?? entryToCardValue(entry);
-                return isWeekly ? (
-                  <KpiCardSaisieWeekly
-                    key={def.id}
-                    kpi={data}
-                    cardValue={cv}
-                    onChange={(v) => handleChange(def, v)}
-                  />
-                ) : (
-                  <KpiCardSaisie
-                    key={def.id}
-                    kpi={data}
-                    cardValue={cv}
-                    onChange={(v) => handleChange(def, v)}
-                  />
+                const needsComment = kpiNeedsComment(def, cv, isWeekly, entriesByDef, liveTargetMap);
+                return (
+                  <div key={def.id} className="flex flex-col">
+                    {isWeekly ? (
+                      <KpiCardSaisieWeekly
+                        kpi={data}
+                        cardValue={cv}
+                        onChange={(v) => handleChange(def, v)}
+                      />
+                    ) : (
+                      <KpiCardSaisie
+                        kpi={data}
+                        cardValue={cv}
+                        onChange={(v) => handleChange(def, v)}
+                      />
+                    )}
+                    {needsComment && (
+                      <div className="mt-1 flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-amber-50 border border-amber-200">
+                        <span>⚠️</span>
+                        <span className="text-xs text-amber-600 font-medium">Commentaire requis</span>
+                      </div>
+                    )}
+                  </div>
                 );
               })}
             </div>
