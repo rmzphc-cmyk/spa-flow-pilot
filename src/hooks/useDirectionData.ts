@@ -55,7 +55,7 @@ export function useDirectionSpas() {
         supabase
           .from("spas")
           .select(
-            "id, name, reports(id, cycle_label, status, updated_at, created_at, kpi_entries(id, status), ids_items(id, triage_mode))",
+            "id, name, reports(id, cycle_label, status, updated_at, created_at, kpi_entries(id, status, value_current, kpi_definitions(name, unit)), ids_items(id, triage_mode), responsibility_logs(completion_rate))",
           )
           .in("id", spaIds),
         supabase
@@ -81,13 +81,42 @@ export function useDirectionSpas() {
           .slice()
           .sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""))[0];
 
-        const alertEntries = ((latestReport?.kpi_entries ?? []) as any[]).filter(
+        const kpiEntries = (latestReport?.kpi_entries ?? []) as any[];
+        const respLogs = (latestReport?.responsibility_logs ?? []) as any[];
+
+        const alertEntries = kpiEntries.filter(
           (e) => e.status === "red" || e.status === "amber",
         );
         const alerts: SpaAlert[] = alertEntries.slice(0, 3).map((e: any) => ({
           level: e.status === "red" ? "red" : "orange",
           text: "KPI en alerte",
         }));
+
+        const findKpi = (predicate: (name: string) => boolean) =>
+          kpiEntries.find((e: any) => {
+            const n = (e.kpi_definitions?.name ?? "").toLowerCase();
+            return predicate(n) && e.value_current != null;
+          });
+
+        const caEntry = findKpi(
+          (n) => n.includes("ca") || n.includes("chiffre d'affaires"),
+        );
+        const npsEntry = findKpi((n) => n.includes("nps"));
+
+        const ca = caEntry
+          ? `${caEntry.value_current}${caEntry.kpi_definitions?.unit ?? ""}`
+          : "—";
+        const nps = npsEntry ? `${npsEntry.value_current}` : "—";
+
+        const respRates = respLogs
+          .map((r: any) => r.completion_rate)
+          .filter((v: any) => typeof v === "number");
+        const responsabilites =
+          respRates.length > 0
+            ? `${Math.round(
+                respRates.reduce((s: number, v: number) => s + v, 0) / respRates.length,
+              )}%`
+            : "—";
 
         const prog = progressFromStatus(latestReport?.status);
 
@@ -99,7 +128,7 @@ export function useDirectionSpas() {
           status: mapReportStatus(latestReport?.status),
           progress: prog.text,
           alerts,
-          kpis: { ca: "—", nps: "—", responsabilites: "—" },
+          kpis: { ca, nps, responsabilites },
           lastReport: latestReport?.updated_at
             ? new Intl.DateTimeFormat("fr-FR").format(new Date(latestReport.updated_at))
             : "—",
