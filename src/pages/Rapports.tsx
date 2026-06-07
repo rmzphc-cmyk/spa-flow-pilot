@@ -156,10 +156,12 @@ function defaultLabel(type: ReportType, start: string): string {
 
 export default function Rapports() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [tab, setTab] = useState<"prep" | "consult">("prep");
   const { data: rows = [], isLoading, error } = useReports();
   const createReport = useCreateReport();
   const schedule = useMeetingSchedule();
+
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newType, setNewType] = useState<ReportType>("monthly");
