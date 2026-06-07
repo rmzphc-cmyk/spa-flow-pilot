@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Database } from "@/integrations/supabase/types";
+import { withTimeout } from "@/lib/withTimeout";
 import type { ReportRecord, ReportType, ReportState } from "@/lib/reportsStore";
 
 export type ReportRow = Database["public"]["Tables"]["reports"]["Row"];
@@ -155,6 +156,8 @@ export function useStartMeeting() {
   });
 }
 
+
+
 export function useCloseMeeting() {
   const qc = useQueryClient();
   return useMutation({
@@ -164,14 +167,17 @@ export function useCloseMeeting() {
       audioMimeType?: string;
       audioDurationS?: number;
     }) => {
-      const { data, error } = await supabase.functions.invoke("close-monthly-meeting", {
-        body: {
-          report_id: input.reportId,
-          audio_storage_path: input.audioStoragePath,
-          audio_mime_type: input.audioMimeType,
-          audio_duration_s: input.audioDurationS,
-        },
-      });
+      const { data, error } = await withTimeout(
+        supabase.functions.invoke("close-monthly-meeting", {
+          body: {
+            report_id: input.reportId,
+            audio_storage_path: input.audioStoragePath,
+            audio_mime_type: input.audioMimeType,
+            audio_duration_s: input.audioDurationS,
+          },
+        }),
+        "La clôture",
+      );
       if (error) throw new Error(data?.error ?? error.message ?? "Erreur clôture réunion");
       if (data?.error) throw new Error(data.error);
       return data as { data: ReportRow; warning?: string };
@@ -182,6 +188,7 @@ export function useCloseMeeting() {
     },
   });
 }
+
 
 export function useReopenMeeting() {
   const qc = useQueryClient();

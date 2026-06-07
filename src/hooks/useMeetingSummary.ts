@@ -3,6 +3,7 @@ import { useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { withTimeout } from "@/lib/withTimeout";
 
 export interface MeetingSummaryRow {
   id: string;
@@ -51,9 +52,12 @@ export function useGenerateMeetingSummary() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: { reportId: string }) => {
-      const { data, error } = await supabase.functions.invoke("generate-meeting-summary", {
-        body: { report_id: input.reportId },
-      });
+      const { data, error } = await withTimeout(
+        supabase.functions.invoke("generate-meeting-summary", {
+          body: { report_id: input.reportId },
+        }),
+        "La génération de la synthèse",
+      );
       if (error) throw new Error(data?.error ?? error.message ?? "Erreur génération");
       if (data?.error) throw new Error(data.error);
       return data.data as MeetingSummaryRow;
@@ -143,9 +147,12 @@ export function useValidateMonthlySummary() {
   const navigate = useNavigate();
   return useMutation({
     mutationFn: async (input: { reportId: string }) => {
-      const { data, error } = await supabase.functions.invoke("validate-final-report", {
-        body: { report_id: input.reportId },
-      });
+      const { data, error } = await withTimeout(
+        supabase.functions.invoke("validate-final-report", {
+          body: { report_id: input.reportId },
+        }),
+        "La validation du rapport",
+      );
       if (error) {
         const msg = data?.error ?? error.message ?? "Erreur validation";
         throw new Error(msg);
