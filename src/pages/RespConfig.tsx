@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useToast } from "@/hooks/use-toast";
+import { useTranslation } from "react-i18next";
 import { Plus, Pencil, Trash2, ArrowUp, ArrowDown, CalendarClock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,9 +28,6 @@ import {
 import {
   loadSchedule,
   saveScheduleToDb,
-  describeSchedule,
-  DAY_LABELS_FR,
-  WEEK_LABELS_FR,
   type MeetingSchedule,
 } from "@/lib/meetingSchedule";
 import { useAuth } from "@/contexts/AuthContext";
@@ -53,28 +51,49 @@ const CATEGORIES = [
 ] as const;
 type Category = (typeof CATEGORIES)[number];
 
-const FREQ_LABEL: Record<string, { label: string; cls: string; unit: string }> = {
-  daily: { label: "Journalier", cls: "bg-purple-100 text-purple-700", unit: "jour" },
-  weekly: { label: "Hebdo", cls: "bg-blue-100 text-blue-700", unit: "sem" },
-  biweekly: { label: "Bimensuel", cls: "bg-cyan-100 text-cyan-700", unit: "quinz." },
-  monthly: { label: "Mensuel", cls: "bg-slate-100 text-slate-600", unit: "mois" },
-};
+const DAY_KEYS = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"] as const;
+const WEEK_KEYS = ["1er", "2eme", "3eme", "4eme", "last"] as const;
 
 function FreqBadges({ frequency, expectedCount }: { frequency: string | null; expectedCount: number | null }) {
+  const { t } = useTranslation();
   const freq = frequency ?? "monthly";
   const count = expectedCount ?? 1;
-  const meta = FREQ_LABEL[freq] ?? FREQ_LABEL.monthly;
   const total = calcMonthlyExpected(freq, count);
+
+  const meta: Record<string, { label: string; cls: string; unit: string }> = {
+    daily: {
+      label: t("respConfig.frequency.daily"),
+      cls: "bg-purple-100 text-purple-700",
+      unit: t("respConfig.unit.day"),
+    },
+    weekly: {
+      label: t("respConfig.frequency.weekly"),
+      cls: "bg-blue-100 text-blue-700",
+      unit: t("respConfig.unit.week"),
+    },
+    biweekly: {
+      label: t("respConfig.frequency.biweekly"),
+      cls: "bg-cyan-100 text-cyan-700",
+      unit: t("respConfig.unit.fortnight"),
+    },
+    monthly: {
+      label: t("respConfig.frequency.monthly"),
+      cls: "bg-slate-100 text-slate-600",
+      unit: t("respConfig.unit.month"),
+    },
+  };
+  const f = meta[freq] ?? meta.monthly;
+
   return (
     <div className="flex gap-1 flex-wrap mt-1">
-      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${meta.cls}`}>
-        {meta.label}
+      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${f.cls}`}>
+        {f.label}
       </span>
       <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
-        × {count}/{meta.unit}
+        × {count}/{f.unit}
       </span>
       <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-teal-50 text-teal-700">
-        = {total}/mois
+        {t("respConfig.expectedTotal", { total })}
       </span>
     </div>
   );
@@ -104,6 +123,7 @@ const EMPTY_EDIT: EditingTemplate = {
 };
 
 export default function RespConfig() {
+  const { t } = useTranslation();
   const { user, userRole, spaId: authSpaId } = useAuth();
   const { toast: showToast } = useToast();
   const [tab, setTab] = useState<TabKey>("templates");
@@ -143,15 +163,15 @@ export default function RespConfig() {
     setSheetOpen(true);
   };
 
-  const openEdit = (t: RespTemplateFullRow) => {
+  const openEdit = (tmpl: RespTemplateFullRow) => {
     setEditing({
-      id: t.id,
-      title: t.title,
-      description: t.description ?? "",
-      category: (CATEGORIES.includes(t.category as Category) ? t.category : "Opérationnel") as Category,
-      is_active: t.is_active,
-      frequency: t.frequency ?? "monthly",
-      expected_count: t.expected_count ?? 1,
+      id: tmpl.id,
+      title: tmpl.title,
+      description: tmpl.description ?? "",
+      category: (CATEGORIES.includes(tmpl.category as Category) ? tmpl.category : "Opérationnel") as Category,
+      is_active: tmpl.is_active,
+      frequency: tmpl.frequency ?? "monthly",
+      expected_count: tmpl.expected_count ?? 1,
     });
     setSheetOpen(true);
   };
@@ -170,10 +190,10 @@ export default function RespConfig() {
         { id: editing.id, spaId, ...payload, is_active: editing.is_active },
         {
           onSuccess: () => {
-            toast.success("Template modifié ✓");
+            toast.success(t("respConfig.editSuccess"));
             setSheetOpen(false);
           },
-          onError: (e: any) => toast.error(e?.message ?? "Erreur"),
+          onError: (e: any) => toast.error(e?.message ?? t("common.error")),
         },
       );
     } else {
@@ -181,10 +201,10 @@ export default function RespConfig() {
         { spaId, ...payload, display_order: sortedTemplates.length },
         {
           onSuccess: () => {
-            toast.success("Template ajouté ✓");
+            toast.success(t("respConfig.addSuccess"));
             setSheetOpen(false);
           },
-          onError: (e: any) => toast.error(e?.message ?? "Erreur"),
+          onError: (e: any) => toast.error(e?.message ?? t("common.error")),
         },
       );
     }
@@ -204,10 +224,10 @@ export default function RespConfig() {
       { id: deleteTarget.id, spaId },
       {
         onSuccess: () => {
-          toast.success("Template désactivé");
+          toast.success(t("respConfig.deactivateSuccess"));
           setDeleteTarget(null);
         },
-        onError: (e: any) => toast.error(e?.message ?? "Erreur"),
+        onError: (e: any) => toast.error(e?.message ?? t("common.error")),
       },
     );
   };
@@ -241,38 +261,57 @@ export default function RespConfig() {
   // Auto-save (debounced) when schedule changes
   useEffect(() => {
     if (!spaId) return;
-    const t = setTimeout(async () => {
+    const timer = setTimeout(async () => {
       setIsSavingSchedule(true);
       try {
         await saveScheduleToDb(schedule);
         await queryClient.invalidateQueries({ queryKey: ["spa-schedule", spaId] });
-        showToast({ title: "Calendrier sauvegardé", description: "Synchronisé sur tous vos appareils." });
+        showToast({ title: t("respConfig.scheduleSaved"), description: t("respConfig.scheduleSavedDesc") });
       } catch (e: any) {
-        showToast({ title: "Erreur", description: e?.message ?? "Erreur de sauvegarde", variant: "destructive" });
+        showToast({ title: t("common.error"), description: e?.message ?? t("respConfig.scheduleSaveError"), variant: "destructive" });
       } finally {
         setIsSavingSchedule(false);
       }
     }, 600);
-    return () => clearTimeout(t);
+    return () => clearTimeout(timer);
      
   }, [schedule.weekly_day, schedule.monthly_mode, schedule.monthly_week, schedule.monthly_day, schedule.monthly_date, spaId]);
 
-  const scheduleDesc = describeSchedule(schedule);
+  // Build schedule descriptions locally with translations
+  const weeklyDesc = t(`respConfig.weeklyDayOption.${DAY_KEYS[schedule.weekly_day]}`);
+
+  let monthlyDesc: string;
+  if (schedule.monthly_mode === "date") {
+    if (schedule.monthly_date >= 32) {
+      monthlyDesc = t("respConfig.lastDayOfMonth");
+    } else {
+      const formattedDate = schedule.monthly_date === 1
+        ? t("respConfig.occurrence.1er")
+        : String(schedule.monthly_date);
+      monthlyDesc = t("respConfig.schedule.monthlyDate", { date: formattedDate });
+    }
+  } else {
+    monthlyDesc = t("respConfig.schedule.monthlyWeekday", {
+      occurrence: t(`respConfig.occurrence.${WEEK_KEYS[schedule.monthly_week - 1]}`),
+      day: t(`days.${DAY_KEYS[schedule.monthly_day]}`).toLowerCase(),
+    });
+  }
+
   void isSavingSchedule;
 
   return (
     <div className="max-w-[1100px] mx-auto px-6 py-6 pb-20">
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-xl font-bold text-foreground">Responsabilités managériales</h1>
+          <h1 className="text-xl font-bold text-foreground">{t("respConfig.title")}</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Gérer les templates et la récurrence des réunions
+            {t("respConfig.subtitle")}
           </p>
         </div>
         {userRole === "admin" && (
           <Select value={adminSpaId ?? ""} onValueChange={(v) => setAdminSpaId(v || null)}>
             <SelectTrigger className="w-56 h-9">
-              <SelectValue placeholder="Sélectionner un spa" />
+              <SelectValue placeholder={t("respConfig.selectSpa")} />
             </SelectTrigger>
             <SelectContent>
               {(spas ?? []).map((s: any) => (
@@ -288,8 +327,8 @@ export default function RespConfig() {
       {/* Tabs */}
       <div className="inline-flex rounded-lg border border-border bg-card p-0.5 mb-5">
         {([
-          { v: "templates" as const, label: "Templates" },
-          { v: "calendrier" as const, label: "Calendrier des réunions" },
+          { v: "templates" as const, label: t("respConfig.tabs.templates") },
+          { v: "calendrier" as const, label: t("respConfig.tabs.calendar") },
         ]).map((opt) => (
           <button
             key={opt.v}
@@ -310,7 +349,7 @@ export default function RespConfig() {
         <section>
           {!spaId ? (
             <div className="border border-border rounded-xl p-12 text-center text-muted-foreground">
-              Sélectionner un spa
+              {t("respConfig.selectSpaPrompt")}
             </div>
           ) : (
             <>
@@ -320,7 +359,7 @@ export default function RespConfig() {
                   className="gap-1.5 bg-teal-600 hover:bg-teal-700 text-white"
                   onClick={openCreate}
                 >
-                  <Plus className="h-4 w-4" /> Ajouter un template
+                  <Plus className="h-4 w-4" /> {t("respConfig.addTemplate")}
                 </Button>
               </div>
 
@@ -328,50 +367,50 @@ export default function RespConfig() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="bg-muted">
-                      <th className="text-left py-2.5 px-4 font-semibold">Titre</th>
-                      <th className="text-left py-2.5 px-4 font-semibold w-40">Catégorie</th>
-                      <th className="text-left py-2.5 px-4 font-semibold w-20">Actif</th>
-                      <th className="text-left py-2.5 px-4 font-semibold w-36">Actions</th>
+                      <th className="text-left py-2.5 px-4 font-semibold">{t("respConfig.table.title")}</th>
+                      <th className="text-left py-2.5 px-4 font-semibold w-40">{t("respConfig.table.category")}</th>
+                      <th className="text-left py-2.5 px-4 font-semibold w-20">{t("respConfig.table.active")}</th>
+                      <th className="text-left py-2.5 px-4 font-semibold w-36">{t("respConfig.table.actions")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {isLoading && (
                       <tr>
                         <td colSpan={4} className="py-8 text-center text-muted-foreground">
-                          Chargement…
+                          {t("common.loading")}
                         </td>
                       </tr>
                     )}
                     {!isLoading && sortedTemplates.length === 0 && (
                       <tr>
                         <td colSpan={4} className="py-8 text-center text-muted-foreground">
-                          Aucun template. Cliquez sur « Ajouter un template ».
+                          {t("respConfig.emptyTemplates")}
                         </td>
                       </tr>
                     )}
-                    {sortedTemplates.map((t, idx) => (
-                      <tr key={t.id} className="border-t border-border">
+                    {sortedTemplates.map((tmpl, idx) => (
+                      <tr key={tmpl.id} className="border-t border-border">
                         <td className="py-2 px-4">
-                          <div className="font-medium">{t.title}</div>
-                          <FreqBadges frequency={t.frequency} expectedCount={t.expected_count} />
-                          {t.description && (
+                          <div className="font-medium">{tmpl.title}</div>
+                          <FreqBadges frequency={tmpl.frequency} expectedCount={tmpl.expected_count} />
+                          {tmpl.description && (
                             <div className="text-xs text-muted-foreground line-clamp-1 mt-0.5">
-                              {t.description}
+                              {tmpl.description}
                             </div>
                           )}
                         </td>
                         <td className="py-2 px-4 text-muted-foreground">
-                          {t.category ?? "—"}
+                          {tmpl.category ? t(`respConfig.category.${tmpl.category}`) : "—"}
                         </td>
                         <td className="py-2 px-4">
                           <Switch
-                            checked={t.is_active}
+                            checked={tmpl.is_active}
                             onCheckedChange={(v) => {
                               updateMut.mutate(
-                                { id: t.id, spaId, is_active: v },
+                                { id: tmpl.id, spaId, is_active: v },
                                 {
-                                  onSuccess: () => toast.success("Sauvegardé ✓"),
-                                  onError: (e: any) => toast.error(e?.message ?? "Erreur"),
+                                  onSuccess: () => toast.success(t("respConfig.saveSuccess")),
+                                  onError: (e: any) => toast.error(e?.message ?? t("common.error")),
                                 },
                               );
                             }}
@@ -401,7 +440,7 @@ export default function RespConfig() {
                               variant="ghost"
                               size="icon"
                               className="h-7 w-7"
-                              onClick={() => openEdit(t)}
+                              onClick={() => openEdit(tmpl)}
                             >
                               <Pencil className="h-3.5 w-3.5" />
                             </Button>
@@ -409,7 +448,7 @@ export default function RespConfig() {
                               variant="ghost"
                               size="icon"
                               className="h-7 w-7 text-destructive"
-                              onClick={() => setDeleteTarget(t)}
+                              onClick={() => setDeleteTarget(tmpl)}
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
@@ -431,21 +470,18 @@ export default function RespConfig() {
           <div className="bg-card border border-border rounded-xl p-5 shadow-sm space-y-6">
             <div className="flex items-start gap-2 text-sm text-muted-foreground">
               <CalendarClock className="h-4 w-4 mt-0.5 text-primary" />
-              <p>
-                Définissez la récurrence des réunions Weekly et Monthly. Le dashboard utilise ces
-                réglages pour afficher la prochaine réunion et envoyer les rappels.
-              </p>
+              <p>{t("respConfig.calendarTitle")}</p>
             </div>
 
             <div className="border-t border-border pt-5">
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800">
-                  🟢 Weekly
+                  {t("respConfig.weeklyLabel")}
                 </span>
-                <span className="text-sm text-muted-foreground">{scheduleDesc.weekly}</span>
+                <span className="text-sm text-muted-foreground">{weeklyDesc}</span>
               </div>
-              <Label className="text-sm font-medium">Jour de la semaine récurrent</Label>
-              <p className="text-[10px] text-muted-foreground mb-1.5">Ex : tous les jeudis</p>
+              <Label className="text-sm font-medium">{t("respConfig.recurrentDayLabel")}</Label>
+              <p className="text-[10px] text-muted-foreground mb-1.5">{t("respConfig.recurrentDayHint")}</p>
               <Select
                 value={String(schedule.weekly_day)}
                 onValueChange={(v) => setSchedule({ ...schedule, weekly_day: Number(v) })}
@@ -454,9 +490,9 @@ export default function RespConfig() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {DAY_LABELS_FR.map((d, i) => (
+                  {DAY_KEYS.map((key, i) => (
                     <SelectItem key={i} value={String(i)}>
-                      Tous les {d.toLowerCase()}s
+                      {t(`respConfig.weeklyDayOption.${key}`)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -466,16 +502,16 @@ export default function RespConfig() {
             <div className="border-t border-border pt-5">
               <div className="flex items-center gap-2 mb-3">
                 <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
-                  🔵 Monthly
+                  {t("respConfig.monthlyLabel")}
                 </span>
-                <span className="text-sm text-muted-foreground">{scheduleDesc.monthly}</span>
+                <span className="text-sm text-muted-foreground">{monthlyDesc}</span>
               </div>
 
-              <Label className="text-sm font-medium">Type de récurrence</Label>
+              <Label className="text-sm font-medium">{t("respConfig.recurrenceTypeLabel")}</Label>
               <div className="flex gap-2 mt-1.5 mb-4">
                 {([
-                  { v: "weekday", label: "X-ième jour du mois (ex : 1er lundi)" },
-                  { v: "date", label: "Date exacte (ex : le 15)" },
+                  { v: "weekday", label: t("respConfig.recurrenceTypeWeekday") },
+                  { v: "date", label: t("respConfig.recurrenceTypeDate") },
                 ] as const).map((o) => (
                   <button
                     key={o.v}
@@ -494,7 +530,7 @@ export default function RespConfig() {
               {schedule.monthly_mode === "weekday" ? (
                 <div className="flex gap-2 items-end">
                   <div>
-                    <Label className="text-xs">Occurrence</Label>
+                    <Label className="text-xs">{t("respConfig.occurrenceLabel")}</Label>
                     <Select
                       value={String(schedule.monthly_week)}
                       onValueChange={(v) =>
@@ -505,16 +541,16 @@ export default function RespConfig() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {WEEK_LABELS_FR.map((w, i) => (
+                        {WEEK_KEYS.map((key, i) => (
                           <SelectItem key={i} value={String(i + 1)}>
-                            {w}
+                            {t(`respConfig.occurrence.${key}`)}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div>
-                    <Label className="text-xs">Jour</Label>
+                    <Label className="text-xs">{t("respConfig.dayLabel")}</Label>
                     <Select
                       value={String(schedule.monthly_day)}
                       onValueChange={(v) =>
@@ -525,19 +561,19 @@ export default function RespConfig() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {DAY_LABELS_FR.map((d, i) => (
+                        {DAY_KEYS.map((key, i) => (
                           <SelectItem key={i} value={String(i)}>
-                            {d}
+                            {t(`days.${key}`)}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
-                  <span className="text-sm text-muted-foreground pb-2">du mois</span>
+                  <span className="text-sm text-muted-foreground pb-2">{t("respConfig.ofTheMonth")}</span>
                 </div>
               ) : (
                 <div>
-                  <Label className="text-xs">Jour du mois (1 – 31, ou « Dernier »)</Label>
+                  <Label className="text-xs">{t("respConfig.monthDateLabel")}</Label>
                   <Select
                     value={String(schedule.monthly_date)}
                     onValueChange={(v) =>
@@ -550,10 +586,10 @@ export default function RespConfig() {
                     <SelectContent className="max-h-72">
                       {Array.from({ length: 31 }, (_, i) => i + 1).map((d) => (
                         <SelectItem key={d} value={String(d)}>
-                          Le {d}
+                          {t("respConfig.theDay", { day: d })}
                         </SelectItem>
                       ))}
-                      <SelectItem value="32">Dernier jour du mois</SelectItem>
+                      <SelectItem value="32">{t("respConfig.lastDayOfMonth")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -568,20 +604,20 @@ export default function RespConfig() {
         <SheetContent className="w-[440px] sm:max-w-[440px] overflow-y-auto">
           <SheetHeader>
             <SheetTitle>
-              {editing.id ? "Modifier le template" : "Ajouter un template"}
+              {editing.id ? t("respConfig.sheet.editTitle") : t("respConfig.sheet.addTitle")}
             </SheetTitle>
           </SheetHeader>
 
           <div className="mt-6 space-y-5">
             <div>
-              <Label className="text-sm font-medium">Titre *</Label>
+              <Label className="text-sm font-medium">{t("respConfig.sheet.titleLabel")}</Label>
               <Input
                 value={editing.title}
                 onChange={(e) =>
                   setEditing((p) => ({ ...p, title: e.target.value.slice(0, 100) }))
                 }
                 maxLength={100}
-                placeholder="Ex : Réunion d'équipe hebdomadaire"
+                placeholder={t("respConfig.sheet.titlePlaceholder")}
                 className="mt-1"
               />
               <p className="text-[10px] text-muted-foreground mt-1 text-right">
@@ -590,7 +626,7 @@ export default function RespConfig() {
             </div>
 
             <div>
-              <Label className="text-sm font-medium">Description</Label>
+              <Label className="text-sm font-medium">{t("respConfig.sheet.descriptionLabel")}</Label>
               <Textarea
                 value={editing.description}
                 onChange={(e) =>
@@ -598,7 +634,7 @@ export default function RespConfig() {
                 }
                 maxLength={300}
                 rows={3}
-                placeholder="Précisions sur cette responsabilité (optionnel)"
+                placeholder={t("respConfig.sheet.descriptionPlaceholder")}
                 className="mt-1"
               />
               <p className="text-[10px] text-muted-foreground mt-1 text-right">
@@ -607,7 +643,7 @@ export default function RespConfig() {
             </div>
 
             <div>
-              <Label className="text-sm font-medium">Catégorie</Label>
+              <Label className="text-sm font-medium">{t("respConfig.sheet.categoryLabel")}</Label>
               <Select
                 value={editing.category}
                 onValueChange={(v) => setEditing((p) => ({ ...p, category: v as Category }))}
@@ -618,7 +654,7 @@ export default function RespConfig() {
                 <SelectContent>
                   {CATEGORIES.map((c) => (
                     <SelectItem key={c} value={c}>
-                      {c}
+                      {t(`respConfig.category.${c}`)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -626,7 +662,7 @@ export default function RespConfig() {
             </div>
 
             <div>
-              <Label className="text-sm font-medium">Fréquence</Label>
+              <Label className="text-sm font-medium">{t("respConfig.sheet.frequencyLabel")}</Label>
               <Select
                 value={editing.frequency}
                 onValueChange={(v) =>
@@ -637,10 +673,10 @@ export default function RespConfig() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="daily">Journalier</SelectItem>
-                  <SelectItem value="weekly">Hebdomadaire</SelectItem>
-                  <SelectItem value="biweekly">Bimensuel</SelectItem>
-                  <SelectItem value="monthly">Mensuel</SelectItem>
+                  <SelectItem value="daily">{t("respConfig.frequency.daily")}</SelectItem>
+                  <SelectItem value="weekly">{t("respConfig.frequency.weekly")}</SelectItem>
+                  <SelectItem value="biweekly">{t("respConfig.frequency.biweekly")}</SelectItem>
+                  <SelectItem value="monthly">{t("respConfig.frequency.monthly")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -648,12 +684,12 @@ export default function RespConfig() {
             <div>
               <Label className="text-sm font-medium">
                 {editing.frequency === "daily"
-                  ? "Nombre par jour"
+                  ? t("respConfig.countLabel.daily")
                   : editing.frequency === "weekly"
-                    ? "Nombre par semaine"
+                    ? t("respConfig.countLabel.weekly")
                     : editing.frequency === "biweekly"
-                      ? "Nombre par quinzaine"
-                      : "Nombre par mois"}
+                      ? t("respConfig.countLabel.biweekly")
+                      : t("respConfig.countLabel.monthly")}
               </Label>
               <Input
                 type="number"
@@ -671,14 +707,14 @@ export default function RespConfig() {
                 const total = calcMonthlyExpected(editing.frequency, editing.expected_count);
                 return (
                   <p className="text-xs text-muted-foreground italic mt-1">
-                    = {total} attendu{total > 1 ? "s" : ""} par mois
+                    {t("respConfig.expectedTotal", { total })}
                   </p>
                 );
               })()}
             </div>
 
             <div className="flex items-center justify-between border-t border-border pt-4">
-              <Label className="text-sm font-medium">Actif</Label>
+              <Label className="text-sm font-medium">{t("respConfig.sheet.activeLabel")}</Label>
               <Switch
                 checked={editing.is_active}
                 onCheckedChange={(v) => setEditing((p) => ({ ...p, is_active: v }))}
@@ -687,14 +723,14 @@ export default function RespConfig() {
 
             <div className="flex justify-end gap-2 pt-4">
               <Button variant="outline" onClick={() => setSheetOpen(false)}>
-                Annuler
+                {t("common.cancel")}
               </Button>
               <Button
                 className="bg-teal-600 hover:bg-teal-700 text-white"
                 disabled={!editing.title.trim() || addMut.isPending || updateMut.isPending}
                 onClick={handleSave}
               >
-                Enregistrer
+                {t("common.save")}
               </Button>
             </div>
           </div>
@@ -705,18 +741,17 @@ export default function RespConfig() {
       <Dialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Désactiver ce template ?</DialogTitle>
+            <DialogTitle>{t("respConfig.deactivateTitle")}</DialogTitle>
             <DialogDescription>
-              « {deleteTarget?.title} » ne sera plus proposé dans les nouveaux rapports. Les
-              historiques restent intacts.
+              {t("respConfig.deactivateDesc", { title: deleteTarget?.title ?? "" })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteTarget(null)}>
-              Annuler
+              {t("common.cancel")}
             </Button>
             <Button variant="destructive" onClick={confirmDelete} disabled={deleteMut.isPending}>
-              Désactiver
+              {t("respConfig.deactivate")}
             </Button>
           </DialogFooter>
         </DialogContent>
