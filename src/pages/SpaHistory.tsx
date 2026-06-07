@@ -115,10 +115,10 @@ function SidePanel({ report, onClose }: { report: HistoryReport; onClose: () => 
 // --- Main ---
 
 export default function SpaHistory() {
-  const { spa } = useParams<{ spa: string }>();
   const navigate = useNavigate();
+  const { spaId } = useAuth();
+  const { data, isLoading, isError } = useSpaHistory(spaId);
 
-  const data = spaData[spa ?? ""];
   const [periodFilter, setPeriodFilter] = useState<"3" | "6" | "12">("6");
   const [cycleFilter, setCycleFilter] = useState<"all" | "weekly" | "monthly">("all");
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
@@ -129,7 +129,6 @@ export default function SpaHistory() {
     if (!data) return [];
     let reports = data.reports;
     if (cycleFilter !== "all") reports = reports.filter((r) => r.type === cycleFilter);
-    // Period filter would use real dates; with mock data we just slice
     const maxItems = periodFilter === "3" ? 3 : periodFilter === "6" ? 6 : 12;
     return reports.slice(-maxItems);
   }, [data, cycleFilter, periodFilter]);
@@ -141,7 +140,6 @@ export default function SpaHistory() {
     return Array.from(labels);
   }, [data]);
 
-  // Set default KPI selection
   const activeKpi = selectedKpi || allKpiLabels[0] || "";
 
   const kpiChartData = useMemo(() => {
@@ -167,10 +165,21 @@ export default function SpaHistory() {
 
   const selectedReport = filteredReports.find((r) => r.id === selectedReportId) ?? null;
 
-  if (!data) {
+  if (isLoading) {
+    return (
+      <div className="max-w-[860px] mx-auto px-6 py-6 space-y-4">
+        <Skeleton className="h-10 w-1/2" />
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-56 w-full" />
+        <Skeleton className="h-56 w-full" />
+      </div>
+    );
+  }
+
+  if (isError || !data) {
     return (
       <div className="max-w-[860px] mx-auto px-6 py-12 text-center">
-        <p className="text-foreground font-medium">Spa introuvable</p>
+        <p className="text-foreground font-medium">Historique indisponible</p>
         <Button variant="outline" className="mt-4" onClick={() => navigate("/rapports")}>
           Retour aux rapports
         </Button>
@@ -205,7 +214,7 @@ export default function SpaHistory() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `historique-${spa}.csv`;
+    a.download = `historique-${data.name.toLowerCase().replace(/\s+/g, "-")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
