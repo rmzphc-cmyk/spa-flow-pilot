@@ -518,6 +518,70 @@
         "fileTooLarge": "Archivo demasiado grande",
         "fileTooLargeDesc": "Archivo de audio demasiado grande (máx. 20 MB)."
       }
+    },
+    "todo": {
+      "subtitle": "Acciones a realizar en este ciclo",
+      "add": "Añadir",
+      "newActionTitle": "Nueva acción",
+      "titlePlaceholder": "Título de la acción *",
+      "responsiblePlaceholder": "Responsable (p. ej. Marie)",
+      "nextMeeting": "Próxima reunión",
+      "customDate": "Fecha precisa",
+      "priority": {
+        "critical": "🔴 Crítico",
+        "high": "🟠 Alto",
+        "normal": "🔵 Normal"
+      },
+      "createAction": "Crear acción",
+      "overdueSuffix": "en retraso",
+      "overdueLabel": "RETRASO +{{days}}d",
+      "doneThisCycle": "Realizadas este ciclo",
+      "inheritedTitle": "Heredadas del ciclo anterior",
+      "inheritedHint": "Cada acción decidida debe tener un registro. Comenta el progreso para la Dirección.",
+      "deadlineUndefined": "Por definir",
+      "status": {
+        "pending": "Por hacer",
+        "inProgress": "En curso",
+        "done": "Hecho",
+        "deferred": "Aplazar"
+      },
+      "placeholder": {
+        "inProgress": "Avance actual, próximo paso… (opcional)",
+        "done": "Describe cómo se realizó, resultado obtenido…",
+        "deferred": "Motivo del aplazamiento, nueva fecha…"
+      },
+      "confirmResetMsg": "Restablecer esta acción a \"Por hacer\" eliminará su estado de finalización. ¿Continuar?",
+      "confirm": "Confirmar",
+      "deferTo": "Aplazar hasta *",
+      "reason": "Motivo",
+      "deferReasonLabel": "Motivo del aplazamiento *",
+      "deferReasonPlaceholder": "¿Por qué este aplazamiento?…",
+      "confirmDefer": "Confirmar aplazamiento",
+      "addFollowUpWarn": "Añadir un comentario de seguimiento…",
+      "addFollowUp": "Añadir seguimiento…",
+      "followUpPlaceholder": "Ej: Comentarios positivos / Aplazado por vacaciones / Realizado con ajuste…",
+      "weekly": {
+        "title": "Acciones de la semana",
+        "subtitle": "Sigue el progreso y notifica los aplazamientos",
+        "doneThisWeek": "Realizado esta semana",
+        "noDone": "Ninguna acción completada esta semana.",
+        "overdueFor_one": "1 día de retraso",
+        "overdueFor_other": "{{count}} días de retraso",
+        "whyLate": "¿Por qué no se completó a tiempo? *",
+        "justificationPlaceholder": "Justificación…",
+        "newDeadline": "Nueva fecha límite *",
+        "thisWeek": "Esta semana",
+        "toProcess": "a gestionar",
+        "noActive": "Ninguna acción en curso para esta semana.",
+        "deferredActions": "Acciones aplazadas",
+        "originallyScheduled": "Previsto inicialmente el {{date}}",
+        "deferredTo": "Aplazado al {{date}}",
+        "doneAfterAll": "Finalmente realizado",
+        "deferAgain": "Aplazar de nuevo",
+        "statusHint": "El estado de cada acción (realizado, en curso, aplazado) se comunica a la Dirección.",
+        "createHint": "💡 Para crear nuevas acciones → informe Monthly",
+        "toastDeferred": "Acción aplazada"
+      }
     }
   },
   "common": {

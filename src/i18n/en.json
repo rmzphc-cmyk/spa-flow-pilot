@@ -518,6 +518,70 @@
         "fileTooLarge": "File too large",
         "fileTooLargeDesc": "Audio file too large (max 20 MB)."
       }
+    },
+    "todo": {
+      "subtitle": "Actions to complete this cycle",
+      "add": "Add",
+      "newActionTitle": "New action",
+      "titlePlaceholder": "Action title *",
+      "responsiblePlaceholder": "Responsible (e.g. Marie)",
+      "nextMeeting": "Next meeting",
+      "customDate": "Specific date",
+      "priority": {
+        "critical": "🔴 Critical",
+        "high": "🟠 High",
+        "normal": "🔵 Normal"
+      },
+      "createAction": "Create action",
+      "overdueSuffix": "overdue",
+      "overdueLabel": "OVERDUE +{{days}}d",
+      "doneThisCycle": "Done this cycle",
+      "inheritedTitle": "Inherited from previous cycle",
+      "inheritedHint": "Every decided action must be traceable. Comment on progress for Management.",
+      "deadlineUndefined": "To be defined",
+      "status": {
+        "pending": "To do",
+        "inProgress": "In progress",
+        "done": "Done",
+        "deferred": "Defer"
+      },
+      "placeholder": {
+        "inProgress": "Current progress, next step… (optional)",
+        "done": "Describe how it was done, result obtained…",
+        "deferred": "Reason for deferral, new deadline…"
+      },
+      "confirmResetMsg": "Resetting this action to \"To do\" will clear its completion status. Continue?",
+      "confirm": "Confirm",
+      "deferTo": "Defer to *",
+      "reason": "Reason",
+      "deferReasonLabel": "Reason for deferral *",
+      "deferReasonPlaceholder": "Why this deferral…",
+      "confirmDefer": "Confirm deferral",
+      "addFollowUpWarn": "Add a follow-up comment…",
+      "addFollowUp": "Add a follow-up…",
+      "followUpPlaceholder": "E.g. Positive feedback / Postponed due to leave / Done with adjustment…",
+      "weekly": {
+        "title": "Week actions",
+        "subtitle": "Track progress and flag deferrals",
+        "doneThisWeek": "Done this week",
+        "noDone": "No actions completed this week.",
+        "overdueFor_one": "1 day overdue",
+        "overdueFor_other": "{{count}} days overdue",
+        "whyLate": "Why not completed on time? *",
+        "justificationPlaceholder": "Justification…",
+        "newDeadline": "New deadline *",
+        "thisWeek": "This week",
+        "toProcess": "to process",
+        "noActive": "No active actions for this week.",
+        "deferredActions": "Deferred actions",
+        "originallyScheduled": "Originally scheduled for {{date}}",
+        "deferredTo": "Deferred to {{date}}",
+        "doneAfterAll": "Done after all",
+        "deferAgain": "Defer again",
+        "statusHint": "The status of each action (done, in progress, deferred) is shared with Management.",
+        "createHint": "💡 To create new actions → Monthly report",
+        "toastDeferred": "Action deferred"
+      }
     }
   },
   "common": {

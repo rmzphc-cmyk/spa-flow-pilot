@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AlertTriangle, Check, CheckCircle2, Play, RotateCcw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -52,6 +53,7 @@ function daysBetween(a: Date, b: Date) {
 
 export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusChange }: Props) {
   const { spaId } = useAuth();
+  const { t } = useTranslation();
   const { data: dbTodos = [] } = useTodos(reportId, spaId);
   const updateMutation = useUpdateTodoStatusWithComment();
   const deferMutation = useDeferTodo();
@@ -78,10 +80,10 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
       return dt >= weekStart && dt <= weekEnd;
     };
 
-    const done = dbTodos.filter((t) => t.status === "done" && inRange(t.due_date));
+    const done = dbTodos.filter((item) => item.status === "done" && inRange(item.due_date));
     const active = dbTodos
       .filter(
-        (t) => t.status !== "done" && t.status !== "deferred" && inRange(t.due_date),
+        (item) => item.status !== "done" && item.status !== "deferred" && inRange(item.due_date),
       )
       .sort((a, b) => {
         const aOver = a.due_date ? new Date(a.due_date) < today : false;
@@ -90,7 +92,7 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
         if (!aOver && bOver) return 1;
         return (a.due_date ?? "").localeCompare(b.due_date ?? "");
       });
-    const def = dbTodos.filter((t) => t.status === "deferred");
+    const def = dbTodos.filter((item) => item.status === "deferred");
     return { doneInWeek: done, activeInWeek: active, deferred: def };
   }, [dbTodos, periodStart, periodEnd]);
 
@@ -110,29 +112,29 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
       {
         onSuccess: () => {
           setDeferForm(null);
-          toast({ title: "Action reportée" });
+          toast({ title: t("report.todo.weekly.toastDeferred") });
         },
         onError: (e) =>
-          toast({ title: "Erreur", description: friendlyError(e), variant: "destructive" }),
+          toast({ title: t("common.error"), description: friendlyError(e), variant: "destructive" }),
       },
     );
   };
 
-  const handleEnCoursOverdueSubmit = async (t: DbTodo) => {
+  const handleEnCoursOverdueSubmit = async (item: DbTodo) => {
     if (!enCoursForm) return;
     await updateMutation.mutateAsync({
-      id: t.id,
+      id: item.id,
       status: "in_progress",
       comment: enCoursForm.reason,
-      currentDescription: t.description,
+      currentDescription: item.description,
     });
     if (enCoursForm.newDate) {
       const { error } = await supabase
         .from("todos")
         .update({ due_date: enCoursForm.newDate, updated_at: new Date().toISOString() })
-        .eq("id", t.id);
+        .eq("id", item.id);
       if (error) {
-        toast({ title: "Erreur", description: friendlyError(error), variant: "destructive" });
+        toast({ title: t("common.error"), description: friendlyError(error), variant: "destructive" });
       }
     }
     setEnCoursForm(null);
@@ -143,30 +145,30 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
     <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
       <div className="flex items-center gap-2 mb-3">
         <CheckCircle2 className="h-4 w-4 text-emerald-700" />
-        <h3 className="text-sm font-semibold text-emerald-900">Fait cette semaine</h3>
+        <h3 className="text-sm font-semibold text-emerald-900">{t("report.todo.weekly.doneThisWeek")}</h3>
         <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 ml-auto">
           {doneInWeek.length} action{doneInWeek.length > 1 ? "s" : ""}
         </Badge>
       </div>
       {doneInWeek.length === 0 ? (
-        <p className="text-xs text-emerald-800/70 italic">Aucune action terminée cette semaine.</p>
+        <p className="text-xs text-emerald-800/70 italic">{t("report.todo.weekly.noDone")}</p>
       ) : (
         <div className="space-y-2">
-          {doneInWeek.map((t) => {
-            const source = sourceDbToUi(t.source);
+          {doneInWeek.map((item) => {
+            const source = sourceDbToUi(item.source);
             return (
               <div
-                key={t.id}
+                key={item.id}
                 className="bg-white/60 border border-emerald-100 rounded-lg p-3 flex items-center gap-2"
               >
                 <Check className="h-4 w-4 text-emerald-600 shrink-0" />
-                <span className="text-sm line-through text-muted-foreground">{t.title}</span>
+                <span className="text-sm line-through text-muted-foreground">{item.title}</span>
                 {source && sourceStyles[source] && (
                   <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${sourceStyles[source].classes}`}>
                     {sourceStyles[source].label}
                   </span>
                 )}
-                <span className="text-xs text-muted-foreground ml-auto">{fmtDate(t.due_date)}</span>
+                <span className="text-xs text-muted-foreground ml-auto">{fmtDate(item.due_date)}</span>
               </div>
             );
           })}
@@ -176,18 +178,18 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
   );
 
   /* ─────────── BLOC 2 ─────────── */
-  const renderActiveCard = (t: DbTodo) => {
-    const isOverdue = t.due_date ? new Date(t.due_date) < today : false;
-    const overdueDays = isOverdue && t.due_date ? daysBetween(today, new Date(t.due_date)) : 0;
-    const source = sourceDbToUi(t.source);
-    const priority = priorityDbToUi(t.priority);
-    const isInProgress = t.status === "in_progress";
-    const deferOpen = deferForm?.id === t.id;
-    const enCoursOpen = enCoursForm?.id === t.id;
+  const renderActiveCard = (item: DbTodo) => {
+    const isOverdue = item.due_date ? new Date(item.due_date) < today : false;
+    const overdueDays = isOverdue && item.due_date ? daysBetween(today, new Date(item.due_date)) : 0;
+    const source = sourceDbToUi(item.source);
+    const priority = priorityDbToUi(item.priority);
+    const isInProgress = item.status === "in_progress";
+    const deferOpen = deferForm?.id === item.id;
+    const enCoursOpen = enCoursForm?.id === item.id;
 
     return (
       <div
-        key={t.id}
+        key={item.id}
         className={`bg-card border rounded-xl p-4 shadow-sm space-y-3 ${
           isOverdue ? "border-l-4 border-l-destructive" : "border-border"
         }`}
@@ -195,28 +197,28 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
         <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-sm font-medium text-foreground">{t.title}</span>
+              <span className="text-sm font-medium text-foreground">{item.title}</span>
               {source && sourceStyles[source] && (
                 <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${sourceStyles[source].classes}`}>
                   {sourceStyles[source].label}
                 </span>
               )}
-              {t.deferred_count > 0 && (
+              {item.deferred_count > 0 && (
                 <span className="text-xs px-1.5 py-0.5 rounded font-medium bg-amber-100 text-amber-800">
-                  ↩ {t.deferred_count}×
+                  ↩ {item.deferred_count}×
                 </span>
               )}
             </div>
             <div className="flex items-center gap-3 text-xs mt-1 flex-wrap">
-              <span className="text-muted-foreground">{fmtDate(t.due_date)}</span>
+              <span className="text-muted-foreground">{fmtDate(item.due_date)}</span>
               {isOverdue && (
                 <span className="text-destructive font-medium">
-                  En retard depuis {overdueDays} jour{overdueDays > 1 ? "s" : ""}
+                  {t("report.todo.weekly.overdueFor", { count: overdueDays })}
                 </span>
               )}
               {isInProgress && (
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-[11px] font-medium">
-                  <Play className="h-3 w-3" /> En cours
+                  <Play className="h-3 w-3" /> {t("report.todo.status.inProgress")}
                 </span>
               )}
             </div>
@@ -231,14 +233,14 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
             className="flex-1 h-8 text-xs gap-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
             onClick={() =>
               updateMutation.mutate({
-                id: t.id,
+                id: item.id,
                 status: "done",
                 comment: "Réalisé",
-                currentDescription: t.description,
+                currentDescription: item.description,
               })
             }
           >
-            <CheckCircle2 className="h-3 w-3" /> Fait
+            <CheckCircle2 className="h-3 w-3" /> {t("report.todo.status.done")}
           </Button>
           <Button
             size="sm"
@@ -250,26 +252,26 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
             }`}
             onClick={() => {
               if (isOverdue) {
-                setEnCoursForm({ id: t.id, reason: "", newDate: "", currentTodo: t });
+                setEnCoursForm({ id: item.id, reason: "", newDate: "", currentTodo: item });
               } else {
                 updateMutation.mutate({
-                  id: t.id,
+                  id: item.id,
                   status: "in_progress",
                   comment: "",
-                  currentDescription: t.description,
+                  currentDescription: item.description,
                 });
               }
             }}
           >
-            <Play className="h-3 w-3" /> En cours
+            <Play className="h-3 w-3" /> {t("report.todo.status.inProgress")}
           </Button>
           <Button
             size="sm"
             variant="outline"
             className="flex-1 h-8 text-xs gap-1 border-amber-300 text-amber-700 hover:bg-amber-50"
-            onClick={() => setDeferForm({ id: t.id, reason: "", newDate: "", currentTodo: t })}
+            onClick={() => setDeferForm({ id: item.id, reason: "", newDate: "", currentTodo: item })}
           >
-            <RotateCcw className="h-3 w-3" /> Reporter
+            <RotateCcw className="h-3 w-3" /> {t("report.todo.status.deferred")}
           </Button>
         </div>
 
@@ -277,18 +279,18 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
             <div className="space-y-1">
               <label className="text-xs font-medium text-blue-900">
-                Pourquoi non terminé dans les délais ? *
+                {t("report.todo.weekly.whyLate")}
               </label>
               <Input
                 autoFocus
                 value={enCoursForm.reason}
                 onChange={(e) => setEnCoursForm({ ...enCoursForm, reason: e.target.value })}
                 className="h-8 text-sm bg-white"
-                placeholder="Justification…"
+                placeholder={t("report.todo.weekly.justificationPlaceholder")}
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-blue-900">Nouvelle échéance *</label>
+              <label className="text-xs font-medium text-blue-900">{t("report.todo.weekly.newDeadline")}</label>
               <Input
                 type="date"
                 value={enCoursForm.newDate}
@@ -301,12 +303,12 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
                 size="sm"
                 className="h-8"
                 disabled={!enCoursForm.reason.trim() || !enCoursForm.newDate}
-                onClick={() => handleEnCoursOverdueSubmit(t)}
+                onClick={() => handleEnCoursOverdueSubmit(item)}
               >
-                Confirmer
+                {t("report.todo.confirm")}
               </Button>
               <Button size="sm" variant="outline" className="h-8" onClick={() => setEnCoursForm(null)}>
-                Annuler
+                {t("common.cancel")}
               </Button>
             </div>
           </div>
@@ -315,17 +317,17 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
         {deferOpen && deferForm && (
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-amber-900">Raison du report *</label>
+              <label className="text-xs font-medium text-amber-900">{t("report.todo.deferReasonLabel")}</label>
               <Input
                 autoFocus
                 value={deferForm.reason}
                 onChange={(e) => setDeferForm({ ...deferForm, reason: e.target.value })}
                 className="h-8 text-sm bg-white"
-                placeholder="Pourquoi ce report…"
+                placeholder={t("report.todo.deferReasonPlaceholder")}
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-amber-900">Reporter au *</label>
+              <label className="text-xs font-medium text-amber-900">{t("report.todo.deferTo")}</label>
               <Input
                 type="date"
                 value={deferForm.newDate}
@@ -340,10 +342,10 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
                 disabled={!deferForm.reason.trim() || !deferForm.newDate}
                 onClick={handleDeferSubmit}
               >
-                Confirmer le report
+                {t("report.todo.confirmDefer")}
               </Button>
               <Button size="sm" variant="outline" className="h-8" onClick={() => setDeferForm(null)}>
-                Annuler
+                {t("common.cancel")}
               </Button>
             </div>
           </div>
@@ -355,13 +357,13 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
   const renderBloc2 = () => (
     <div className="bg-card border rounded-xl p-4 mt-4">
       <div className="flex items-center gap-2 mb-3">
-        <h3 className="text-sm font-semibold text-foreground">Cette semaine</h3>
+        <h3 className="text-sm font-semibold text-foreground">{t("report.todo.weekly.thisWeek")}</h3>
         <Badge variant="secondary" className="ml-auto">
-          {activeInWeek.length} action{activeInWeek.length > 1 ? "s" : ""} à traiter
+          {activeInWeek.length} action{activeInWeek.length > 1 ? "s" : ""} {t("report.todo.weekly.toProcess")}
         </Badge>
       </div>
       {activeInWeek.length === 0 ? (
-        <p className="text-xs text-muted-foreground italic">Aucune action en cours pour cette semaine.</p>
+        <p className="text-xs text-muted-foreground italic">{t("report.todo.weekly.noActive")}</p>
       ) : (
         <div className="space-y-3">{activeInWeek.map(renderActiveCard)}</div>
       )}
@@ -369,28 +371,28 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
   );
 
   /* ─────────── BLOC 3 ─────────── */
-  const renderDeferredCard = (t: DbTodo) => {
-    const meta = parseTodoDescription(t.description);
-    const source = sourceDbToUi(t.source);
-    const deferOpen = deferForm?.id === t.id;
+  const renderDeferredCard = (item: DbTodo) => {
+    const meta = parseTodoDescription(item.description);
+    const source = sourceDbToUi(item.source);
+    const deferOpen = deferForm?.id === item.id;
     return (
-      <div key={t.id} className="bg-white border border-amber-100 rounded-xl p-4 shadow-sm space-y-3">
+      <div key={item.id} className="bg-white border border-amber-100 rounded-xl p-4 shadow-sm space-y-3">
         <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-sm font-medium text-foreground">{t.title}</span>
+          <span className="text-sm font-medium text-foreground">{item.title}</span>
           {source && sourceStyles[source] && (
             <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${sourceStyles[source].classes}`}>
               {sourceStyles[source].label}
             </span>
           )}
           <span className="text-xs px-1.5 py-0.5 rounded font-medium bg-amber-100 text-amber-800">
-            ↩ {t.deferred_count}×
+            ↩ {item.deferred_count}×
           </span>
         </div>
         <div className="text-xs text-muted-foreground space-y-0.5">
-          {t.deferred_from_date && (
-            <div>Prévu initialement le {fmtDate(t.deferred_from_date)}</div>
+          {item.deferred_from_date && (
+            <div>{t("report.todo.weekly.originallyScheduled", { date: fmtDate(item.deferred_from_date) })}</div>
           )}
-          <div>Reporté au {fmtDate(t.due_date)}</div>
+          <div>{t("report.todo.weekly.deferredTo", { date: fmtDate(item.due_date) })}</div>
         </div>
         {meta.followUp && (
           <p className="text-xs italic text-amber-900 bg-amber-50/60 rounded px-2 py-1.5">
@@ -405,14 +407,14 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
             className="flex-1 h-8 text-xs gap-1 border-emerald-300 text-emerald-700 hover:bg-emerald-50"
             onClick={() =>
               updateMutation.mutate({
-                id: t.id,
+                id: item.id,
                 status: "done",
                 comment: "Réalisé",
-                currentDescription: t.description,
+                currentDescription: item.description,
               })
             }
           >
-            <CheckCircle2 className="h-3 w-3" /> Réalisé finalement
+            <CheckCircle2 className="h-3 w-3" /> {t("report.todo.weekly.doneAfterAll")}
           </Button>
           <Button
             size="sm"
@@ -420,29 +422,29 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
             className="flex-1 h-8 text-xs gap-1 border-blue-300 text-blue-700 hover:bg-blue-50"
             onClick={() =>
               updateMutation.mutate({
-                id: t.id,
+                id: item.id,
                 status: "in_progress",
                 comment: "",
-                currentDescription: t.description,
+                currentDescription: item.description,
               })
             }
           >
-            <Play className="h-3 w-3" /> En cours
+            <Play className="h-3 w-3" /> {t("report.todo.status.inProgress")}
           </Button>
           <Button
             size="sm"
             variant="outline"
             className="flex-1 h-8 text-xs gap-1 border-amber-300 text-amber-700 hover:bg-amber-50"
-            onClick={() => setDeferForm({ id: t.id, reason: "", newDate: "", currentTodo: t })}
+            onClick={() => setDeferForm({ id: item.id, reason: "", newDate: "", currentTodo: item })}
           >
-            <RotateCcw className="h-3 w-3" /> Reporter à nouveau
+            <RotateCcw className="h-3 w-3" /> {t("report.todo.weekly.deferAgain")}
           </Button>
         </div>
 
         {deferOpen && deferForm && (
           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2">
             <div className="space-y-1">
-              <label className="text-xs font-medium text-amber-900">Raison du report *</label>
+              <label className="text-xs font-medium text-amber-900">{t("report.todo.deferReasonLabel")}</label>
               <Input
                 autoFocus
                 value={deferForm.reason}
@@ -451,7 +453,7 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
               />
             </div>
             <div className="space-y-1">
-              <label className="text-xs font-medium text-amber-900">Reporter au *</label>
+              <label className="text-xs font-medium text-amber-900">{t("report.todo.deferTo")}</label>
               <Input
                 type="date"
                 value={deferForm.newDate}
@@ -466,10 +468,10 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
                 disabled={!deferForm.reason.trim() || !deferForm.newDate}
                 onClick={handleDeferSubmit}
               >
-                Confirmer le report
+                {t("report.todo.confirmDefer")}
               </Button>
               <Button size="sm" variant="outline" className="h-8" onClick={() => setDeferForm(null)}>
-                Annuler
+                {t("common.cancel")}
               </Button>
             </div>
           </div>
@@ -482,7 +484,7 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
     <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mt-4">
       <div className="flex items-center gap-2 mb-3">
         <AlertTriangle className="h-4 w-4 text-amber-700" />
-        <h3 className="text-sm font-semibold text-amber-900">Actions reportées</h3>
+        <h3 className="text-sm font-semibold text-amber-900">{t("report.todo.weekly.deferredActions")}</h3>
         <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 ml-auto">
           {deferred.length} action{deferred.length > 1 ? "s" : ""}
         </Badge>
@@ -494,9 +496,9 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
   return (
     <section className="mb-8 px-6 pt-4">
       <div className="mb-4">
-        <h2 className="text-lg font-semibold text-foreground">Actions de la semaine</h2>
+        <h2 className="text-lg font-semibold text-foreground">{t("report.todo.weekly.title")}</h2>
         <p className="text-sm text-muted-foreground">
-          Suivez l'avancement et signalez les reports
+          {t("report.todo.weekly.subtitle")}
         </p>
       </div>
 
@@ -505,10 +507,10 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
       {deferred.length > 0 && renderBloc3()}
 
       <p className="mt-4 text-xs text-muted-foreground italic">
-        Le statut de chaque action (fait, en cours, reporté) est transmis à la Direction.
+        {t("report.todo.weekly.statusHint")}
       </p>
       <div className="mt-2 rounded-lg bg-muted/50 px-4 py-3 text-xs text-muted-foreground">
-        💡 Pour créer de nouvelles actions → rapport Monthly
+        {t("report.todo.weekly.createHint")}
       </div>
     </section>
   );

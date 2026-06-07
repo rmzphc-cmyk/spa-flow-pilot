@@ -519,6 +519,70 @@
         "fileTooLarge": "Fichier trop volumineux",
         "fileTooLargeDesc": "Fichier audio trop volumineux (max 20 Mo)."
       }
+    },
+    "todo": {
+      "subtitle": "Actions à réaliser ce cycle",
+      "add": "Ajouter",
+      "newActionTitle": "Nouvelle action",
+      "titlePlaceholder": "Titre de l'action *",
+      "responsiblePlaceholder": "Responsable (ex : Marie)",
+      "nextMeeting": "Prochaine réunion",
+      "customDate": "Date précise",
+      "priority": {
+        "critical": "🔴 Critique",
+        "high": "🟠 Haute",
+        "normal": "🔵 Normale"
+      },
+      "createAction": "Créer l'action",
+      "overdueSuffix": "en retard",
+      "overdueLabel": "RETARD +{{days}}j",
+      "doneThisCycle": "Faites ce cycle",
+      "inheritedTitle": "Héritées du cycle précédent",
+      "inheritedHint": "Chaque action décidée doit avoir une trace. Commentez l'avancement pour la Direction.",
+      "deadlineUndefined": "À définir",
+      "status": {
+        "pending": "À faire",
+        "inProgress": "En cours",
+        "done": "Fait",
+        "deferred": "Reporter"
+      },
+      "placeholder": {
+        "inProgress": "Avancement actuel, prochaine étape… (optionnel)",
+        "done": "Décrivez comment c'est fait, résultat obtenu…",
+        "deferred": "Raison du report, nouvelle échéance…"
+      },
+      "confirmResetMsg": "Remettre cette action \"À faire\" effacera son statut de complétion. Continuer ?",
+      "confirm": "Confirmer",
+      "deferTo": "Reporter au *",
+      "reason": "Raison",
+      "deferReasonLabel": "Raison du report *",
+      "deferReasonPlaceholder": "Pourquoi ce report…",
+      "confirmDefer": "Confirmer le report",
+      "addFollowUpWarn": "Ajouter un commentaire de suivi…",
+      "addFollowUp": "Ajouter un suivi…",
+      "followUpPlaceholder": "Ex: Retours positifs / Repoussé pour congé / Fait avec ajustement…",
+      "weekly": {
+        "title": "Actions de la semaine",
+        "subtitle": "Suivez l'avancement et signalez les reports",
+        "doneThisWeek": "Fait cette semaine",
+        "noDone": "Aucune action terminée cette semaine.",
+        "overdueFor_one": "En retard depuis 1 jour",
+        "overdueFor_other": "En retard depuis {{count}} jours",
+        "whyLate": "Pourquoi non terminé dans les délais ? *",
+        "justificationPlaceholder": "Justification…",
+        "newDeadline": "Nouvelle échéance *",
+        "thisWeek": "Cette semaine",
+        "toProcess": "à traiter",
+        "noActive": "Aucune action en cours pour cette semaine.",
+        "deferredActions": "Actions reportées",
+        "originallyScheduled": "Prévu initialement le {{date}}",
+        "deferredTo": "Reporté au {{date}}",
+        "doneAfterAll": "Réalisé finalement",
+        "deferAgain": "Reporter à nouveau",
+        "statusHint": "Le statut de chaque action (fait, en cours, reporté) est transmis à la Direction.",
+        "createHint": "💡 Pour créer de nouvelles actions → rapport Monthly",
+        "toastDeferred": "Action reportée"
+      }
     }
   },
   "common": {
