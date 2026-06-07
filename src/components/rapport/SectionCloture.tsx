@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -22,7 +23,6 @@ interface ClotureState {
   summaryEdited: boolean;
 }
 
-// Engagements consolidés (statique pour l'instant)
 const engagements = [
   { qui: "Sophie M.", quoi: "Lancer formation Maria — protocole cabine humidité", quand: "5 avril" },
   { qui: "Marie D.", quoi: "Négocier nouveau contrat Phytomer (clause délais)", quand: "10 avril" },
@@ -32,14 +32,13 @@ const engagements = [
 
 interface TodoLike { id: string; title: string; status: string }
 
-function buildSummary(reportId: string, reportType: "monthly" | "weekly"): string {
+function buildSummary(reportId: string, reportType: "monthly" | "weekly", t: (k: string) => string): string {
   const ids = (getReportSection(reportId, "ids") as string[] | null) ?? [];
   const todos = (getReportSection(reportId, "todo") as TodoLike[] | null) ?? [];
   const kpiVals = (getReportSection(reportId, "kpi") as Record<string, KpiCardValue> | null) ?? {};
 
-  const doneTodos = todos.filter((t) => t.status === "done");
+  const doneTodos = todos.filter((td) => td.status === "done");
 
-  // KPI deltas
   type Delta = { label: string; pct: number; above: boolean };
   const deltas: Delta[] = [];
   for (const kpi of baseKpis) {
@@ -55,15 +54,15 @@ function buildSummary(reportId: string, reportType: "monthly" | "weekly"): strin
 
   const lines: string[] = [];
   const intro = reportType === "weekly"
-    ? "Cette semaine :"
-    : "Ce mois-ci :";
+    ? t("report.cloture.generated.weekly")
+    : t("report.cloture.generated.monthly");
   lines.push(intro);
 
   if (topKpis.length) {
     lines.push(
-      "\n• KPI clés : " +
+      "\n• " + t("report.cloture.generated.kpiLabel") + " " +
         topKpis
-          .map((k) => `${k.label} ${k.above ? "au-dessus" : "en-dessous"} de l'objectif (${k.pct >= 0 ? "+" : ""}${k.pct.toFixed(0)}%)`)
+          .map((k) => `${k.label} ${k.above ? t("report.cloture.generated.above") : t("report.cloture.generated.below")} de l'objectif (${k.pct >= 0 ? "+" : ""}${k.pct.toFixed(0)}%)`)
           .join(" ; ") +
         ".",
     );
@@ -71,8 +70,8 @@ function buildSummary(reportId: string, reportType: "monthly" | "weekly"): strin
 
   if (doneTodos.length) {
     lines.push(
-      `\n• Actions terminées (${doneTodos.length}) : ` +
-        doneTodos.slice(0, 4).map((t) => t.title).join(" · ") +
+      `\n• ${t("report.cloture.generated.actionsLabel")} (${doneTodos.length}) : ` +
+        doneTodos.slice(0, 4).map((td) => td.title).join(" · ") +
         (doneTodos.length > 4 ? "…" : "") +
         ".",
     );
@@ -80,7 +79,7 @@ function buildSummary(reportId: string, reportType: "monthly" | "weekly"): strin
 
   if (ids.length) {
     lines.push(
-      `\n• Problèmes IDS traités (${ids.length}) : ` +
+      `\n• ${t("report.cloture.generated.idsLabel")} (${ids.length}) : ` +
         ids.slice(0, 4).join(" · ") +
         (ids.length > 4 ? "…" : "") +
         ".",
@@ -88,15 +87,16 @@ function buildSummary(reportId: string, reportType: "monthly" | "weekly"): strin
   }
 
   if (lines.length === 1) {
-    lines.push("\nAucune donnée saisie pour générer une synthèse automatique. Rédigez votre résumé ci-dessous.");
+    lines.push("\n" + t("report.cloture.generated.noData"));
   }
 
   return lines.join("");
 }
 
 export function SectionCloture({ reportId, reportType }: Props) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
-  const generated = useMemo(() => buildSummary(reportId, reportType), [reportId, reportType]);
+  const generated = useMemo(() => buildSummary(reportId, reportType, t), [reportId, reportType, t]);
 
   const [state, setState] = usePersistedSection<ClotureState>(reportId, "cloture", {
     summary: generated,
@@ -106,7 +106,6 @@ export function SectionCloture({ reportId, reportType }: Props) {
   });
   const { summary, nextMeeting, nextMeetingTime, summaryEdited } = state;
 
-  // Show generated when user hasn't edited yet
   const displayedSummary = summaryEdited ? summary : generated;
 
   const setSummary = (v: string) => setState((p) => ({ ...p, summary: v, summaryEdited: true }));
@@ -114,25 +113,24 @@ export function SectionCloture({ reportId, reportType }: Props) {
   const setNextMeetingTime = (v: string) => setState((p) => ({ ...p, nextMeetingTime: v }));
 
   const handleValidate = () => {
-    // Persist final summary
     setState((p) => ({ ...p, summary: displayedSummary, summaryEdited: true }));
     updateReportStatus(reportId, "validated");
-    toast.success("Rapport validé — visible par la Direction");
+    toast.success(t("report.cloture.toast.validated"));
     setTimeout(() => navigate("/rapports"), 300);
   };
 
   if (reportType === "monthly") {
     return (
       <section className="mb-8">
-        <h2 className="text-lg font-semibold text-foreground">Clôture & engagements</h2>
-        <p className="text-sm text-muted-foreground mb-4">Synthèse, engagements pris en réunion et prochaine échéance</p>
+        <h2 className="text-lg font-semibold text-foreground">{t("report.cloture.title.monthly")}</h2>
+        <p className="text-sm text-muted-foreground mb-4">{t("report.cloture.subtitle.monthly")}</p>
 
         <div className="bg-card border border-border rounded-xl p-5 shadow-sm mb-4">
           <div className="flex items-center justify-between mb-3">
-            <label className="font-medium text-foreground text-sm">Synthèse du mois</label>
+            <label className="font-medium text-foreground text-sm">{t("report.cloture.summary.monthly")}</label>
             <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
               <Sparkles className="h-3 w-3" />
-              Suggestion IA
+              {t("report.cloture.aiSuggestion")}
             </span>
           </div>
           <Textarea
@@ -141,17 +139,17 @@ export function SectionCloture({ reportId, reportType }: Props) {
             onChange={(e) => setSummary(e.target.value)}
           />
           <div className="text-xs text-muted-foreground text-right mt-1">
-            {displayedSummary.split(/\s+/).filter(Boolean).length} mots
+            {displayedSummary.split(/\s+/).filter(Boolean).length} {t("report.cloture.words")}
           </div>
         </div>
 
         <div className="bg-card border border-border rounded-xl p-5 shadow-sm mb-4">
           <div className="flex items-center gap-2 mb-3">
             <ListChecks className="h-4 w-4 text-primary" />
-            <label className="font-medium text-foreground text-sm">Engagements pris — qui fait quoi pour quand</label>
+            <label className="font-medium text-foreground text-sm">{t("report.cloture.engagements.title")}</label>
           </div>
           <p className="text-xs text-muted-foreground mb-3 italic">
-            Consolidé depuis les sections IDS, Objectifs et To-do de ce cycle.
+            {t("report.cloture.engagements.subtitle")}
           </p>
           <div className="space-y-2">
             {engagements.map((e, i) => (
@@ -168,7 +166,7 @@ export function SectionCloture({ reportId, reportType }: Props) {
         <div className="bg-card border border-border rounded-xl p-5 shadow-sm mb-4">
           <div className="flex items-center gap-2 mb-3">
             <Calendar className="h-4 w-4 text-primary" />
-            <label className="font-medium text-foreground text-sm">Prochaine réunion mensuelle</label>
+            <label className="font-medium text-foreground text-sm">{t("report.cloture.nextMeeting")}</label>
           </div>
           <div className="flex gap-3">
             <Input type="date" value={nextMeeting} onChange={(e) => setNextMeeting(e.target.value)} className="text-sm max-w-xs" />
@@ -178,24 +176,23 @@ export function SectionCloture({ reportId, reportType }: Props) {
 
         <Button onClick={handleValidate} className="gap-1.5">
           <Send className="h-4 w-4" />
-          Valider et envoyer à la Direction
+          {t("report.cloture.validate")}
         </Button>
       </section>
     );
   }
 
-  // Weekly
   return (
     <section className="mb-8">
-      <h2 className="text-lg font-semibold text-foreground">Clôture — Résumé de la semaine</h2>
-      <p className="text-sm text-muted-foreground mb-4">Résumé pré-rempli à partir de vos saisies, modifiable</p>
+      <h2 className="text-lg font-semibold text-foreground">{t("report.cloture.title.weekly")}</h2>
+      <p className="text-sm text-muted-foreground mb-4">{t("report.cloture.subtitle.weekly")}</p>
 
       <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
         <div className="flex items-center justify-between mb-3">
-          <label className="font-medium text-foreground text-sm">Résumé hebdomadaire</label>
+          <label className="font-medium text-foreground text-sm">{t("report.cloture.summary.weekly")}</label>
           <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
             <Sparkles className="h-3 w-3" />
-            Suggestion IA
+            {t("report.cloture.aiSuggestion")}
           </span>
         </div>
         <Textarea
@@ -204,12 +201,12 @@ export function SectionCloture({ reportId, reportType }: Props) {
           onChange={(e) => setSummary(e.target.value)}
         />
         <div className="text-xs text-muted-foreground text-right mt-1">
-          {displayedSummary.split(/\s+/).filter(Boolean).length} mots
+          {displayedSummary.split(/\s+/).filter(Boolean).length} {t("report.cloture.words")}
         </div>
 
         <Button onClick={handleValidate} className="mt-4 gap-1.5">
           <Send className="h-4 w-4" />
-          Valider et envoyer à la Direction
+          {t("report.cloture.validate")}
         </Button>
       </div>
     </section>

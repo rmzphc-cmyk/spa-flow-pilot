@@ -17,7 +17,7 @@ interface Props {
 }
 
 export function SectionCheckinWeekly({ reportId, onStatusChange, isLocked = false }: Props) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const speechLang = i18n.language === "es" ? "es-ES" : i18n.language === "en" ? "en-US" : "fr-FR";
   const { data: row, isFetching } = useCheckin(reportId);
   const { debouncedUpsert } = useUpsertCheckin();
@@ -78,26 +78,32 @@ export function SectionCheckinWeekly({ reportId, onStatusChange, isLocked = fals
 
   return (
     <section className="mb-8">
-      <h2 className="text-lg font-semibold text-foreground">Check-in rapide</h2>
-      <p className="text-sm text-muted-foreground mb-4">30 secondes · Votre état et celui de l'équipe</p>
+      <h2 className="text-lg font-semibold text-foreground">{t("report.checkinWeekly.title")}</h2>
+      <p className="text-sm text-muted-foreground mb-4">{t("report.checkinWeekly.subtitle")}</p>
 
       <div className="bg-card border border-border rounded-xl p-5 shadow-sm mb-4">
-        <label className="font-medium text-foreground text-sm block mb-1">Météo de l'équipe cette semaine</label>
-        <p className="text-xs text-muted-foreground mb-4">Comment va l'équipe cette semaine ?</p>
+        <label className="font-medium text-foreground text-sm block mb-1">
+          {t("report.checkinWeekly.meteo.label")}
+        </label>
+        <p className="text-xs text-muted-foreground mb-4">{t("report.checkinWeekly.meteo.sublabel")}</p>
         <EmojiScore value={meteoScore} onChange={setMeteoScore} />
       </div>
 
       <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
         <div className="flex items-center justify-between mb-1">
-          <label className="font-medium text-foreground text-sm">Contexte équipe</label>
+          <label className="font-medium text-foreground text-sm">{t("report.checkinWeekly.context.label")}</label>
           {needsComment ? (
-            <span className="text-xs text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">Requis</span>
+            <span className="text-xs text-destructive bg-destructive/10 px-2 py-0.5 rounded-full">
+              {t("common.required")}
+            </span>
           ) : (
-            <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Optionnel</span>
+            <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+              {t("common.optional")}
+            </span>
           )}
         </div>
         <p className="text-xs text-muted-foreground mb-3">
-          Météo, ambiance, retour bref sur chaque collaborateur…
+          {t("report.checkinWeekly.context.sublabel")}
         </p>
 
         <div className="flex flex-row gap-2 mb-2">
@@ -119,21 +125,20 @@ export function SectionCheckinWeekly({ reportId, onStatusChange, isLocked = fals
             {structureMutation.isPending ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Structuration…
+                {t("common.structuring")}
               </>
             ) : (
               <>
                 <Sparkles className="h-3.5 w-3.5 text-violet-500" />
-                Structurer avec l'IA
+                {t("common.structureWithAI")}
               </>
             )}
           </Button>
         </div>
 
-
         <Textarea
           className={`text-sm min-h-[100px] ${missing ? "border-destructive" : ""}`}
-          placeholder="Ex : Bonne semaine globalement. Marie très engagée sur les soins duo. Thomas en retrait — à surveiller. Julie a géré l'incident piscine avec calme. Moral général positif malgré la charge."
+          placeholder={t("report.checkinWeekly.context.placeholder")}
           maxLength={1000}
           value={note}
           onChange={(e) => setNote(e.target.value)}

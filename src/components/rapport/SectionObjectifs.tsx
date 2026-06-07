@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Target, Info } from "lucide-react";
@@ -12,26 +13,25 @@ import {
   type DbObjective,
 } from "@/hooks/useObjectives";
 
-const statusOptions = [
-  { key: "on_track" as const, label: "En bonne voie", classes: "bg-emerald-100 text-emerald-800 border-emerald-300" },
-  { key: "at_risk" as const, label: "À risque", classes: "bg-amber-100 text-amber-800 border-amber-300" },
-  { key: "behind" as const, label: "En retard", classes: "bg-red-100 text-red-800 border-red-300" },
-];
-
 interface Props {
   reportId: string;
   reportType: "monthly" | "weekly";
 }
 
 export function SectionObjectifs({ reportId, reportType }: Props) {
+  const { t } = useTranslation();
   const { spaId } = useAuth();
   const { data: objectives, isLoading } = useObjectives(spaId);
   const { debouncedUpdate, immediateUpdate } = useUpdateObjectiveProgress();
 
-  // Local draft state for smooth editing (not persisted to localStorage)
+  const statusOptions = [
+    { key: "on_track" as const, label: t("report.objectifs.status.onTrack"), classes: "bg-emerald-100 text-emerald-800 border-emerald-300" },
+    { key: "at_risk" as const, label: t("report.objectifs.status.atRisk"), classes: "bg-amber-100 text-amber-800 border-amber-300" },
+    { key: "behind" as const, label: t("report.objectifs.status.behind"), classes: "bg-red-100 text-red-800 border-red-300" },
+  ];
+
   const [drafts, setDrafts] = useState<Record<string, Partial<ParsedObjectiveDescription>>>({});
 
-  // Initialize drafts from fetched data when not already editing
   useEffect(() => {
     if (!objectives) return;
     setDrafts((prev) => {
@@ -81,26 +81,27 @@ export function SectionObjectifs({ reportId, reportType }: Props) {
   return (
     <section className="mb-8">
       <div className="flex items-center justify-between mb-1">
-        <h2 className="text-lg font-semibold text-foreground">Objectifs</h2>
-        <span className="text-sm text-muted-foreground font-medium">{visible.length}/3 actifs</span>
+        <h2 className="text-lg font-semibold text-foreground">{t("report.objectifs.title")}</h2>
+        <span className="text-sm text-muted-foreground font-medium">
+          {t("report.objectifs.active", { count: visible.length })}
+        </span>
       </div>
-      <p className="text-sm text-muted-foreground mb-4">Suivi des objectifs du cycle</p>
+      <p className="text-sm text-muted-foreground mb-4">{t("report.objectifs.subtitle")}</p>
 
-      {/* No create in preparation */}
       <div className="flex items-start gap-2 bg-blue-50 border border-blue-200 rounded-xl p-3 mb-4 text-xs text-blue-800">
         <Info className="h-4 w-4 shrink-0 mt-0.5" />
-        <span>Les objectifs se définissent en réunion ou dans la section Clôture post-réunion.</span>
+        <span>{t("report.objectifs.info")}</span>
       </div>
 
       {isLoading ? (
         <div className="bg-card border border-border rounded-xl p-8 text-center shadow-sm">
-          <p className="text-sm text-muted-foreground">Chargement des objectifs…</p>
+          <p className="text-sm text-muted-foreground">{t("report.objectifs.loading")}</p>
         </div>
       ) : visible.length === 0 ? (
         <div className="bg-card border border-border rounded-xl p-8 text-center shadow-sm">
           <Target className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-          <p className="text-foreground font-medium">Aucun objectif actif pour ce cycle</p>
-          <p className="text-sm text-muted-foreground mt-1">À définir lors de la prochaine réunion</p>
+          <p className="text-foreground font-medium">{t("report.objectifs.empty.title")}</p>
+          <p className="text-sm text-muted-foreground mt-1">{t("report.objectifs.empty.subtitle")}</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -115,7 +116,7 @@ export function SectionObjectifs({ reportId, reportType }: Props) {
                   <div>
                     <h3 className="font-medium text-foreground text-sm">{obj.title}</h3>
                     <p className="text-xs text-muted-foreground mt-0.5">
-                      {parsed.metric} — Cible : {parsed.target}
+                      {parsed.metric} — {t("report.objectifs.cible")} : {parsed.target}
                       {parsed.unit}
                     </p>
                   </div>
@@ -160,7 +161,7 @@ export function SectionObjectifs({ reportId, reportType }: Props) {
                 {/* Comment */}
                 <Textarea
                   className="text-sm min-h-[40px]"
-                  placeholder="Commentaire court"
+                  placeholder={t("report.objectifs.comment.placeholder")}
                   maxLength={200}
                   value={parsed.comment}
                   onChange={(e) => handleUpdate(obj, { comment: e.target.value })}

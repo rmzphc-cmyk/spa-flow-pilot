@@ -422,12 +422,12 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
       <div className="flex items-center justify-between mb-6">
         <div>
           <h2 className="text-xl font-bold text-foreground">
-            {isWeekly ? "📅 KPI de la semaine" : `📊 ${t("kpi.title")}`}
+            {isWeekly ? t("report.kpi.weeklyTitle") : `📊 ${t("report.kpi.title")}`}
           </h2>
           <p className="text-sm text-muted-foreground mt-0.5">
             {isWeekly
               ? "Comparaison vs objectif hebdomadaire (÷4 ou fixe selon config)"
-              : t("kpi.subtitle")}
+              : t("report.kpi.subtitle")}
           </p>
         </div>
       </div>
@@ -436,7 +436,7 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
         <div className="mb-6 p-3 rounded-lg bg-amber-50 border border-amber-200 flex items-center gap-2">
           <span className="text-amber-600">⚠️</span>
           <span className="text-sm text-amber-700 font-medium">
-            {missingCommentKpis.length} KPI{missingCommentKpis.length > 1 ? "s" : ""} nécessitent un commentaire pour continuer
+            {t("report.kpi.missingComment", { count: missingCommentKpis.length })}
           </span>
         </div>
       )}
@@ -550,7 +550,7 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
             <div className="flex items-center gap-3 px-4 py-2.5 rounded-lg mb-4 bg-gray-50 border border-gray-200">
               <span className="text-lg">📊</span>
               <h3 className="text-sm font-bold uppercase tracking-wide text-gray-600 flex-1">
-                Autres KPIs
+                {t("report.kpi.othersTitle")}
               </h3>
               <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">
                 {groupedByRole.unassigned.length} KPI{groupedByRole.unassigned.length > 1 ? "s" : ""}

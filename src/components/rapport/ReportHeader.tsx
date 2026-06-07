@@ -1,20 +1,10 @@
+import { useTranslation } from "react-i18next";
 import { ChevronRight, FileDown, Loader2 } from "lucide-react";
 import { PDFDownloadLink } from "@react-pdf/renderer";
 import type { SectionId } from "@/pages/RapportDetail";
 import { Button } from "@/components/ui/button";
 import { WeeklyReportPdf } from "@/components/pdf/WeeklyReportPdf";
 import { useWeeklyPdfData } from "@/hooks/useWeeklyPdfData";
-
-const sectionLabels: Record<SectionId, string> = {
-  kpi: "KPI",
-  checkin: "Check-in",
-  responsabilites: "Responsabilités",
-  todo: "To-do",
-  objectifs: "Objectifs",
-  ids: "IDS",
-  notes: "Notes libres",
-  cloture: "Clôture",
-};
 
 interface Props {
   label: string;
@@ -43,6 +33,7 @@ export function ReportHeader({
   periodStart = "",
   periodEnd = "",
 }: Props) {
+  const { t } = useTranslation();
   const isWeekly = type === "weekly";
   const { data: pdfData, isLoading: pdfLoading } = useWeeklyPdfData(
     isWeekly && reportId ? reportId : "",
@@ -52,13 +43,24 @@ export function ReportHeader({
     periodEnd,
   );
 
+  const sectionLabels: Record<SectionId, string> = {
+    kpi: t("report.header.sectionLabels.kpi"),
+    checkin: t("report.header.sectionLabels.checkin"),
+    responsabilites: t("report.header.sectionLabels.responsabilites"),
+    todo: t("report.header.sectionLabels.todo"),
+    objectifs: t("report.header.sectionLabels.objectifs"),
+    ids: t("report.header.sectionLabels.ids"),
+    notes: t("report.header.sectionLabels.notes"),
+    cloture: t("report.header.sectionLabels.cloture"),
+  };
+
   return (
     <div className="mb-6">
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1.5 text-xs text-muted-foreground mb-3">
-        <span>Par Gran Canaria</span>
+        <span>{t("report.header.breadcrumb.org")}</span>
         <ChevronRight className="h-3 w-3" />
-        <span>Rapports</span>
+        <span>{t("report.header.breadcrumb.reports")}</span>
         <ChevronRight className="h-3 w-3" />
         <span>{period}</span>
         <ChevronRight className="h-3 w-3" />
@@ -80,7 +82,7 @@ export function ReportHeader({
             {isWeekly ? "🟢 Weekly" : "🔵 Monthly"}
           </span>
           <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground">
-            En préparation
+            {t("report.header.badge.enPreparation")}
           </span>
           {isWeekly && reportId && (
             pdfLoading || !pdfData ? (
@@ -111,7 +113,7 @@ export function ReportHeader({
       {/* Segmented progress bar */}
       <div className="flex items-center gap-2 mb-1">
         <span className="text-xs text-muted-foreground font-medium">
-          {completedSections}/{totalSections} sections
+          {t("report.header.sections", { completed: completedSections, total: totalSections })}
         </span>
       </div>
       <div className="flex gap-1 h-2">

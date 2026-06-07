@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -27,6 +28,7 @@ interface Props {
 }
 
 export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
+  const { t } = useTranslation();
   const { user, spaId } = useAuth();
   const { data: issues = [], isLoading } = useIdsItems(reportId);
   const addMutation = useAddIdsItem(reportId, "weekly");
@@ -91,13 +93,13 @@ export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
         onSuccess: () => {
           setTodoDialog({ open: false, issue: null });
           toast({
-            title: "To-do créé",
-            description: "Visible dans la section Actions du rapport Monthly",
+            title: t("report.ids.toastTodoTitle"),
+            description: t("report.ids.toastTodoDesc"),
           });
         },
         onError: (e) => {
           toast({
-            title: "Erreur",
+            title: t("report.ids.toastError"),
             description: friendlyError(e),
             variant: "destructive",
           });
@@ -125,13 +127,13 @@ export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
         onSuccess: () => {
           setObjectifDialog({ open: false, issue: null });
           toast({
-            title: "Objectif créé",
-            description: "Visible dans la section Objectifs du rapport Monthly",
+            title: t("report.ids.toastObjectifTitle"),
+            description: t("report.ids.toastObjectifDesc"),
           });
         },
         onError: (e) => {
           toast({
-            title: "Erreur",
+            title: t("report.ids.toastError"),
             description: friendlyError(e),
             variant: "destructive",
           });
@@ -145,9 +147,9 @@ export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
 
   return (
     <section className="mb-8">
-      <h2 className="text-lg font-semibold text-foreground">Problèmes identifiés</h2>
+      <h2 className="text-lg font-semibold text-foreground">{t("report.ids.identifiedTitle")}</h2>
       <p className="text-sm text-muted-foreground mb-4">
-        Capture rapide — convertissez en to-do ou objectif si besoin
+        {t("report.ids.identifiedSubtitle")}
       </p>
 
       {isLoading ? (
@@ -171,7 +173,7 @@ export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
                       <p className="text-sm text-foreground">{issue.capture_text}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground font-medium">
-                          Identifié
+                          {t("report.ids.identified")}
                         </span>
                         <span className="text-xs text-muted-foreground">{dateFr}</span>
                       </div>
@@ -180,7 +182,7 @@ export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
                   <div className="flex gap-2 mt-2.5 flex-wrap">
                     {hasTodo ? (
                       <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full">
-                        <Check className="h-3 w-3" /> To-do créé
+                        <Check className="h-3 w-3" /> {t("report.ids.todoDoneWeekly")}
                       </span>
                     ) : (
                       <Button
@@ -189,12 +191,12 @@ export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
                         className="h-7 text-xs gap-1.5"
                         onClick={() => openTodoDialog(issue)}
                       >
-                        <CheckSquare className="h-3.5 w-3.5" /> → To-do
+                        <CheckSquare className="h-3.5 w-3.5" /> {t("report.ids.toTodo")}
                       </Button>
                     )}
                     {hasObjectif ? (
                       <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-1 rounded-full">
-                        <Check className="h-3 w-3" /> Objectif créé
+                        <Check className="h-3 w-3" /> {t("report.ids.objectiveDone")}
                       </span>
                     ) : (
                       <Button
@@ -203,7 +205,7 @@ export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
                         className="h-7 text-xs gap-1.5"
                         onClick={() => openObjectifDialog(issue)}
                       >
-                        <Target className="h-3.5 w-3.5" /> → Objectif
+                        <Target className="h-3.5 w-3.5" /> {t("report.ids.toObjectif")}
                       </Button>
                     )}
                   </div>
@@ -217,7 +219,7 @@ export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
       {showInput ? (
         <div className="bg-card border border-border rounded-xl p-4 shadow-sm space-y-3">
           <Input
-            placeholder="Décrivez le problème en une phrase..."
+            placeholder={t("report.ids.describePlaceholder")}
             maxLength={150}
             value={newIssue}
             onChange={(e) => setNewIssue(e.target.value)}
@@ -232,10 +234,10 @@ export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
               className="gap-1.5"
             >
               {addMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              Confirmer
+              {t("report.ids.confirm")}
             </Button>
             <Button size="sm" variant="ghost" onClick={cancel}>
-              Annuler
+              {t("report.ids.cancel")}
             </Button>
           </div>
         </div>
@@ -246,19 +248,19 @@ export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
           className="gap-1.5 border-primary text-primary hover:bg-primary/5"
         >
           <Plus className="h-4 w-4" />
-          Ajouter un problème
+          {t("report.ids.addProblem")}
         </Button>
       )}
 
       {issues.length > 0 && (
         <p className="text-xs text-muted-foreground mt-3">
-          {issues.length} problème(s) · {todoCount} to-do(s) créé(s) · {objectifCount} objectif(s) créé(s)
+          {t("report.ids.counter", { count: issues.length, todoCount, objectifCount })}
         </p>
       )}
 
       <div className="mt-6 flex items-start gap-2 text-xs text-muted-foreground bg-muted/50 rounded-lg p-3">
         <Info className="h-4 w-4 shrink-0 mt-0.5" />
-        <span>Les problèmes identifiés ici seront traités lors de la prochaine réunion Monthly.</span>
+        <span>{t("report.ids.hint")}</span>
       </div>
 
       {/* Dialog To-do */}
@@ -268,23 +270,23 @@ export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Convertir en To-do</DialogTitle>
+            <DialogTitle>{t("report.ids.convertTodoTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Titre *</label>
+              <label className="text-sm font-medium">{t("report.ids.labelTitle")}</label>
               <Input value={todoTitle} onChange={(e) => setTodoTitle(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Responsable</label>
+              <label className="text-sm font-medium">{t("report.ids.labelResponsible")}</label>
               <Input
                 value={todoResponsible}
                 onChange={(e) => setTodoResponsible(e.target.value)}
-                placeholder="Nom du responsable"
+                placeholder={t("report.ids.placeholderResponsible")}
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Date limite *</label>
+              <label className="text-sm font-medium">{t("report.ids.labelDueDate")}</label>
               <Input
                 type="date"
                 value={todoDueDate}
@@ -297,7 +299,7 @@ export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
               variant="ghost"
               onClick={() => setTodoDialog({ open: false, issue: null })}
             >
-              Annuler
+              {t("report.ids.cancel")}
             </Button>
             <Button
               onClick={submitTodo}
@@ -305,7 +307,7 @@ export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
               className="gap-1.5"
             >
               {toTodoMutation.isPending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              Créer le to-do
+              {t("report.ids.createTodoBtn")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -318,18 +320,18 @@ export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
       >
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Convertir en Objectif</DialogTitle>
+            <DialogTitle>{t("report.ids.convertObjectifTitle")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Titre *</label>
+              <label className="text-sm font-medium">{t("report.ids.labelTitle")}</label>
               <Input
                 value={objectifTitle}
                 onChange={(e) => setObjectifTitle(e.target.value)}
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Date cible *</label>
+              <label className="text-sm font-medium">{t("report.ids.labelTargetDate")}</label>
               <Input
                 type="date"
                 value={objectifTargetDate}
@@ -337,7 +339,7 @@ export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
               />
             </div>
             <p className="text-xs text-muted-foreground">
-              ℹ️ Max 3 objectifs actifs par spa
+              {t("report.ids.maxObjectifs")}
             </p>
           </div>
           <DialogFooter>
@@ -345,7 +347,7 @@ export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
               variant="ghost"
               onClick={() => setObjectifDialog({ open: false, issue: null })}
             >
-              Annuler
+              {t("report.ids.cancel")}
             </Button>
             <Button
               onClick={submitObjectif}
@@ -357,7 +359,7 @@ export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
               {toObjectifMutation.isPending && (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               )}
-              Créer l'objectif
+              {t("report.ids.createObjectifBtn")}
             </Button>
           </DialogFooter>
         </DialogContent>

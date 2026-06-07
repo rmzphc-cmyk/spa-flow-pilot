@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
 import { Check } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { REPORT_SECTION_SAVED_EVENT } from "@/lib/reportsStore";
 
 export function AutosaveIndicator() {
+  const { t } = useTranslation();
   const [visible, setVisible] = useState(false);
 
   useEffect(() => {
@@ -24,7 +26,7 @@ export function AutosaveIndicator() {
   return (
     <span className="flex items-center gap-1.5 text-xs text-emerald-600 transition-opacity">
       <Check className="h-3 w-3" />
-      Sauvegardé ✓
+      {t("report.autosave.saved")}
     </span>
   );
 }

@@ -190,7 +190,335 @@
     "emptyPrepTitle": "No report in preparation",
     "emptyPrepSub": "All your reports are finalized. Create the next report to get started.",
     "emptyConsultTitle": "No report to consult",
-    "emptyConsultSub": "Finalized and validated reports will appear here."
+    "emptyConsultSub": "Finalized and validated reports will appear here.",
+    "header": {
+      "breadcrumb": {
+        "org": "Par Gran Canaria",
+        "reports": "Reports"
+      },
+      "badge": {
+        "enPreparation": "In preparation"
+      },
+      "sections": "{{completed}}/{{total}} sections",
+      "sectionLabels": {
+        "kpi": "KPI",
+        "checkin": "Check-in",
+        "responsabilites": "Responsibilities",
+        "todo": "To-do",
+        "objectifs": "Objectives",
+        "ids": "IDS",
+        "notes": "Free notes",
+        "cloture": "Closing"
+      }
+    },
+    "checkin": {
+      "title": "Human check-in",
+      "subtitle": "Team status and managerial energy",
+      "equipe": {
+        "label": "Team weather",
+        "sublabel": "How is the team this cycle?",
+        "placeholder": "What is weighing on the team right now?"
+      },
+      "manager": {
+        "label": "Manager energy",
+        "sublabel": "How are you feeling this cycle?",
+        "placeholder": "What is impacting your energy?"
+      },
+      "commentRequired": "Comment required",
+      "commentError": "A comment is required for a score ≤ 2",
+      "situation": {
+        "label": "Overall situation",
+        "sublabel": "In one sentence, how is the spa doing this cycle?",
+        "visible": "Will be visible to Management",
+        "placeholder": "In one sentence, how is the spa doing this cycle?"
+      }
+    },
+    "checkinWeekly": {
+      "title": "Quick check-in",
+      "subtitle": "30 seconds · Your status and the team's",
+      "meteo": {
+        "label": "Team weather this week",
+        "sublabel": "How is the team this week?"
+      },
+      "context": {
+        "label": "Team context",
+        "sublabel": "Weather, atmosphere, brief update on each team member…",
+        "placeholder": "Ex: Good week overall. Marie very engaged on duo treatments. Thomas withdrawn — to monitor. Julie handled the pool incident calmly. General morale positive despite the workload."
+      }
+    },
+    "notes": {
+      "title": "Free notes",
+      "subtitle": "Additional information for Management",
+      "label": "Your notes",
+      "placeholder": "Ex: Follow-up on hotel director visit. Update on product order… Anything that doesn't fit elsewhere.",
+      "info": "ℹ️ This block is sent as-is to Management. AI can reformat your dictated notes."
+    },
+    "objectifs": {
+      "title": "Objectives",
+      "active": "{{count}}/3 active",
+      "subtitle": "Cycle objectives tracking",
+      "info": "Objectives are defined during meetings or in the post-meeting Closing section.",
+      "loading": "Loading objectives…",
+      "empty": {
+        "title": "No active objectives for this cycle",
+        "subtitle": "To be defined at the next meeting"
+      },
+      "cible": "Target",
+      "comment": {
+        "placeholder": "Short comment"
+      },
+      "status": {
+        "onTrack": "On track",
+        "atRisk": "At risk",
+        "behind": "Behind"
+      }
+    },
+    "cloture": {
+      "title": {
+        "monthly": "Closing & commitments",
+        "weekly": "Closing — Weekly summary"
+      },
+      "subtitle": {
+        "monthly": "Summary, commitments made in the meeting and next deadline",
+        "weekly": "Pre-filled summary from your entries, editable"
+      },
+      "aiSuggestion": "AI Suggestion",
+      "summary": {
+        "monthly": "Monthly summary",
+        "weekly": "Weekly summary"
+      },
+      "words": "words",
+      "engagements": {
+        "title": "Commitments made — who does what by when",
+        "subtitle": "Consolidated from the IDS, Objectives and To-do sections of this cycle."
+      },
+      "nextMeeting": "Next monthly meeting",
+      "validate": "Validate and send to Management",
+      "toast": {
+        "validated": "Report validated — visible to Management"
+      },
+      "generated": {
+        "weekly": "This week:",
+        "monthly": "This month:",
+        "kpiLabel": "Key KPIs:",
+        "above": "above",
+        "below": "below",
+        "actionsLabel": "Completed actions",
+        "idsLabel": "IDS issues resolved",
+        "noData": "No data entered to generate an automatic summary. Write your summary below."
+      }
+    },
+    "ids": {
+      "triage": {
+        "dialogTitle": "How do you qualify this IDS?",
+        "dialogSubtitle": "Is it urgent · important · to delegate?",
+        "later": "Later",
+        "marked": "Marked {{label}} ✓",
+        "confirmYes": "✓ Yes, right now",
+        "confirmLater": "→ I'll do it later",
+        "requalify": "Click to re-qualify",
+        "qualify": "Click to qualify",
+        "toSort": "To sort"
+      },
+      "todoDone": "To-Do created",
+      "objectiveDone": "Objective created",
+      "createTodo": "→ Create a To-Do",
+      "createObjective": "→ Create an Objective",
+      "monthlyTitle": "IDS — Monthly issues",
+      "monthlySubtitle": "Summary of issues raised during weekly meetings — read only",
+      "monthlyEmpty": "No issues reported this month",
+      "monthlyEmptyHint": "Issues raised during weeklies will appear here.",
+      "toProcess": "To discuss in meeting",
+      "weeklyTitle": "IDS — Issues to escalate",
+      "weeklySubtitle": "Capture only — processing at next Monthly meeting",
+      "placeholder": "Report an issue (max 150 chars)",
+      "signaler": "Report",
+      "identifiedTitle": "Identified issues",
+      "identifiedSubtitle": "Quick capture — convert to to-do or objective if needed",
+      "identified": "Identified",
+      "todoDoneWeekly": "To-do created",
+      "toTodo": "→ To-do",
+      "toObjectif": "→ Objective",
+      "describePlaceholder": "Describe the issue in one sentence...",
+      "confirm": "Confirm",
+      "cancel": "Cancel",
+      "addProblem": "Add an issue",
+      "counter": "{{count}} issue(s) · {{todoCount}} to-do(s) created · {{objectifCount}} objective(s) created",
+      "hint": "Issues identified here will be processed at the next Monthly meeting.",
+      "toastTodoTitle": "To-do created",
+      "toastTodoDesc": "Visible in the Actions section of the Monthly report",
+      "toastObjectifTitle": "Objective created",
+      "toastObjectifDesc": "Visible in the Objectives section of the Monthly report",
+      "toastError": "Error",
+      "convertTodoTitle": "Convert to To-do",
+      "labelTitle": "Title *",
+      "labelResponsible": "Responsible",
+      "placeholderResponsible": "Responsible person's name",
+      "labelDueDate": "Due date *",
+      "createTodoBtn": "Create to-do",
+      "convertObjectifTitle": "Convert to Objective",
+      "labelTargetDate": "Target date *",
+      "maxObjectifs": "ℹ️ Max 3 active objectives per spa",
+      "createObjectifBtn": "Create objective"
+    },
+    "kpi": {
+      "title": "Monthly KPIs",
+      "subtitle": "Enter key performance indicators for this month",
+      "weeklyTitle": "📅 Weekly KPIs",
+      "weeklySubtitle": "Comparison vs weekly target (÷4 or fixed per config)",
+      "missingComment": "{{count}} KPI(s) require a comment to continue",
+      "commentRequired": "Comment required",
+      "othersTitle": "Other KPIs"
+    },
+    "meeting": {
+      "slides": {
+        "kpi": "KPI",
+        "checkin": "Check-in",
+        "responsabilities": "Responsibilities",
+        "todos": "To-dos",
+        "objectives": "Objectives",
+        "ids": "IDS",
+        "notes": "Notes",
+        "closure": "Closure",
+        "summary": "AI Summary",
+        "idsStructure": "IDS — Structuring",
+        "validation": "Validation"
+      },
+      "kpi": {
+        "noData": "No KPIs entered.",
+        "otherKpis": "Other KPIs",
+        "colIndicator": "Indicator",
+        "colN1": "N-1",
+        "colReal": "Actual",
+        "colEvolution": "Change"
+      },
+      "checkin": {
+        "noData": "No check-in entered.",
+        "teamMood": "Team mood",
+        "managerEnergy": "Manager energy",
+        "globalSituation": "Overall situation"
+      },
+      "responsabilities": {
+        "noData": "No responsibilities configured."
+      },
+      "todos": {
+        "noData": "No active to-dos.",
+        "inProgress": "In progress",
+        "todo": "To do"
+      },
+      "objectives": {
+        "noData": "No active objectives.",
+        "onTrack": "On track",
+        "atRisk": "At risk",
+        "behind": "Behind"
+      },
+      "ids": {
+        "monthlyProblems": "Month issues (weekly)",
+        "loading": "Loading…",
+        "noMonthlyIds": "No IDS raised during this month's weeklies.",
+        "badgeTodo": "Todo",
+        "badgeObjective": "Objective",
+        "badgeUntreated": "Untreated",
+        "convertToTodo": "→ Todo",
+        "convertToObjective": "→ Objective",
+        "newPoints": "New points raised in meeting",
+        "addPlaceholder": "Describe the issue (max 150 chars)",
+        "add": "Add",
+        "noNewPoints": "No new points captured."
+      },
+      "notes": {
+        "title": "Free notes",
+        "noData": "No free notes entered during preparation."
+      },
+      "closure": {
+        "idsMonth": "Month IDS",
+        "newIds": "New IDS",
+        "decisions": "Decisions made",
+        "meetingDecisions": "Meeting decisions",
+        "audioSection": "Audio recording",
+        "audioRecordedInApp": "Recorded in-app ({{duration}})",
+        "audioSave": "Save",
+        "audioImport": "Import audio file (MP3, M4A, MP4, WAV)",
+        "audioSavedMsg": "Audio saved — transcript available after closure",
+        "audioHint": "Use the in-app recording (header) or import an external audio file.",
+        "closeMeetingBtn": "Close the meeting"
+      },
+      "aiSummary": {
+        "reviewLabel": "← Review:",
+        "slideTooltip": "Review slide {{n}} — {{label}} (read-only)",
+        "executiveSummary": "Executive summary",
+        "aiBadge": "AI Summary",
+        "summaryPlaceholder": "Meeting summary…",
+        "keyDecisions": "Key decisions",
+        "goToIds": "Go to IDS structuring →",
+        "errorMessage": "The summary could not be generated. Check your connection and try again.",
+        "retry": "Retry",
+        "generating": "Generating AI summary…",
+        "generatingHint": "~10–15 seconds (timeout 30s)"
+      },
+      "idsStructure": {
+        "untriagedAlert": "{{count}} unqualified IDS — sort before closing",
+        "untriagedSection": "❓ TO SORT",
+        "goToValidation": "Go to validation →",
+        "noIds": "No IDS raised this month.",
+        "toConvert": "To convert",
+        "todoBadge": "To-Do ✓",
+        "objectiveBadge": "Objective ✓"
+      },
+      "validation": {
+        "aiSummaryLabel": "AI Summary",
+        "idsStructured": "Structured IDS",
+        "decisionsLabel": "Decisions",
+        "incompleteSolutions": "{{count}} IDS without solution — the report will still be distributed.",
+        "summaryRequired": "The AI summary is required before validation.",
+        "validateBtn": "Validate and distribute to Management"
+      },
+      "header": {
+        "weekly": "🟢 Weekly",
+        "monthly": "🔵 Monthly",
+        "readOnlyBadge": "📋 Archived presentation — read-only",
+        "closingPhaseBadge": "Phase 2 — Closure",
+        "close": "Close",
+        "viewReport": "View report",
+        "closeMeeting": "Close",
+        "readOnlyAlert": "Read-only — you are viewing a phase 1 slide. Changes are no longer taken into account.",
+        "backToSummary": "Back to summary →"
+      },
+      "panel": {
+        "title": "Decisions & notes — {{label}}",
+        "placeholder": "Note a decision or point raised by Management…",
+        "add": "Add"
+      },
+      "closeDialog": {
+        "title": "Close the meeting?",
+        "description": "{{idsCount}} new IDS · {{decisionCount}} decision{{decisionPlural}}",
+        "audioInfo": "Recorded ({{duration}})",
+        "warning": "⚠️ This action is irreversible. All slides must be complete before continuing. Once closed, you will no longer be able to modify the entered data (KPIs, check-in, todos, objectives, IDS…).",
+        "aiNote": "The AI summary will be generated automatically after closure.",
+        "ackLabel": "I confirm that I have reviewed all slides and understand that this action is irreversible.",
+        "cancel": "Cancel",
+        "confirm": "Confirm closure"
+      },
+      "recording": {
+        "start": "Record",
+        "acquiring": "Accessing microphone…",
+        "pauseTitle": "Pause",
+        "resumeTitle": "Resume",
+        "stopTitle": "Stop",
+        "recorded": "Recorded ({{duration}})",
+        "retry": "Retry"
+      },
+      "toasts": {
+        "summarySaveFailed": "Summary save failed",
+        "meetingClosed": "Meeting closed",
+        "meetingClosedSuccess": "Meeting closed ✓",
+        "meetingClosedDesc": "Generating AI summary…",
+        "error": "Error",
+        "audioSaved": "Audio saved ✓",
+        "fileTooLarge": "File too large",
+        "fileTooLargeDesc": "Audio file too large (max 20 MB)."
+      }
+    }
   },
   "common": {
     "cancel": "Cancel",
@@ -199,7 +527,11 @@
     "edit": "Edit",
     "close": "Close",
     "loading": "Loading…",
-    "error": "Error"
+    "error": "Error",
+    "optional": "Optional",
+    "required": "Required",
+    "structuring": "Structuring…",
+    "structureWithAI": "Structure with AI"
   },
   "admin": {
     "title": "Organization",
