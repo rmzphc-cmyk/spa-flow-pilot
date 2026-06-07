@@ -193,6 +193,119 @@
     "emptyConsultSub": "Los informes finalizados y validados aparecerán aquí."
   },
   "common": {
-    "cancel": "Cancelar"
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "delete": "Eliminar",
+    "edit": "Editar",
+    "close": "Cerrar",
+    "loading": "Cargando…",
+    "error": "Error"
+  },
+  "admin": {
+    "title": "Organización",
+    "subtitle": "Gestión de destinos, spas y direcciones.",
+    "subtitleReadOnly": "Solo lectura — la gestión está reservada a los administradores.",
+    "orgPlaceholder": "Organización",
+    "noOrgs": "Ninguna organización accesible.",
+    "tabs": {
+      "destinations": "Destinos",
+      "spas": "Spas",
+      "managers": "Managers",
+      "directors": "Direcciones"
+    },
+    "destinations": {
+      "count": "{{count}} destino(s)",
+      "new": "Nuevo destino",
+      "empty": "Ningún destino.",
+      "detachFirst": "Desvincule los spas primero",
+      "editTitle": "Editar destino",
+      "newTitle": "Nuevo destino",
+      "deleteTitle": "¿Eliminar este destino?",
+      "deleteDesc": "\"{{name}}\" será eliminado. Acción irreversible.",
+      "createdToast": "Destino creado",
+      "updatedToast": "Destino actualizado",
+      "deletedToast": "Destino eliminado",
+      "nameRequired": "Nombre requerido",
+      "fields": {
+        "name": "Nombre",
+        "namePlaceholder": "Ej: Tenerife",
+        "country": "País",
+        "countryPlaceholder": "ES",
+        "timezone": "Zona horaria"
+      }
+    },
+    "spas": {
+      "count": "{{count}} spa(s)",
+      "new": "Nuevo spa",
+      "empty": "Ningún spa.",
+      "editTitle": "Editar spa",
+      "newTitle": "Nuevo spa",
+      "deleteTitle": "¿Eliminar este spa?",
+      "deleteDesc": "\"{{name}}\" y todos sus datos (informes, KPI…) se perderán.",
+      "createdToast": "Spa creado",
+      "updatedToast": "Spa actualizado",
+      "deletedToast": "Spa eliminado",
+      "nameDestRequired": "Nombre y destino requeridos",
+      "fields": {
+        "name": "Nombre",
+        "namePlaceholder": "Ej: Sanagua Par Tenerife",
+        "destination": "Destino",
+        "active": "Spa activo"
+      }
+    },
+    "directors": {
+      "count": "{{count}} dirección(es)",
+      "invite": "Invitar a un director",
+      "empty": "Ningún director.",
+      "wholeOrg": "Toda la organización",
+      "editTitle": "Editar director",
+      "inviteTitle": "Invitar a un director",
+      "deleteTitle": "¿Eliminar este director?",
+      "deleteDesc": "{{name}} perderá el acceso a la aplicación.",
+      "invitedToast": "Director invitado",
+      "updatedToast": "Director actualizado",
+      "deletedToast": "Director eliminado",
+      "fields": {
+        "email": "Email",
+        "emailPlaceholder": "direccion@ejemplo.com",
+        "fullName": "Nombre completo",
+        "fullNamePlaceholder": "Ana Sanagua",
+        "destination": "Destino"
+      }
+    },
+    "managers": {
+      "count": "{{count}} manager(s)",
+      "invite": "Invitar a un manager",
+      "empty": "Ningún manager.",
+      "noSpa": "Ningún spa",
+      "unknownSpa": "Spa desconocido",
+      "editTitle": "Editar manager",
+      "inviteTitle": "Invitar a un manager",
+      "deleteTitle": "¿Eliminar este manager?",
+      "deleteDesc": "{{name}} perderá el acceso a la aplicación.",
+      "invitedToast": "Manager invitado",
+      "updatedToast": "Manager actualizado",
+      "deletedToast": "Manager eliminado",
+      "spaRequired": "Spa requerido",
+      "fields": {
+        "email": "Email",
+        "emailPlaceholder": "manager@ejemplo.com",
+        "fullName": "Nombre completo",
+        "fullNamePlaceholder": "Sophie Marchand",
+        "spa": "Spa asignado",
+        "spaPlaceholder": "Seleccionar un spa"
+      }
+    },
+    "invite": "Invitar",
+    "emailRequired": "Email requerido",
+    "destRequired": "Destino requerido",
+    "tempCreds": {
+      "title": "Credenciales temporales",
+      "desc": "Comparte estas credenciales con el director. La contraseña no se mostrará de nuevo.",
+      "emailLabel": "Email:",
+      "passwordLabel": "Contraseña:",
+      "copy": "Copiar",
+      "copied": "Copiado"
+    }
   }
 }

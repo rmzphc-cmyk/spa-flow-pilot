@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Plus, Pencil, Trash2, UserPlus, Copy, Check } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -62,6 +63,7 @@ import {
 } from "@/hooks/useAdminOrganization";
 
 export default function AdminOrganization() {
+  const { t } = useTranslation();
   const { userRole } = useAuth();
   const readOnly = userRole === "direction";
 
@@ -73,17 +75,15 @@ export default function AdminOrganization() {
     <div className="container mx-auto p-6 max-w-6xl">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Organisation</h1>
+          <h1 className="text-2xl font-bold">{t("admin.title")}</h1>
           <p className="text-sm text-muted-foreground">
-            {readOnly
-              ? "Lecture seule — gestion réservée aux administrateurs."
-              : "Gestion des destinations, spas et directions."}
+            {readOnly ? t("admin.subtitleReadOnly") : t("admin.subtitle")}
           </p>
         </div>
         {orgs.length > 1 && (
           <Select value={currentOrgId} onValueChange={setOrgId}>
             <SelectTrigger className="w-[240px]">
-              <SelectValue placeholder="Organisation" />
+              <SelectValue placeholder={t("admin.orgPlaceholder")} />
             </SelectTrigger>
             <SelectContent>
               {orgs.map((o) => (
@@ -99,16 +99,16 @@ export default function AdminOrganization() {
       {!currentOrgId ? (
         <Card>
           <CardContent className="p-6 text-sm text-muted-foreground">
-            Aucune organisation accessible.
+            {t("admin.noOrgs")}
           </CardContent>
         </Card>
       ) : (
         <Tabs defaultValue="destinations" className="w-full">
           <TabsList className="grid w-full grid-cols-4 max-w-2xl">
-            <TabsTrigger value="destinations">Destinations</TabsTrigger>
-            <TabsTrigger value="spas">Spas</TabsTrigger>
-            <TabsTrigger value="managers">Managers</TabsTrigger>
-            <TabsTrigger value="directors">Directions</TabsTrigger>
+            <TabsTrigger value="destinations">{t("admin.tabs.destinations")}</TabsTrigger>
+            <TabsTrigger value="spas">{t("admin.tabs.spas")}</TabsTrigger>
+            <TabsTrigger value="managers">{t("admin.tabs.managers")}</TabsTrigger>
+            <TabsTrigger value="directors">{t("admin.tabs.directors")}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="destinations" className="mt-6">
@@ -134,6 +134,7 @@ export default function AdminOrganization() {
 
 // =================== Destinations ===================
 function DestinationsTab({ organizationId, readOnly }: { organizationId: string; readOnly: boolean }) {
+  const { t } = useTranslation();
   const { data: destinations = [], isLoading } = useDestinations(organizationId);
   const { data: spas = [] } = useAdminSpas(organizationId);
   const createMut = useCreateDestination();
@@ -153,18 +154,18 @@ function DestinationsTab({ organizationId, readOnly }: { organizationId: string;
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base">{destinations.length} destination(s)</CardTitle>
+        <CardTitle className="text-base">{t("admin.destinations.count", { count: destinations.length })}</CardTitle>
         {!readOnly && (
           <Button size="sm" onClick={() => setCreating(true)}>
-            <Plus className="h-4 w-4 mr-2" /> Nouvelle destination
+            <Plus className="h-4 w-4 mr-2" /> {t("admin.destinations.new")}
           </Button>
         )}
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Chargement…</p>
+          <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
         ) : destinations.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Aucune destination.</p>
+          <p className="text-sm text-muted-foreground">{t("admin.destinations.empty")}</p>
         ) : (
           <div className="divide-y divide-border">
             {destinations.map((d) => (
@@ -185,7 +186,7 @@ function DestinationsTab({ organizationId, readOnly }: { organizationId: string;
                       size="icon"
                       onClick={() => setDeleteTarget(d)}
                       disabled={(spaCountByDest.get(d.id) ?? 0) > 0}
-                      title={(spaCountByDest.get(d.id) ?? 0) > 0 ? "Détacher les spas d'abord" : "Supprimer"}
+                      title={(spaCountByDest.get(d.id) ?? 0) > 0 ? t("admin.destinations.detachFirst") : t("common.delete")}
                     >
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
@@ -207,10 +208,10 @@ function DestinationsTab({ organizationId, readOnly }: { organizationId: string;
         onSubmit={async (values) => {
           if (editing) {
             await updateMut.mutateAsync({ id: editing.id, ...values });
-            toast.success("Destination mise à jour");
+            toast.success(t("admin.destinations.updatedToast"));
           } else {
             await createMut.mutateAsync({ organization_id: organizationId, ...values });
-            toast.success("Destination créée");
+            toast.success(t("admin.destinations.createdToast"));
           }
         }}
       />
@@ -218,26 +219,26 @@ function DestinationsTab({ organizationId, readOnly }: { organizationId: string;
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer cette destination ?</AlertDialogTitle>
+            <AlertDialogTitle>{t("admin.destinations.deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              "{deleteTarget?.name}" sera supprimée. Action irréversible.
+              {t("admin.destinations.deleteDesc", { name: deleteTarget?.name ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={async () => {
                 if (!deleteTarget) return;
                 try {
                   await deleteMut.mutateAsync(deleteTarget.id);
-                  toast.success("Destination supprimée");
+                  toast.success(t("admin.destinations.deletedToast"));
                   setDeleteTarget(null);
                 } catch (e: any) {
-                  toast.error(e.message ?? "Erreur");
+                  toast.error(e.message ?? t("common.error"));
                 }
               }}
             >
-              Supprimer
+              {t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -257,6 +258,7 @@ function DestinationEditDialog({
   onClose: () => void;
   onSubmit: (values: { name: string; country?: string; timezone?: string }) => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const [name, setName] = useState("");
   const [country, setCountry] = useState("");
   const [timezone, setTimezone] = useState("Atlantic/Canary");
@@ -273,41 +275,41 @@ function DestinationEditDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{destination ? "Modifier la destination" : "Nouvelle destination"}</DialogTitle>
+          <DialogTitle>{destination ? t("admin.destinations.editTitle") : t("admin.destinations.newTitle")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <Label>Nom</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Tenerife" />
+            <Label>{t("admin.destinations.fields.name")}</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("admin.destinations.fields.namePlaceholder")} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <Label>Pays</Label>
-              <Input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="ES" />
+              <Label>{t("admin.destinations.fields.country")}</Label>
+              <Input value={country} onChange={(e) => setCountry(e.target.value)} placeholder={t("admin.destinations.fields.countryPlaceholder")} />
             </div>
             <div>
-              <Label>Fuseau</Label>
+              <Label>{t("admin.destinations.fields.timezone")}</Label>
               <Input value={timezone} onChange={(e) => setTimezone(e.target.value)} />
             </div>
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Annuler</Button>
+          <Button variant="ghost" onClick={onClose}>{t("common.cancel")}</Button>
           <Button
             onClick={async () => {
               if (!name.trim()) {
-                toast.error("Nom requis");
+                toast.error(t("admin.destinations.nameRequired"));
                 return;
               }
               try {
                 await onSubmit({ name: name.trim(), country: country.trim() || undefined, timezone });
                 onClose();
               } catch (e: any) {
-                toast.error(e.message ?? "Erreur");
+                toast.error(e.message ?? t("common.error"));
               }
             }}
           >
-            Enregistrer
+            {t("common.save")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -317,6 +319,7 @@ function DestinationEditDialog({
 
 // =================== Spas ===================
 function SpasTab({ organizationId, readOnly }: { organizationId: string; readOnly: boolean }) {
+  const { t } = useTranslation();
   const { data: spas = [], isLoading } = useAdminSpas(organizationId);
   const { data: destinations = [] } = useDestinations(organizationId);
   const createMut = useCreateSpa();
@@ -332,18 +335,18 @@ function SpasTab({ organizationId, readOnly }: { organizationId: string; readOnl
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base">{spas.length} spa(s)</CardTitle>
+        <CardTitle className="text-base">{t("admin.spas.count", { count: spas.length })}</CardTitle>
         {!readOnly && (
           <Button size="sm" onClick={() => setCreating(true)} disabled={destinations.length === 0}>
-            <Plus className="h-4 w-4 mr-2" /> Nouveau spa
+            <Plus className="h-4 w-4 mr-2" /> {t("admin.spas.new")}
           </Button>
         )}
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Chargement…</p>
+          <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
         ) : spas.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Aucun spa.</p>
+          <p className="text-sm text-muted-foreground">{t("admin.spas.empty")}</p>
         ) : (
           <div className="divide-y divide-border">
             {spas.map((s) => (
@@ -386,10 +389,10 @@ function SpasTab({ organizationId, readOnly }: { organizationId: string; readOnl
         onSubmit={async (values) => {
           if (editing) {
             await updateMut.mutateAsync({ id: editing.id, ...values });
-            toast.success("Spa mis à jour");
+            toast.success(t("admin.spas.updatedToast"));
           } else {
             await createMut.mutateAsync({ organization_id: organizationId, ...values });
-            toast.success("Spa créé");
+            toast.success(t("admin.spas.createdToast"));
           }
         }}
       />
@@ -397,26 +400,26 @@ function SpasTab({ organizationId, readOnly }: { organizationId: string; readOnl
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer ce spa ?</AlertDialogTitle>
+            <AlertDialogTitle>{t("admin.spas.deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              "{deleteTarget?.name}" et toutes ses données (rapports, KPI…) seront perdues.
+              {t("admin.spas.deleteDesc", { name: deleteTarget?.name ?? "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={async () => {
                 if (!deleteTarget) return;
                 try {
                   await deleteMut.mutateAsync(deleteTarget.id);
-                  toast.success("Spa supprimé");
+                  toast.success(t("admin.spas.deletedToast"));
                   setDeleteTarget(null);
                 } catch (e: any) {
-                  toast.error(e.message ?? "Erreur");
+                  toast.error(e.message ?? t("common.error"));
                 }
               }}
             >
-              Supprimer
+              {t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -442,6 +445,7 @@ function SpaEditDialog({
     is_active?: boolean;
   }) => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const [name, setName] = useState("");
   const [destinationId, setDestinationId] = useState("");
   const [isActive, setIsActive] = useState(true);
@@ -458,15 +462,15 @@ function SpaEditDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{spa ? "Modifier le spa" : "Nouveau spa"}</DialogTitle>
+          <DialogTitle>{spa ? t("admin.spas.editTitle") : t("admin.spas.newTitle")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <Label>Nom</Label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Ex: Sanagua Par Tenerife" />
+            <Label>{t("admin.spas.fields.name")}</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("admin.spas.fields.namePlaceholder")} />
           </div>
           <div>
-            <Label>Destination</Label>
+            <Label>{t("admin.spas.fields.destination")}</Label>
             <Select value={destinationId} onValueChange={setDestinationId}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -478,17 +482,17 @@ function SpaEditDialog({
           </div>
           {spa && (
             <div className="flex items-center justify-between">
-              <Label>Spa actif</Label>
+              <Label>{t("admin.spas.fields.active")}</Label>
               <Switch checked={isActive} onCheckedChange={setIsActive} />
             </div>
           )}
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Annuler</Button>
+          <Button variant="ghost" onClick={onClose}>{t("common.cancel")}</Button>
           <Button
             onClick={async () => {
               if (!name.trim() || !destinationId) {
-                toast.error("Nom et destination requis");
+                toast.error(t("admin.spas.nameDestRequired"));
                 return;
               }
               try {
@@ -499,11 +503,11 @@ function SpaEditDialog({
                 });
                 onClose();
               } catch (e: any) {
-                toast.error(e.message ?? "Erreur");
+                toast.error(e.message ?? t("common.error"));
               }
             }}
           >
-            Enregistrer
+            {t("common.save")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -513,6 +517,7 @@ function SpaEditDialog({
 
 // =================== Directors ===================
 function DirectorsTab({ organizationId, readOnly }: { organizationId: string; readOnly: boolean }) {
+  const { t } = useTranslation();
   const { data: users = [], isLoading } = useAdminUsers(organizationId);
   const { data: destinations = [] } = useDestinations(organizationId);
   const inviteMut = useInviteUser();
@@ -530,18 +535,18 @@ function DirectorsTab({ organizationId, readOnly }: { organizationId: string; re
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base">{directors.length} direction(s)</CardTitle>
+        <CardTitle className="text-base">{t("admin.directors.count", { count: directors.length })}</CardTitle>
         {!readOnly && (
           <Button size="sm" onClick={() => setInviting(true)} disabled={destinations.length === 0}>
-            <UserPlus className="h-4 w-4 mr-2" /> Inviter un directeur
+            <UserPlus className="h-4 w-4 mr-2" /> {t("admin.directors.invite")}
           </Button>
         )}
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Chargement…</p>
+          <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
         ) : directors.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Aucun directeur.</p>
+          <p className="text-sm text-muted-foreground">{t("admin.directors.empty")}</p>
         ) : (
           <div className="divide-y divide-border">
             {directors.map((u) => (
@@ -549,7 +554,7 @@ function DirectorsTab({ organizationId, readOnly }: { organizationId: string; re
                 <div>
                   <p className="font-medium">{u.full_name || u.email}</p>
                   <p className="text-xs text-muted-foreground">
-                    {u.email} · {destById.get(u.destination_id ?? "")?.name ?? "Toute l'organisation"}
+                    {u.email} · {destById.get(u.destination_id ?? "")?.name ?? t("admin.directors.wholeOrg")}
                   </p>
                 </div>
                 {!readOnly && (
@@ -583,7 +588,7 @@ function DirectorsTab({ organizationId, readOnly }: { organizationId: string; re
               full_name: values.full_name,
               destination_id: values.destination_id,
             });
-            toast.success("Directeur mis à jour");
+            toast.success(t("admin.directors.updatedToast"));
           } else {
             const res = await inviteMut.mutateAsync({
               email: values.email!,
@@ -592,7 +597,7 @@ function DirectorsTab({ organizationId, readOnly }: { organizationId: string; re
               destination_id: values.destination_id,
               organization_id: organizationId,
             });
-            toast.success("Directeur invité");
+            toast.success(t("admin.directors.invitedToast"));
             if (res?.temp_password) {
               setTempCredentials({ email: values.email!, password: res.temp_password });
             }
@@ -603,26 +608,26 @@ function DirectorsTab({ organizationId, readOnly }: { organizationId: string; re
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer ce directeur ?</AlertDialogTitle>
+            <AlertDialogTitle>{t("admin.directors.deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {deleteTarget?.full_name || deleteTarget?.email} perdra l'accès à l'application.
+              {t("admin.directors.deleteDesc", { name: deleteTarget?.full_name || deleteTarget?.email || "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={async () => {
                 if (!deleteTarget) return;
                 try {
                   await deleteMut.mutateAsync(deleteTarget.id);
-                  toast.success("Directeur supprimé");
+                  toast.success(t("admin.directors.deletedToast"));
                   setDeleteTarget(null);
                 } catch (e: any) {
-                  toast.error(e.message ?? "Erreur");
+                  toast.error(e.message ?? t("common.error"));
                 }
               }}
             >
-              Supprimer
+              {t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -649,6 +654,7 @@ function DirectorEditDialog({
   onClose: () => void;
   onSubmit: (values: { email?: string; full_name: string; destination_id: string | null }) => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [destinationId, setDestinationId] = useState<string>("");
@@ -665,25 +671,25 @@ function DirectorEditDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{director ? "Modifier le directeur" : "Inviter un directeur"}</DialogTitle>
+          <DialogTitle>{director ? t("admin.directors.editTitle") : t("admin.directors.inviteTitle")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <Label>Email</Label>
+            <Label>{t("admin.directors.fields.email")}</Label>
             <Input
               type="email"
               value={email}
               disabled={!!director}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="direction@exemple.com"
+              placeholder={t("admin.directors.fields.emailPlaceholder")}
             />
           </div>
           <div>
-            <Label>Nom complet</Label>
-            <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Ana Sanagua" />
+            <Label>{t("admin.directors.fields.fullName")}</Label>
+            <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={t("admin.directors.fields.fullNamePlaceholder")} />
           </div>
           <div>
-            <Label>Destination</Label>
+            <Label>{t("admin.directors.fields.destination")}</Label>
             <Select value={destinationId} onValueChange={setDestinationId}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
@@ -695,15 +701,15 @@ function DirectorEditDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Annuler</Button>
+          <Button variant="ghost" onClick={onClose}>{t("common.cancel")}</Button>
           <Button
             onClick={async () => {
               if (!director && !email.trim()) {
-                toast.error("Email requis");
+                toast.error(t("admin.emailRequired"));
                 return;
               }
               if (!destinationId) {
-                toast.error("Destination requise");
+                toast.error(t("admin.destRequired"));
                 return;
               }
               try {
@@ -714,11 +720,11 @@ function DirectorEditDialog({
                 });
                 onClose();
               } catch (e: any) {
-                toast.error(e.message ?? "Erreur");
+                toast.error(e.message ?? t("common.error"));
               }
             }}
           >
-            {director ? "Enregistrer" : "Inviter"}
+            {director ? t("common.save") : t("admin.invite")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -728,6 +734,7 @@ function DirectorEditDialog({
 
 // =================== Managers ===================
 function ManagersTab({ organizationId, readOnly }: { organizationId: string; readOnly: boolean }) {
+  const { t } = useTranslation();
   const { data: users = [], isLoading } = useAdminUsers(organizationId);
   const { data: spas = [] } = useAdminSpas(organizationId);
   const inviteMut = useInviteUser();
@@ -745,18 +752,18 @@ function ManagersTab({ organizationId, readOnly }: { organizationId: string; rea
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-base">{managers.length} manager(s)</CardTitle>
+        <CardTitle className="text-base">{t("admin.managers.count", { count: managers.length })}</CardTitle>
         {!readOnly && (
           <Button size="sm" onClick={() => setInviting(true)} disabled={spas.length === 0}>
-            <UserPlus className="h-4 w-4 mr-2" /> Inviter un manager
+            <UserPlus className="h-4 w-4 mr-2" /> {t("admin.managers.invite")}
           </Button>
         )}
       </CardHeader>
       <CardContent>
         {isLoading ? (
-          <p className="text-sm text-muted-foreground">Chargement…</p>
+          <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
         ) : managers.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Aucun manager.</p>
+          <p className="text-sm text-muted-foreground">{t("admin.managers.empty")}</p>
         ) : (
           <div className="divide-y divide-border">
             {managers.map((u) => (
@@ -764,7 +771,7 @@ function ManagersTab({ organizationId, readOnly }: { organizationId: string; rea
                 <div>
                   <p className="font-medium">{u.full_name || u.email}</p>
                   <p className="text-xs text-muted-foreground">
-                    {u.email} · {u.spa_id ? (spaById.get(u.spa_id)?.name ?? "Spa inconnu") : "Aucun spa"}
+                    {u.email} · {u.spa_id ? (spaById.get(u.spa_id)?.name ?? t("admin.managers.unknownSpa")) : t("admin.managers.noSpa")}
                   </p>
                 </div>
                 {!readOnly && (
@@ -798,7 +805,7 @@ function ManagersTab({ organizationId, readOnly }: { organizationId: string; rea
               full_name: values.full_name,
               spa_id: values.spa_id,
             });
-            toast.success("Manager mis à jour");
+            toast.success(t("admin.managers.updatedToast"));
           } else {
             const res = await inviteMut.mutateAsync({
               email: values.email!,
@@ -807,7 +814,7 @@ function ManagersTab({ organizationId, readOnly }: { organizationId: string; rea
               spa_id: values.spa_id,
               organization_id: organizationId,
             });
-            toast.success("Manager invité");
+            toast.success(t("admin.managers.invitedToast"));
             if (res?.temp_password) {
               setTempCredentials({ email: values.email!, password: res.temp_password });
             }
@@ -818,26 +825,26 @@ function ManagersTab({ organizationId, readOnly }: { organizationId: string; rea
       <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Supprimer ce manager ?</AlertDialogTitle>
+            <AlertDialogTitle>{t("admin.managers.deleteTitle")}</AlertDialogTitle>
             <AlertDialogDescription>
-              {deleteTarget?.full_name || deleteTarget?.email} perdra l'accès à l'application.
+              {t("admin.managers.deleteDesc", { name: deleteTarget?.full_name || deleteTarget?.email || "" })}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={async () => {
                 if (!deleteTarget) return;
                 try {
                   await deleteMut.mutateAsync(deleteTarget.id);
-                  toast.success("Manager supprimé");
+                  toast.success(t("admin.managers.deletedToast"));
                   setDeleteTarget(null);
                 } catch (e: any) {
-                  toast.error(e.message ?? "Erreur");
+                  toast.error(e.message ?? t("common.error"));
                 }
               }}
             >
-              Supprimer
+              {t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -864,6 +871,7 @@ function ManagerEditDialog({
   onClose: () => void;
   onSubmit: (values: { email?: string; full_name: string; spa_id: string }) => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [fullName, setFullName] = useState("");
   const [spaId, setSpaId] = useState<string>("");
@@ -880,27 +888,27 @@ function ManagerEditDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{manager ? "Modifier le manager" : "Inviter un manager"}</DialogTitle>
+          <DialogTitle>{manager ? t("admin.managers.editTitle") : t("admin.managers.inviteTitle")}</DialogTitle>
         </DialogHeader>
         <div className="space-y-4">
           <div>
-            <Label>Email</Label>
+            <Label>{t("admin.managers.fields.email")}</Label>
             <Input
               type="email"
               value={email}
               disabled={!!manager}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="manager@exemple.com"
+              placeholder={t("admin.managers.fields.emailPlaceholder")}
             />
           </div>
           <div>
-            <Label>Nom complet</Label>
-            <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Sophie Marchand" />
+            <Label>{t("admin.managers.fields.fullName")}</Label>
+            <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder={t("admin.managers.fields.fullNamePlaceholder")} />
           </div>
           <div>
-            <Label>Spa rattaché</Label>
+            <Label>{t("admin.managers.fields.spa")}</Label>
             <Select value={spaId} onValueChange={setSpaId}>
-              <SelectTrigger><SelectValue placeholder="Sélectionner un spa" /></SelectTrigger>
+              <SelectTrigger><SelectValue placeholder={t("admin.managers.fields.spaPlaceholder")} /></SelectTrigger>
               <SelectContent>
                 {spas.map((s) => (
                   <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
@@ -910,15 +918,15 @@ function ManagerEditDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="ghost" onClick={onClose}>Annuler</Button>
+          <Button variant="ghost" onClick={onClose}>{t("common.cancel")}</Button>
           <Button
             onClick={async () => {
               if (!manager && !email.trim()) {
-                toast.error("Email requis");
+                toast.error(t("admin.emailRequired"));
                 return;
               }
               if (!spaId) {
-                toast.error("Spa requis");
+                toast.error(t("admin.managers.spaRequired"));
                 return;
               }
               try {
@@ -929,11 +937,11 @@ function ManagerEditDialog({
                 });
                 onClose();
               } catch (e: any) {
-                toast.error(e.message ?? "Erreur");
+                toast.error(e.message ?? t("common.error"));
               }
             }}
           >
-            {manager ? "Enregistrer" : "Inviter"}
+            {manager ? t("common.save") : t("admin.invite")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -948,37 +956,38 @@ function TempCredentialsDialog({
   credentials: { email: string; password: string } | null;
   onClose: () => void;
 }) {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   return (
     <Dialog open={!!credentials} onOpenChange={(o) => !o && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Identifiants temporaires</DialogTitle>
+          <DialogTitle>{t("admin.tempCreds.title")}</DialogTitle>
         </DialogHeader>
         <p className="text-sm text-muted-foreground">
-          Transmets ces identifiants au directeur. Le mot de passe ne sera plus affiché ensuite.
+          {t("admin.tempCreds.desc")}
         </p>
         <div className="space-y-2 mt-2">
           <div className="bg-muted p-3 rounded-lg text-sm">
-            <p><strong>Email :</strong> {credentials?.email}</p>
-            <p><strong>Mot de passe :</strong> <code>{credentials?.password}</code></p>
+            <p><strong>{t("admin.tempCreds.emailLabel")}</strong> {credentials?.email}</p>
+            <p><strong>{t("admin.tempCreds.passwordLabel")}</strong> <code>{credentials?.password}</code></p>
           </div>
           <Button
             variant="outline"
             size="sm"
             className="w-full"
             onClick={() => {
-              navigator.clipboard.writeText(`Email: ${credentials?.email}\nMot de passe: ${credentials?.password}`);
+              navigator.clipboard.writeText(`${t("admin.tempCreds.emailLabel")} ${credentials?.email}\n${t("admin.tempCreds.passwordLabel")} ${credentials?.password}`);
               setCopied(true);
               setTimeout(() => setCopied(false), 2000);
             }}
           >
             {copied ? <Check className="h-4 w-4 mr-2" /> : <Copy className="h-4 w-4 mr-2" />}
-            {copied ? "Copié" : "Copier"}
+            {copied ? t("admin.tempCreds.copied") : t("admin.tempCreds.copy")}
           </Button>
         </div>
         <DialogFooter>
-          <Button onClick={onClose}>Fermer</Button>
+          <Button onClick={onClose}>{t("common.close")}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
