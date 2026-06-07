@@ -30,36 +30,11 @@ type LocalEntry = {
 };
 type LocalState = Record<string, LocalEntry>;
 
-const BUTTON_STATES: { value: 100 | 50 | 0; label: string; cls: string }[] = [
-  { value: 100, label: "Réalisé ✓", cls: "bg-emerald-100 text-emerald-800 border-emerald-300" },
-  { value: 50, label: "Partiel ◐", cls: "bg-amber-100 text-amber-800 border-amber-300" },
-  { value: 0, label: "Non réalisé ✗", cls: "bg-red-100 text-red-800 border-red-300" },
-];
-
-const FREQ_BADGE: Record<string, { label: string; cls: string }> = {
-  daily: { label: "Journalier", cls: "bg-purple-100 text-purple-700" },
-  weekly: { label: "Hebdo", cls: "bg-blue-100 text-blue-700" },
-  biweekly: { label: "Bimensuel", cls: "bg-cyan-100 text-cyan-700" },
-  monthly: { label: "Mensuel", cls: "bg-slate-100 text-slate-600" },
-};
-
 function scoreColor(score: number | null): string {
   if (score === null) return "text-muted-foreground";
   if (score >= 80) return "text-emerald-600";
   if (score >= 50) return "text-amber-600";
   return "text-red-600";
-}
-
-function numericPlaceholder(score: number | null): string {
-  if (score === null || score < 50) return "Qu'est-ce qui a bloqué ?";
-  if (score >= 100) return "Commentaire (optionnel)";
-  return "Qu'est-ce qui manque pour atteindre l'objectif ?";
-}
-
-function buttonPlaceholder(score: number | null): string {
-  if (score === null || score === 0) return "Qu'est-ce qui a bloqué ?";
-  if (score === 50) return "Qu'est-ce qui a été fait ? Qu'est-ce qui manque ?";
-  return "Commentaire (optionnel)";
 }
 
 export function SectionResponsabilites({
@@ -69,7 +44,7 @@ export function SectionResponsabilites({
   isLocked = false,
   onStatusChange,
 }: Props) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const speechLang =
     i18n.language === "es" ? "es-ES" : i18n.language === "en" ? "en-US" : "fr-FR";
   const { spaId } = useAuth();
@@ -77,6 +52,31 @@ export function SectionResponsabilites({
   const { data: logs } = useResponsabilityLogs(reportId);
   const upsertMutation = useUpsertResponsabilityLog();
   const { debouncedUpsert, mutate: upsertNow } = upsertMutation;
+
+  const BUTTON_STATES: { value: 100 | 50 | 0; label: string; cls: string }[] = [
+    { value: 100, label: t("report.responsabilites.button.done"), cls: "bg-emerald-100 text-emerald-800 border-emerald-300" },
+    { value: 50, label: t("report.responsabilites.button.partial"), cls: "bg-amber-100 text-amber-800 border-amber-300" },
+    { value: 0, label: t("report.responsabilites.button.notDone"), cls: "bg-red-100 text-red-800 border-red-300" },
+  ];
+
+  const FREQ_BADGE: Record<string, { label: string; cls: string }> = {
+    daily: { label: t("report.responsabilites.freq.daily"), cls: "bg-purple-100 text-purple-700" },
+    weekly: { label: t("report.responsabilites.freq.weekly"), cls: "bg-blue-100 text-blue-700" },
+    biweekly: { label: t("report.responsabilites.freq.biweekly"), cls: "bg-cyan-100 text-cyan-700" },
+    monthly: { label: t("report.responsabilites.freq.monthly"), cls: "bg-slate-100 text-slate-600" },
+  };
+
+  function numericPlaceholder(score: number | null): string {
+    if (score === null || score < 50) return t("report.responsabilites.placeholder.blocked");
+    if (score >= 100) return t("report.responsabilites.placeholder.optional");
+    return t("report.responsabilites.placeholder.missing");
+  }
+
+  function buttonPlaceholder(score: number | null): string {
+    if (score === null || score === 0) return t("report.responsabilites.placeholder.blocked");
+    if (score === 50) return t("report.responsabilites.placeholder.whatDone");
+    return t("report.responsabilites.placeholder.optional");
+  }
 
   const dailyWeeklyTemplateIds = useMemo(
     () =>
@@ -96,13 +96,12 @@ export function SectionResponsabilites({
   const [local, setLocal] = useState<LocalState>({});
   const [hydratedFor, setHydratedFor] = useState<string | null>(null);
 
-  // Hydrate
   useEffect(() => {
     if (!logs || hydratedFor === reportId) return;
     const next: LocalState = {};
-    for (const t of templates) {
-      const log = logs[t.id];
-      next[t.id] = {
+    for (const tmpl of templates) {
+      const log = logs[tmpl.id];
+      next[tmpl.id] = {
         completion_rate: log?.completion_rate ?? null,
         actual_count:
           log?.actual_count !== null && log?.actual_count !== undefined
@@ -116,54 +115,52 @@ export function SectionResponsabilites({
     setHydratedFor(reportId);
   }, [logs, reportId, hydratedFor, templates]);
 
-  // Auto-apply prefill for daily/weekly templates
   useEffect(() => {
     if (!logs || !prefillEnabled || templates.length === 0) return;
-    for (const t of templates) {
-      if (t.frequency !== "daily" && t.frequency !== "weekly") continue;
-      const entry = local[t.id];
-      const pf = prefillData[t.id];
+    for (const tmpl of templates) {
+      if (tmpl.frequency !== "daily" && tmpl.frequency !== "weekly") continue;
+      const entry = local[tmpl.id];
+      const pf = prefillData[tmpl.id];
       if (!pf || pf.prefillValue <= 0) continue;
       if (entry?.prefillApplied) continue;
-      const dbActual = logs[t.id]?.actual_count;
+      const dbActual = logs[tmpl.id]?.actual_count;
       const localEmpty = !entry || entry.actual_count === "";
       if (!(localEmpty || dbActual == null)) continue;
 
-      const monthlyExpected = calcMonthlyExpected(t.frequency, t.expected_count);
+      const monthlyExpected = calcMonthlyExpected(tmpl.frequency, tmpl.expected_count);
       const cr =
         monthlyExpected > 0
           ? Math.min(100, Math.round((pf.prefillValue / monthlyExpected) * 100))
           : 0;
       upsertNow({
         report_id: reportId,
-        responsibility_template_id: t.id,
+        responsibility_template_id: tmpl.id,
         completion_rate: cr,
         actual_count: pf.prefillValue,
         comment: entry?.comment || null,
       });
       setLocal((prev) => ({
         ...prev,
-        [t.id]: {
+        [tmpl.id]: {
           completion_rate: cr,
           actual_count: String(pf.prefillValue),
-          comment: prev[t.id]?.comment ?? "",
+          comment: prev[tmpl.id]?.comment ?? "",
           prefillApplied: true,
         },
       }));
     }
   }, [prefillData, templates, local, logs, prefillEnabled, reportId, upsertNow]);
 
-  // Status: complete iff all button-mode cards have a value
   useEffect(() => {
     const buttonCards = templates.filter(
-      (t) => t.frequency === "monthly" && t.expected_count === 1,
+      (tmpl) => tmpl.frequency === "monthly" && tmpl.expected_count === 1,
     );
     if (buttonCards.length === 0) {
       onStatusChange("complete");
       return;
     }
-    const allSet = buttonCards.every((t) => {
-      const e = local[t.id];
+    const allSet = buttonCards.every((tmpl) => {
+      const e = local[tmpl.id];
       return e && e.completion_rate !== null && e.completion_rate !== undefined;
     });
     onStatusChange(allSet ? "complete" : "incomplete");
@@ -261,20 +258,19 @@ export function SectionResponsabilites({
     });
   };
 
-  // Global score
   const { avg, evaluated, total } = useMemo(() => {
     const rates: number[] = [];
-    for (const t of templates) {
-      const entry = local[t.id];
+    for (const tmpl of templates) {
+      const entry = local[tmpl.id];
       if (!entry) continue;
-      if (t.frequency === "monthly" && t.expected_count === 1) {
+      if (tmpl.frequency === "monthly" && tmpl.expected_count === 1) {
         if (entry.completion_rate !== null && entry.completion_rate !== undefined) {
           rates.push(entry.completion_rate);
         }
       } else {
         const parsed = parseInt(entry.actual_count, 10);
         if (!isNaN(parsed)) {
-          const m = calcMonthlyExpected(t.frequency, t.expected_count);
+          const m = calcMonthlyExpected(tmpl.frequency, tmpl.expected_count);
           rates.push(m > 0 ? Math.min(100, Math.round((parsed / m) * 100)) : 0);
         }
       }
@@ -298,25 +294,29 @@ export function SectionResponsabilites({
   return (
     <section className="mb-8 px-6">
       <div className="flex items-center justify-between mb-1">
-        <h2 className="text-lg font-semibold text-foreground">Responsabilités</h2>
+        <h2 className="text-lg font-semibold text-foreground">{t("report.responsabilites.title")}</h2>
         {isLocked && (
           <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
-            <Lock className="h-3 w-3" /> Rapport validé — lecture seule
+            <Lock className="h-3 w-3" /> {t("report.responsabilites.lockedBadge")}
           </span>
         )}
       </div>
       <p className="text-sm text-muted-foreground mb-4">
-        Évaluez la réalisation de chaque responsabilité
+        {t("report.responsabilites.subtitleMonthly")}
       </p>
 
-      {/* Score card */}
       <div className="bg-card border border-border rounded-xl p-4 shadow-sm mb-4">
         <div className="flex items-center justify-between mb-2">
           <span className={`text-2xl font-bold ${scoreColor(avg)}`}>
             {avg === null ? "—%" : `${avg}%`}
           </span>
           <span className="text-xs text-muted-foreground">
-            {evaluated}/{total} responsabilité{total > 1 ? "s" : ""} évaluée{evaluated > 1 ? "s" : ""}
+            {t("report.responsabilites.scoreCounter", {
+              evaluated,
+              total,
+              s: total > 1 ? "s" : "",
+              es: evaluated > 1 ? "s" : "",
+            })}
           </span>
         </div>
         <div className="h-2 bg-border rounded-full overflow-hidden">
@@ -330,22 +330,21 @@ export function SectionResponsabilites({
       <div className="space-y-3">
         {templates.length === 0 && (
           <div className="bg-card border border-border rounded-xl p-4 shadow-sm text-sm text-muted-foreground">
-            Aucune responsabilité configurée pour ce spa
+            {t("report.responsabilites.empty")}
           </div>
         )}
-        {templates.map((t) => {
+        {templates.map((tmpl) => {
           const entry =
-            local[t.id] ?? {
+            local[tmpl.id] ?? {
               completion_rate: null,
               actual_count: "",
               comment: "",
               prefillApplied: false,
             };
-          const isButtonMode = t.frequency === "monthly" && t.expected_count === 1;
-          const monthlyExpected = calcMonthlyExpected(t.frequency, t.expected_count);
-          const badge = FREQ_BADGE[t.frequency] ?? FREQ_BADGE.monthly;
+          const isButtonMode = tmpl.frequency === "monthly" && tmpl.expected_count === 1;
+          const monthlyExpected = calcMonthlyExpected(tmpl.frequency, tmpl.expected_count);
+          const badge = FREQ_BADGE[tmpl.frequency] ?? FREQ_BADGE.monthly;
 
-          // Numeric live score
           const parsed = parseInt(entry.actual_count, 10);
           const liveScore = isButtonMode
             ? entry.completion_rate
@@ -355,34 +354,34 @@ export function SectionResponsabilites({
                 ? Math.min(100, Math.round((parsed / monthlyExpected) * 100))
                 : 0;
 
-          const pf = prefillData[t.id];
+          const pf = prefillData[tmpl.id];
           const showPrefillIndicator =
             !isLocked &&
             prefillEnabled &&
-            (t.frequency === "daily" || t.frequency === "weekly");
+            (tmpl.frequency === "daily" || tmpl.frequency === "weekly");
           const userModifiedPrefill =
             entry.prefillApplied && pf && String(pf.prefillValue) !== entry.actual_count;
 
           return (
-            <div key={t.id} className="bg-card border border-border rounded-xl p-4 shadow-sm">
+            <div key={tmpl.id} className="bg-card border border-border rounded-xl p-4 shadow-sm">
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="font-medium text-foreground text-sm">{t.title}</span>
+                <span className="font-medium text-foreground text-sm">{tmpl.title}</span>
                 <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${badge.cls}`}>
                   {badge.label}
                 </span>
                 {!isButtonMode && (
                   <span className="text-xs font-medium px-1.5 py-0.5 rounded bg-teal-50 text-teal-700">
-                    = {monthlyExpected}/mois
+                    {t("report.responsabilites.perMonth", { n: monthlyExpected })}
                   </span>
                 )}
-                {t.category && (
+                {tmpl.category && (
                   <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
-                    {t.category}
+                    {tmpl.category}
                   </span>
                 )}
               </div>
-              {t.description && (
-                <p className="text-xs text-muted-foreground mt-1">{t.description}</p>
+              {tmpl.description && (
+                <p className="text-xs text-muted-foreground mt-1">{tmpl.description}</p>
               )}
 
               {isButtonMode ? (
@@ -391,7 +390,7 @@ export function SectionResponsabilites({
                     <button
                       key={s.value}
                       disabled={isLocked}
-                      onClick={() => updateButtonState(t.id, s.value)}
+                      onClick={() => updateButtonState(tmpl.id, s.value)}
                       className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
                         entry.completion_rate === s.value
                           ? s.cls
@@ -405,17 +404,17 @@ export function SectionResponsabilites({
               ) : (
                 <>
                   <div className="mt-3 flex items-center gap-3 flex-wrap">
-                    <span className="text-sm text-foreground">Réalisé</span>
+                    <span className="text-sm text-foreground">{t("report.responsabilites.realized")}</span>
                     <Input
                       type="number"
                       min={0}
                       value={entry.actual_count}
                       disabled={isLocked}
-                      onChange={(e) => updateNumericActual(t.id, e.target.value, monthlyExpected)}
+                      onChange={(e) => updateNumericActual(tmpl.id, e.target.value, monthlyExpected)}
                       className="w-20 text-center"
                     />
                     <span className="text-sm text-muted-foreground">
-                      / {monthlyExpected} attendus ce mois
+                      {t("report.responsabilites.expectedMonth", { n: monthlyExpected })}
                     </span>
                     <span className={`text-sm font-semibold ml-auto ${scoreColor(liveScore)}`}>
                       {liveScore === null ? "—%" : `${liveScore}%`}
@@ -427,18 +426,18 @@ export function SectionResponsabilites({
                       if (entry.actual_count !== "") return null;
                       return (
                         <p className="mt-2 text-xs text-muted-foreground">
-                          ○ Aucun rapport weekly renseigné ce mois
+                          {t("report.responsabilites.noPrefill")}
                         </p>
                       );
                     }
                     const isFull = pf.weeklyReportsWithData === pf.totalWeeklyReports;
                     const cls = isFull ? "text-emerald-600" : "text-amber-600";
-                    const icon = isFull ? "✓" : "⚠";
+                    const key = isFull ? "report.responsabilites.prefillOk" : "report.responsabilites.prefillWarn";
                     return (
                       <p className={`mt-2 text-xs ${cls}`}>
-                        {icon} Calculé depuis {pf.weeklyReportsWithData}/{pf.totalWeeklyReports} rapports weekly
+                        {t(key, { with: pf.weeklyReportsWithData, total: pf.totalWeeklyReports })}
                         {userModifiedPrefill && (
-                          <span className="text-muted-foreground"> · (modifié)</span>
+                          <span className="text-muted-foreground"> · {t("report.responsabilites.prefillModified")}</span>
                         )}
                       </p>
                     );
@@ -454,7 +453,7 @@ export function SectionResponsabilites({
                     disabled={isLocked}
                     onTranscript={(transcript) =>
                       updateComment(
-                        t.id,
+                        tmpl.id,
                         (entry.comment ? entry.comment + " " + transcript : transcript).slice(0, 500),
                         isButtonMode ? "buttons" : "numeric",
                         monthlyExpected,
@@ -473,7 +472,7 @@ export function SectionResponsabilites({
                   readOnly={isLocked}
                   onChange={(e) =>
                     updateComment(
-                      t.id,
+                      tmpl.id,
                       e.target.value,
                       isButtonMode ? "buttons" : "numeric",
                       monthlyExpected,

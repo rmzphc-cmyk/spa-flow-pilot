@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import {
   useKpiRoleAssignments,
   ROLE_LABELS,
@@ -59,12 +60,6 @@ const statusDotClass = (s: string) =>
   : s === "red" ? "bg-red-500"
   : "bg-muted-foreground/40";
 
-const objectiveStatusBadge = (s: "on_track" | "at_risk" | "behind") => {
-  if (s === "on_track") return { label: "En bonne voie", cls: "bg-emerald-100 text-emerald-800" };
-  if (s === "at_risk") return { label: "À risque", cls: "bg-amber-100 text-amber-800" };
-  return { label: "En retard", cls: "bg-red-100 text-red-800" };
-};
-
 function formatDelta(current: number | null, n1: number | null): string {
   if (current === null || n1 === null || n1 === 0) return "—";
   const diff = ((current - n1) / Math.abs(n1)) * 100;
@@ -77,23 +72,8 @@ function formatDuration(s: number): string {
   return `${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
 }
 
-const LIVE_SLIDE_META = [
-  { icon: BarChart3,     label: "KPI" },
-  { icon: MessageSquare, label: "Check-in" },
-  { icon: Users,         label: "Responsabilités" },
-  { icon: CheckSquare,   label: "Todos" },
-  { icon: Target,        label: "Objectifs" },
-  { icon: Lightbulb,     label: "IDS" },
-  { icon: FileText,      label: "Notes" },
-  { icon: CheckCircle,   label: "Clôture" },
-];
-
-const CLOSING_SLIDE_META = [
-  ...LIVE_SLIDE_META,
-  { icon: Sparkles,      label: "Synthèse IA" },
-  { icon: Lightbulb,     label: "IDS — Structuration" },
-  { icon: CheckCircle,   label: "Validation" },
-];
+const LIVE_SLIDE_ICONS = [BarChart3, MessageSquare, Users, CheckSquare, Target, Lightbulb, FileText, CheckCircle];
+const CLOSING_SLIDE_ICONS = [...LIVE_SLIDE_ICONS, Sparkles, Lightbulb, CheckCircle];
 
 /* ── component ── */
 
@@ -107,9 +87,29 @@ interface Props {
 export function MeetingView({ report, periodStart, periodEnd, readOnly = false }: Props) {
   const navigate = useNavigate();
   const { spaId } = useAuth();
+  const { t } = useTranslation();
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [meetingPhase, setMeetingPhase] = useState<"live" | "closing">("live");
+
+  const LIVE_SLIDE_META = useMemo(() => [
+    { icon: BarChart3,     label: t("report.meeting.slides.kpi") },
+    { icon: MessageSquare, label: t("report.meeting.slides.checkin") },
+    { icon: Users,         label: t("report.meeting.slides.responsabilities") },
+    { icon: CheckSquare,   label: t("report.meeting.slides.todos") },
+    { icon: Target,        label: t("report.meeting.slides.objectives") },
+    { icon: Lightbulb,     label: t("report.meeting.slides.ids") },
+    { icon: FileText,      label: t("report.meeting.slides.notes") },
+    { icon: CheckCircle,   label: t("report.meeting.slides.closure") },
+  ], [t]);
+
+  const CLOSING_SLIDE_META = useMemo(() => [
+    ...LIVE_SLIDE_META,
+    { icon: Sparkles,   label: t("report.meeting.slides.summary") },
+    { icon: Lightbulb,  label: t("report.meeting.slides.idsStructure") },
+    { icon: CheckCircle, label: t("report.meeting.slides.validation") },
+  ], [LIVE_SLIDE_META, t]);
+
   const SLIDE_META = meetingPhase === "closing" ? CLOSING_SLIDE_META : LIVE_SLIDE_META;
   const TOTAL = SLIDE_META.length;
   const [editedSummary, setEditedSummary] = useState("");
@@ -166,9 +166,9 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
     pendingSummaryRef.current = null;
     updateSummaryRef.current.mutate(
       { reportId: report.id, newSummary: p.summary, newKeyActions: p.decisions },
-      { onError: (e) => toast({ title: "Sauvegarde de la synthèse échouée", description: (e as Error).message, variant: "destructive" }) },
+      { onError: (e) => toast({ title: t("report.meeting.toasts.summarySaveFailed"), description: (e as Error).message, variant: "destructive" }) },
     );
-  }, [report.id]);
+  }, [report.id, t]);
 
   const scheduleSummarySave = useCallback((summary: string, decisions: string[]) => {
     pendingSummaryRef.current = { summary, decisions };
@@ -209,8 +209,8 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
     if (meetingPhase !== "closing") return;
     if (summaryReady) { setSummaryTimedOut(false); return; }
     if (!summaryLoading) return;
-    const t = setTimeout(() => setSummaryTimedOut(true), 30000);
-    return () => clearTimeout(t);
+    const timer = setTimeout(() => setSummaryTimedOut(true), 30000);
+    return () => clearTimeout(timer);
   }, [meetingPhase, summaryReady, summaryLoading]);
 
   const retrySummary = useCallback(() => {
@@ -277,7 +277,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
 
   const checkin        = checkinQ.data;
   const checkinKc      = parseKeyContext(checkin?.key_context);
-  const reportTodos    = (todosQ.data ?? []).filter((t) => t.status !== "done");
+  const reportTodos    = (todosQ.data ?? []).filter((todo) => todo.status !== "done");
   const respLogs       = respLogsQ.data ?? {};
   const totalDecisions = Object.values(slideDecisions).flat().length;
   const currentDecisions = slideDecisions[currentSlide] ?? [];
@@ -326,14 +326,14 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
       },
       {
         onSuccess: (res) => {
-          if (res.warning) toast({ title: "Réunion clôturée", description: res.warning });
-          else toast({ title: "Réunion clôturée ✓", description: "Génération de la synthèse IA en cours…" });
+          if (res.warning) toast({ title: t("report.meeting.toasts.meetingClosed"), description: res.warning });
+          else toast({ title: t("report.meeting.toasts.meetingClosedSuccess"), description: t("report.meeting.toasts.meetingClosedDesc") });
           setMeetingPhase("closing");
           setCurrentSlide(8);
           generateSummary.mutate({ reportId: report.id });
         },
         onError: (e) =>
-          toast({ title: "Erreur", description: friendlyError(e), variant: "destructive" }),
+          toast({ title: t("report.meeting.toasts.error"), description: friendlyError(e), variant: "destructive" }),
       },
     );
   };
@@ -350,12 +350,12 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
         )}
         {status === "idle" && (
           <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={startRecording}>
-            <Mic className="h-3.5 w-3.5 text-rose-500" /> Enregistrer
+            <Mic className="h-3.5 w-3.5 text-rose-500" /> {t("report.meeting.recording.start")}
           </Button>
         )}
         {status === "acquiring" && (
           <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Loader2 className="h-3.5 w-3.5 animate-spin" /> Accès micro…
+            <Loader2 className="h-3.5 w-3.5 animate-spin" /> {t("report.meeting.recording.acquiring")}
           </span>
         )}
         {(status === "recording" || status === "paused") && (
@@ -365,20 +365,20 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
               : <span className="h-2 w-2 rounded-full bg-amber-400" />}
             <span className="text-xs font-mono font-medium text-rose-800">{formatDuration(durationSeconds)}</span>
             {status === "recording"
-              ? <button onClick={pauseRecording} className="text-rose-700 hover:text-rose-900 ml-1" title="Pause"><Pause className="h-3.5 w-3.5" /></button>
-              : <button onClick={resumeRecording} className="text-amber-700 hover:text-amber-900 ml-1" title="Reprendre"><Mic className="h-3.5 w-3.5" /></button>}
-            <button onClick={stopRecording} className="text-rose-700 hover:text-rose-900" title="Arrêter"><Square className="h-3.5 w-3.5" /></button>
+              ? <button onClick={pauseRecording} className="text-rose-700 hover:text-rose-900 ml-1" title={t("report.meeting.recording.pauseTitle")}><Pause className="h-3.5 w-3.5" /></button>
+              : <button onClick={resumeRecording} className="text-amber-700 hover:text-amber-900 ml-1" title={t("report.meeting.recording.resumeTitle")}><Mic className="h-3.5 w-3.5" /></button>}
+            <button onClick={stopRecording} className="text-rose-700 hover:text-rose-900" title={t("report.meeting.recording.stopTitle")}><Square className="h-3.5 w-3.5" /></button>
           </div>
         )}
         {status === "stopped" && (
           <div className="flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-2 py-1">
             <Check className="h-3.5 w-3.5" />
-            Enregistré ({formatDuration(durationSeconds)})
+            {t("report.meeting.recording.recorded", { duration: formatDuration(durationSeconds) })}
           </div>
         )}
         {status === "error" && (
           <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={startRecording}>
-            <MicOff className="h-3.5 w-3.5 text-rose-500" /> Réessayer
+            <MicOff className="h-3.5 w-3.5 text-rose-500" /> {t("report.meeting.recording.retry")}
           </Button>
         )}
       </div>
@@ -400,14 +400,14 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
         };
         const ROLE_LABELS_VIEW: Record<KpiRole | "other", string> = {
           ...ROLE_LABELS,
-          other: "Autres KPIs",
+          other: t("report.meeting.kpi.otherKpis"),
         };
         const allSections: (KpiRole | "other")[] = [...ROLE_SECTION_ORDER_VIEW, "other"];
 
         return (
           <div className="space-y-6">
             {kpiRows.length === 0 ? (
-              <p className="text-muted-foreground">Aucun KPI renseigné.</p>
+              <p className="text-muted-foreground">{t("report.meeting.kpi.noData")}</p>
             ) : (
               allSections.map((role) => {
                 const rows = kpiRowsByRole.get(role) ?? [];
@@ -428,10 +428,10 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                       <table className="w-full text-base">
                         <thead>
                           <tr className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                            <th className="pb-2 pr-4">Indicateur</th>
-                            <th className="pb-2 px-4 text-right">N-1</th>
-                            <th className="pb-2 px-4 text-right">Réel</th>
-                            <th className="pb-2 pl-4 text-right">Évolution</th>
+                            <th className="pb-2 pr-4">{t("report.meeting.kpi.colIndicator")}</th>
+                            <th className="pb-2 px-4 text-right">{t("report.meeting.kpi.colN1")}</th>
+                            <th className="pb-2 px-4 text-right">{t("report.meeting.kpi.colReal")}</th>
+                            <th className="pb-2 pl-4 text-right">{t("report.meeting.kpi.colEvolution")}</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-border">
@@ -478,24 +478,24 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
         return (
           <div className="space-y-5">
             {!checkin
-              ? <p className="text-muted-foreground">Pas de check-in renseigné.</p>
+              ? <p className="text-muted-foreground">{t("report.meeting.checkin.noData")}</p>
               : (
                 <>
                   <div className="grid sm:grid-cols-2 gap-4">
                     <div className="rounded-xl border border-border p-5 bg-muted/30">
-                      <p className="text-sm text-muted-foreground">Météo équipe</p>
+                      <p className="text-sm text-muted-foreground">{t("report.meeting.checkin.teamMood")}</p>
                       <p className="text-3xl font-bold text-foreground mt-1">{checkin.mood_score} / 5</p>
                       {checkinKc.equipeComment && <p className="text-sm text-muted-foreground mt-2 italic">{checkinKc.equipeComment}</p>}
                     </div>
                     <div className="rounded-xl border border-border p-5 bg-muted/30">
-                      <p className="text-sm text-muted-foreground">Énergie manager</p>
+                      <p className="text-sm text-muted-foreground">{t("report.meeting.checkin.managerEnergy")}</p>
                       <p className="text-3xl font-bold text-foreground mt-1">{checkin.focus_level} / 5</p>
                       {checkinKc.managerComment && <p className="text-sm text-muted-foreground mt-2 italic">{checkinKc.managerComment}</p>}
                     </div>
                   </div>
                   {checkinKc.situation && (
                     <div className="rounded-xl border border-border p-5 bg-card">
-                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">Situation globale</p>
+                      <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1">{t("report.meeting.checkin.globalSituation")}</p>
                       <p className="text-foreground whitespace-pre-line">{checkinKc.situation}</p>
                     </div>
                   )}
@@ -509,7 +509,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
         return (
           <div className="space-y-2">
             {(respTemplatesQ.data ?? []).length === 0
-              ? <p className="text-muted-foreground">Aucune responsabilité configurée.</p>
+              ? <p className="text-muted-foreground">{t("report.meeting.responsabilities.noData")}</p>
               : (respTemplatesQ.data ?? []).map((tmpl) => {
                   const log  = respLogs[tmpl.id];
                   const rate = log?.completion_rate ?? null;
@@ -535,21 +535,21 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
         return (
           <div className="space-y-2">
             {reportTodos.length === 0
-              ? <p className="text-muted-foreground">Aucune to-do active.</p>
-              : reportTodos.map((t) => {
-                  const meta = parseTodoDescription(t.description);
+              ? <p className="text-muted-foreground">{t("report.meeting.todos.noData")}</p>
+              : reportTodos.map((todo) => {
+                  const meta = parseTodoDescription(todo.description);
                   return (
-                    <div key={t.id} className="rounded-xl border border-border p-4 bg-card flex items-start justify-between gap-4">
+                    <div key={todo.id} className="rounded-xl border border-border p-4 bg-card flex items-start justify-between gap-4">
                       <div className="min-w-0">
-                        <p className="font-medium text-foreground text-sm">{t.title}</p>
+                        <p className="font-medium text-foreground text-sm">{todo.title}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          👤 {meta.responsible || "—"}{t.due_date && <> · 📅 {t.due_date}</>}
+                          👤 {meta.responsible || "—"}{todo.due_date && <> · 📅 {todo.due_date}</>}
                         </p>
                       </div>
                       <span className={`text-xs px-2 py-0.5 rounded-full shrink-0 font-medium ${
-                        t.status === "in_progress" ? "bg-blue-100 text-blue-800" : "bg-muted text-muted-foreground"
+                        todo.status === "in_progress" ? "bg-blue-100 text-blue-800" : "bg-muted text-muted-foreground"
                       }`}>
-                        {t.status === "in_progress" ? "En cours" : "À faire"}
+                        {todo.status === "in_progress" ? t("report.meeting.todos.inProgress") : t("report.meeting.todos.todo")}
                       </span>
                     </div>
                   );
@@ -562,16 +562,23 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
         return (
           <div className="space-y-4">
             {(objectivesQ.data ?? []).length === 0
-              ? <p className="text-muted-foreground">Aucun objectif actif.</p>
+              ? <p className="text-muted-foreground">{t("report.meeting.objectives.noData")}</p>
               : (objectivesQ.data ?? []).map((o) => {
                   const parsed   = parseObjectiveDescription(o.description);
-                  const badge    = objectiveStatusBadge(parsed.status_ui);
+                  const badgeLabel =
+                    parsed.status_ui === "on_track" ? t("report.meeting.objectives.onTrack") :
+                    parsed.status_ui === "at_risk"  ? t("report.meeting.objectives.atRisk") :
+                    t("report.meeting.objectives.behind");
+                  const badgeCls =
+                    parsed.status_ui === "on_track" ? "bg-emerald-100 text-emerald-800" :
+                    parsed.status_ui === "at_risk"  ? "bg-amber-100 text-amber-800" :
+                    "bg-red-100 text-red-800";
                   const progress = parsed.target > 0 ? Math.min(100, Math.round((parsed.current / parsed.target) * 100)) : 0;
                   return (
                     <div key={o.id} className="rounded-xl border border-border p-5 bg-card">
                       <div className="flex items-center justify-between mb-3">
                         <span className="font-semibold text-foreground">{o.title}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badge.cls}`}>{badge.label}</span>
+                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badgeCls}`}>{badgeLabel}</span>
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-lg font-bold text-foreground tabular-nums">{parsed.current}{parsed.unit}</span>
@@ -595,12 +602,12 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
             <div>
               <h3 className="text-sm font-semibold text-foreground mb-3 flex items-center gap-2">
                 <Lightbulb className="h-4 w-4 text-amber-500" />
-                Problèmes du mois (weekly)
+                {t("report.meeting.ids.monthlyProblems")}
               </h3>
               {monthlyIdsQ.isLoading
-                ? <div className="flex items-center gap-2 text-muted-foreground text-sm py-4"><Loader2 className="h-4 w-4 animate-spin" /> Chargement…</div>
+                ? <div className="flex items-center gap-2 text-muted-foreground text-sm py-4"><Loader2 className="h-4 w-4 animate-spin" /> {t("report.meeting.ids.loading")}</div>
                 : monthlyIdsQ.data.length === 0
-                  ? <p className="text-sm text-muted-foreground italic">Aucun IDS remonté lors des weekly de ce mois.</p>
+                  ? <p className="text-sm text-muted-foreground italic">{t("report.meeting.ids.noMonthlyIds")}</p>
                   : (
                     <div className="space-y-2">
                       {monthlyIdsQ.data.map((item) => {
@@ -618,17 +625,17 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                                   </span>
                                   {hasTodo && (
                                     <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                                      <Check className="h-3 w-3" /> Todo
+                                      <Check className="h-3 w-3" /> {t("report.meeting.ids.badgeTodo")}
                                     </span>
                                   )}
                                   {hasObj && (
                                     <span className="inline-flex items-center gap-1 text-xs font-medium text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
-                                      <Check className="h-3 w-3" /> Objectif
+                                      <Check className="h-3 w-3" /> {t("report.meeting.ids.badgeObjective")}
                                     </span>
                                   )}
                                   {!isResolved && (
                                     <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-                                      <AlertCircle className="h-3 w-3" /> Non traité
+                                      <AlertCircle className="h-3 w-3" /> {t("report.meeting.ids.badgeUntreated")}
                                     </span>
                                   )}
                                 </div>
@@ -642,14 +649,14 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                                   disabled={convertToTodo.isPending}
                                   onClick={() => convertToTodo.mutate(item)}
                                 >
-                                  <CheckSquare className="h-3 w-3" /> → Todo
+                                  <CheckSquare className="h-3 w-3" /> {t("report.meeting.ids.convertToTodo")}
                                 </Button>
                                 <Button
                                   size="sm" variant="outline" className="h-7 text-xs gap-1"
                                   disabled={convertToObjective.isPending}
                                   onClick={() => convertToObjective.mutate(item)}
                                 >
-                                  <Target className="h-3 w-3" /> → Objectif
+                                  <Target className="h-3 w-3" /> {t("report.meeting.ids.convertToObjective")}
                                 </Button>
                               </div>
                             )}
@@ -662,10 +669,10 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
 
             {/* Bloc B — Nouveaux IDS monthly */}
             <div>
-              <h3 className="text-sm font-semibold text-foreground mb-3">Nouveaux points soulevés en réunion</h3>
+              <h3 className="text-sm font-semibold text-foreground mb-3">{t("report.meeting.ids.newPoints")}</h3>
               <div className="flex gap-2 mb-3">
                 <Input
-                  placeholder="Décrire le problème (max 150 car.)"
+                  placeholder={t("report.meeting.ids.addPlaceholder")}
                   maxLength={150}
                   value={newIdsText}
                   onChange={(e) => setNewIdsText(e.target.value)}
@@ -673,11 +680,11 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                   className="flex-1"
                 />
                 <Button size="sm" onClick={handleAddIds} disabled={addIds.isPending || !newIdsText.trim()} className="gap-1.5 shrink-0">
-                  <Plus className="h-4 w-4" /> Ajouter
+                  <Plus className="h-4 w-4" /> {t("report.meeting.ids.add")}
                 </Button>
               </div>
               {(idsQ.data ?? []).length === 0
-                ? <p className="text-sm text-muted-foreground italic">Aucun nouveau point capturé.</p>
+                ? <p className="text-sm text-muted-foreground italic">{t("report.meeting.ids.noNewPoints")}</p>
                 : (
                   <div className="space-y-2">
                     {(idsQ.data ?? []).map((item, i) => (
@@ -700,12 +707,12 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
               ? (
                 <div className="rounded-xl border border-border p-5 bg-card">
                   <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3 flex items-center gap-1.5">
-                    <PenLine className="h-3.5 w-3.5" /> Notes libres
+                    <PenLine className="h-3.5 w-3.5" /> {t("report.meeting.notes.title")}
                   </p>
                   <p className="text-foreground whitespace-pre-line leading-relaxed">{checkinKc.free_note}</p>
                 </div>
               )
-              : <p className="text-muted-foreground">Aucune note libre saisie en préparation.</p>}
+              : <p className="text-muted-foreground">{t("report.meeting.notes.noData")}</p>}
           </div>
         );
 
@@ -717,22 +724,22 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
             <div className="grid grid-cols-3 gap-4">
               <div className="rounded-xl border border-border p-4 bg-muted/30 text-center">
                 <p className="text-2xl font-bold text-foreground">{monthlyIdsQ.data.length}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">IDS du mois</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t("report.meeting.closure.idsMonth")}</p>
               </div>
               <div className="rounded-xl border border-border p-4 bg-muted/30 text-center">
                 <p className="text-2xl font-bold text-foreground">{(idsQ.data ?? []).length}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Nouveaux IDS</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t("report.meeting.closure.newIds")}</p>
               </div>
               <div className="rounded-xl border border-border p-4 bg-muted/30 text-center">
                 <p className="text-2xl font-bold text-foreground">{totalDecisions}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Décisions prises</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t("report.meeting.closure.decisions")}</p>
               </div>
             </div>
 
             {/* Décisions groupées par slide */}
             {totalDecisions > 0 && (
               <div>
-                <h3 className="text-sm font-semibold text-foreground mb-3">Décisions de la réunion</h3>
+                <h3 className="text-sm font-semibold text-foreground mb-3">{t("report.meeting.closure.meetingDecisions")}</h3>
                 <div className="space-y-2">
                   {SLIDE_META.map((meta, idx) => {
                     const decisions = slideDecisions[idx] ?? [];
@@ -758,13 +765,13 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
             <div className="rounded-xl border border-border p-4 bg-card space-y-3">
               <p className="text-sm font-semibold text-foreground flex items-center gap-2">
                 <UploadCloud className="h-4 w-4 text-muted-foreground" />
-                Enregistrement audio
+                {t("report.meeting.closure.audioSection")}
               </p>
 
               {recorder.blob && !audioStoragePath && (
                 <div className="flex items-center justify-between bg-emerald-50 border border-emerald-200 rounded-lg p-3">
                   <span className="text-sm text-emerald-800 flex items-center gap-2">
-                    <Check className="h-4 w-4" /> Enregistré in-app ({formatDuration(recorder.durationSeconds)})
+                    <Check className="h-4 w-4" /> {t("report.meeting.closure.audioRecordedInApp", { duration: formatDuration(recorder.durationSeconds) })}
                   </span>
                   <Button
                     size="sm" variant="outline" className="gap-1.5 text-xs shrink-0"
@@ -779,17 +786,17 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                             setAudioStoragePath(res.storagePath);
                             setAudioMimeType(res.mimeType);
                             setAudioDurationS(res.durationSeconds);
-                            toast({ title: "Audio sauvegardé ✓" });
+                            toast({ title: t("report.meeting.toasts.audioSaved") });
                           },
                           onError: (err) => {
-                            toast({ title: "Erreur", description: friendlyError(err), variant: "destructive" });
+                            toast({ title: t("report.meeting.toasts.error"), description: friendlyError(err), variant: "destructive" });
                           },
                         },
                       );
                     }}
                   >
                     {uploadAudio.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-                    Sauvegarder
+                    {t("report.meeting.closure.audioSave")}
                   </Button>
                 </div>
               )}
@@ -803,7 +810,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                       const file = e.target.files?.[0];
                       if (!file) return;
                       if (file.size > 20 * 1024 * 1024) {
-                        toast({ title: "Fichier trop volumineux", description: "Fichier audio trop volumineux (max 20 Mo).", variant: "destructive" });
+                        toast({ title: t("report.meeting.toasts.fileTooLarge"), description: t("report.meeting.toasts.fileTooLargeDesc"), variant: "destructive" });
                         e.target.value = ""; return;
                       }
                       const mime = file.type || "audio/mpeg";
@@ -815,10 +822,10 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                             setAudioStoragePath(res.storagePath);
                             setAudioMimeType(res.mimeType);
                             setAudioDurationS(res.durationSeconds);
-                            toast({ title: "Audio sauvegardé ✓" });
+                            toast({ title: t("report.meeting.toasts.audioSaved") });
                           },
                           onError: (err) => {
-                            toast({ title: "Erreur", description: friendlyError(err), variant: "destructive" });
+                            toast({ title: t("report.meeting.toasts.error"), description: friendlyError(err), variant: "destructive" });
                           },
                         },
                       );
@@ -829,7 +836,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                     className={`flex items-center gap-2 text-sm text-muted-foreground border border-dashed border-border rounded-lg px-3 py-2.5 cursor-pointer hover:bg-muted/50 transition-colors ${uploadAudio.isPending ? "opacity-50 pointer-events-none" : ""}`}
                   >
                     {uploadAudio.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <UploadCloud className="h-4 w-4" />}
-                    Importer un fichier audio (MP3, M4A, MP4, WAV)
+                    {t("report.meeting.closure.audioImport")}
                   </label>
                 </div>
               )}
@@ -837,13 +844,13 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
               {audioStoragePath && (
                 <div className="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg p-3">
                   <Check className="h-4 w-4 shrink-0" />
-                  <span>Audio sauvegardé — transcription disponible après clôture</span>
+                  <span>{t("report.meeting.closure.audioSavedMsg")}</span>
                 </div>
               )}
 
               {!recorder.blob && !audioStoragePath && !uploadAudio.isPending && (
                 <p className="text-xs text-muted-foreground">
-                  Utilisez l'enregistrement in-app (header) ou importez un fichier audio externe.
+                  {t("report.meeting.closure.audioHint")}
                 </p>
               )}
             </div>
@@ -856,7 +863,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
               {closeMeeting.isPending
                 ? <Loader2 className="h-4 w-4 animate-spin" />
                 : <CheckCircle className="h-4 w-4" />}
-              Clôturer la réunion
+              {t("report.meeting.closure.closeMeetingBtn")}
             </Button>
           </div>
         );
@@ -867,14 +874,14 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
           <div className="space-y-6">
             {/* Navigation lecture seule vers les slides de phase 1 */}
             <div className="flex flex-wrap items-center gap-1.5 text-xs bg-muted/40 border border-border rounded-lg p-2">
-              <span className="text-muted-foreground font-medium px-1">← Revoir :</span>
+              <span className="text-muted-foreground font-medium px-1">{t("report.meeting.aiSummary.reviewLabel")}</span>
               {LIVE_SLIDE_META.map((m, idx) => (
                 <button
                   key={idx}
                   type="button"
                   onClick={() => goTo(idx)}
                   className="px-2 py-0.5 rounded-md hover:bg-background border border-transparent hover:border-border text-foreground transition-colors"
-                  title={`Revoir la slide ${idx + 1} — ${m.label} (lecture seule)`}
+                  title={t("report.meeting.aiSummary.slideTooltip", { n: idx + 1, label: m.label })}
                 >
                   {idx + 1}. {m.label}
                 </button>
@@ -885,9 +892,9 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
               <>
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <h3 className="text-sm font-semibold text-foreground">Résumé exécutif</h3>
+                    <h3 className="text-sm font-semibold text-foreground">{t("report.meeting.aiSummary.executiveSummary")}</h3>
                     <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-                      <Sparkles className="h-3 w-3" /> Synthèse IA
+                      <Sparkles className="h-3 w-3" /> {t("report.meeting.aiSummary.aiBadge")}
                     </span>
                   </div>
                   <Textarea
@@ -897,12 +904,12 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                       setEditedSummary(e.target.value);
                       scheduleSummarySave(e.target.value, editedDecisions);
                     }}
-                    placeholder="Résumé de la réunion…"
+                    placeholder={t("report.meeting.aiSummary.summaryPlaceholder")}
                   />
                 </div>
                 {editedDecisions.length > 0 && (
                   <div>
-                    <h3 className="text-sm font-semibold text-foreground mb-3">Décisions clés</h3>
+                    <h3 className="text-sm font-semibold text-foreground mb-3">{t("report.meeting.aiSummary.keyDecisions")}</h3>
                     <div className="space-y-2">
                       {editedDecisions.map((d, i) => (
                         <div key={i} className="flex items-start gap-2 bg-muted/40 rounded-lg px-3 py-2">
@@ -914,24 +921,24 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                   </div>
                 )}
                 <Button className="w-full gap-2" onClick={() => goTo(9)}>
-                  <CheckSquare className="h-4 w-4" /> Passer à la structuration IDS →
+                  <CheckSquare className="h-4 w-4" /> {t("report.meeting.aiSummary.goToIds")}
                 </Button>
               </>
             ) : summaryTimedOut ? (
               <Alert variant="destructive">
                 <AlertCircle className="h-4 w-4" />
                 <AlertDescription className="flex flex-col gap-3">
-                  <span>La synthèse n'a pas pu être générée. Vérifiez votre connexion puis réessayez.</span>
+                  <span>{t("report.meeting.aiSummary.errorMessage")}</span>
                   <Button size="sm" variant="outline" className="gap-1.5 self-start" onClick={retrySummary}>
-                    <Sparkles className="h-3.5 w-3.5" /> Réessayer
+                    <Sparkles className="h-3.5 w-3.5" /> {t("report.meeting.aiSummary.retry")}
                   </Button>
                 </AlertDescription>
               </Alert>
             ) : (
               <div className="flex flex-col items-center justify-center py-16 gap-4">
                 <Loader2 className="h-10 w-10 animate-spin text-primary" />
-                <p className="text-sm font-medium text-foreground">Génération de la synthèse IA en cours…</p>
-                <p className="text-xs text-muted-foreground">~10–15 secondes (timeout 30s)</p>
+                <p className="text-sm font-medium text-foreground">{t("report.meeting.aiSummary.generating")}</p>
+                <p className="text-xs text-muted-foreground">{t("report.meeting.aiSummary.generatingHint")}</p>
               </div>
             )}
           </div>
@@ -963,7 +970,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
               <div className="flex items-center gap-2 px-4 py-2.5 bg-orange-50 border border-orange-200 rounded-lg">
                 <AlertCircle className="h-4 w-4 text-orange-500 shrink-0" />
                 <p className="text-sm text-orange-800 font-medium">
-                  {untriaged.length} IDS non qualifié{untriaged.length > 1 ? "s" : ""} — à trier avant de clôturer
+                  {t("report.meeting.idsStructure.untriagedAlert", { count: untriaged.length })}
                 </p>
               </div>
             )}
@@ -972,7 +979,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
               const items = grouped.get(mode) ?? [];
               if (items.length === 0) return null;
               const cfg = mode ? TRIAGE_CONFIG[mode] : null;
-              const sectionLabel = cfg ? `${cfg.icon} ${cfg.label.toUpperCase()}` : "❓ À TRIER";
+              const sectionLabel = cfg ? `${cfg.icon} ${cfg.label.toUpperCase()}` : t("report.meeting.idsStructure.untriagedSection");
               const sectionBg = cfg ? cfg.color : "bg-orange-50";
               const sectionText = cfg ? cfg.textColor : "text-orange-800";
               const sectionBorder = cfg ? cfg.borderColor : "border-orange-300";
@@ -991,6 +998,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                     {items.map((item) => {
                       const hasTodo = item.converted_to_todo_id !== null;
                       const hasObj = item.converted_to_objective_id !== null;
+                      const mode2 = (item.triage_mode ?? null) as TriageMode | null;
                       return (
                         <div key={item.id} className="flex items-start gap-3 bg-card border border-border rounded-lg p-2.5">
                           <Lightbulb className="h-3.5 w-3.5 text-amber-500 shrink-0 mt-0.5" />
@@ -999,17 +1007,17 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                             <div className="flex flex-wrap gap-1.5 mt-1">
                               {hasTodo && (
                                 <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full">
-                                  <Check className="h-2.5 w-2.5" /> To-Do ✓
+                                  <Check className="h-2.5 w-2.5" /> {t("report.meeting.idsStructure.todoBadge")}
                                 </span>
                               )}
                               {hasObj && (
                                 <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded-full">
-                                  <Check className="h-2.5 w-2.5" /> Objectif ✓
+                                  <Check className="h-2.5 w-2.5" /> {t("report.meeting.idsStructure.objectiveBadge")}
                                 </span>
                               )}
-                              {!hasTodo && !hasObj && mode && mode !== "veille" && (
+                              {!hasTodo && !hasObj && mode2 && mode2 !== "veille" && (
                                 <span className="text-[10px] text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-200">
-                                  À convertir
+                                  {t("report.meeting.idsStructure.toConvert")}
                                 </span>
                               )}
                             </div>
@@ -1024,12 +1032,12 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
 
             {idsItems.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-8">
-                Aucun IDS remonté ce mois.
+                {t("report.meeting.idsStructure.noIds")}
               </p>
             )}
 
             <Button className="w-full gap-2" onClick={() => goTo(10)}>
-              <CheckCircle className="h-4 w-4" /> Passer à la validation →
+              <CheckCircle className="h-4 w-4" /> {t("report.meeting.idsStructure.goToValidation")}
             </Button>
           </div>
         );
@@ -1049,27 +1057,27 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                 <p className={`text-2xl font-bold ${hasSynthesis ? "text-emerald-600" : "text-amber-600"}`}>
                   {hasSynthesis ? "✓" : "…"}
                 </p>
-                <p className="text-xs text-muted-foreground mt-0.5">Synthèse IA</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t("report.meeting.validation.aiSummaryLabel")}</p>
               </div>
               <div className="rounded-xl border border-border p-4 bg-muted/30 text-center">
                 <p className="text-2xl font-bold text-foreground">{structured}/{idsItems.length}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">IDS structurés</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t("report.meeting.validation.idsStructured")}</p>
               </div>
               <div className="rounded-xl border border-border p-4 bg-muted/30 text-center">
                 <p className="text-2xl font-bold text-foreground">{Object.values(slideDecisions).flat().length}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Décisions</p>
+                <p className="text-xs text-muted-foreground mt-0.5">{t("report.meeting.validation.decisionsLabel")}</p>
               </div>
             </div>
             {incomplete > 0 && (
               <div className="flex items-start gap-2 bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-800">
                 <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>{incomplete} IDS sans solution — le rapport sera tout de même diffusé.</span>
+                <span>{t("report.meeting.validation.incompleteSolutions", { count: incomplete })}</span>
               </div>
             )}
             {!hasSynthesis && (
               <div className="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl p-3 text-xs text-red-800">
                 <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                <span>La synthèse IA est requise avant validation.</span>
+                <span>{t("report.meeting.validation.summaryRequired")}</span>
               </div>
             )}
             <Button
@@ -1080,7 +1088,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
               {validateMonthly.isPending
                 ? <Loader2 className="h-4 w-4 animate-spin" />
                 : <CheckCircle className="h-4 w-4" />}
-              Valider et diffuser à la Direction
+              {t("report.meeting.validation.validateBtn")}
             </Button>
           </div>
         );
@@ -1093,7 +1101,8 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
 
   /* ── RENDER ── */
   const currentMeta = SLIDE_META[currentSlide];
-  const SlideIcon   = currentMeta.icon;
+  const SlideIcons = meetingPhase === "closing" ? CLOSING_SLIDE_ICONS : LIVE_SLIDE_ICONS;
+  const SlideIcon = SlideIcons[currentSlide] ?? SlideIcons[0];
 
   return (
     <div className="fixed inset-0 bg-background z-40 flex flex-col overflow-hidden">
@@ -1106,7 +1115,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
             <span className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium shrink-0 ${
               report.type === "weekly" ? "bg-emerald-100 text-emerald-800" : "bg-blue-100 text-blue-800"
             }`}>
-              {report.type === "weekly" ? "🟢 Weekly" : "🔵 Monthly"}
+              {report.type === "weekly" ? t("report.meeting.header.weekly") : t("report.meeting.header.monthly")}
             </span>
             <div className="min-w-0 hidden sm:block">
               <h1 className="text-sm font-bold text-foreground truncate">{report.label}</h1>
@@ -1119,11 +1128,11 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
           <div className="shrink-0">
             {readOnly ? (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-muted text-muted-foreground border border-border">
-                📋 Présentation archivée — lecture seule
+                {t("report.meeting.header.readOnlyBadge")}
               </span>
             ) : meetingPhase === "closing" ? (
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium bg-primary/10 text-primary border border-primary/20">
-                <Sparkles className="h-3 w-3" /> Phase 2 — Clôture
+                <Sparkles className="h-3 w-3" /> {t("report.meeting.header.closingPhaseBadge")}
               </span>
             ) : (
               renderRecordingControls()
@@ -1143,7 +1152,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                 className="gap-1.5 text-xs ml-1"
                 onClick={() => navigate(report.state === "validated" ? "/rapports" : "/post-reunion/" + report.id)}
               >
-                <ChevronLeft className="h-3.5 w-3.5" /> Fermer
+                <ChevronLeft className="h-3.5 w-3.5" /> {t("report.meeting.header.close")}
               </Button>
             ) : meetingPhase === "closing" ? (
               <Button
@@ -1151,7 +1160,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                 className="gap-1.5 text-xs ml-1"
                 onClick={() => navigate("/post-reunion/" + report.id)}
               >
-                <ChevronLeft className="h-3.5 w-3.5" /> Voir le compte-rendu
+                <ChevronLeft className="h-3.5 w-3.5" /> {t("report.meeting.header.viewReport")}
               </Button>
             ) : (
               <Button
@@ -1160,7 +1169,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                 onClick={() => setCloseConfirm(true)}
                 disabled={closeMeeting.isPending}
               >
-                <Square className="h-3.5 w-3.5" /> Clôturer
+                <Square className="h-3.5 w-3.5" /> {t("report.meeting.header.closeMeeting")}
               </Button>
             )}
           </div>
@@ -1198,9 +1207,9 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
             <Alert className="mb-5 border-amber-300 bg-amber-50 text-amber-900">
               <AlertCircle className="h-4 w-4 text-amber-600" />
               <AlertDescription className="flex items-center justify-between gap-3">
-                <span>Lecture seule — vous consultez une slide de la phase 1. Les modifications ne sont plus prises en compte.</span>
+                <span>{t("report.meeting.header.readOnlyAlert")}</span>
                 <Button size="sm" variant="outline" className="gap-1.5 shrink-0" onClick={() => goTo(8)}>
-                  Retour à la synthèse →
+                  {t("report.meeting.header.backToSummary")}
                 </Button>
               </AlertDescription>
             </Alert>
@@ -1219,7 +1228,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
         >
           <div className="flex items-center gap-2">
             <PenLine className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium text-foreground">Décisions & notes — {currentMeta.label}</span>
+            <span className="text-sm font-medium text-foreground">{t("report.meeting.panel.title", { label: currentMeta.label })}</span>
             {currentDecisions.length > 0 && (
               <span className="text-xs bg-primary text-primary-foreground rounded-full px-1.5 py-0.5 font-medium">
                 {currentDecisions.length}
@@ -1232,7 +1241,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
           <div className="px-5 pb-4 space-y-3">
             <div className="flex gap-2">
               <Textarea
-                placeholder="Note une décision ou un point soulevé par la Direction…"
+                placeholder={t("report.meeting.panel.placeholder")}
                 className="text-sm min-h-[52px] resize-none flex-1"
                 value={newDecision}
                 onChange={(e) => setNewDecision(e.target.value)}
@@ -1241,7 +1250,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                 }}
               />
               <Button size="sm" onClick={addDecision} disabled={!newDecision.trim()} className="self-end gap-1.5 shrink-0">
-                <Plus className="h-4 w-4" /> Ajouter
+                <Plus className="h-4 w-4" /> {t("report.meeting.panel.add")}
               </Button>
             </div>
             {currentDecisions.length > 0 && (
@@ -1270,23 +1279,27 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
       >
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Clôturer la réunion ?</DialogTitle>
+            <DialogTitle>{t("report.meeting.closeDialog.title")}</DialogTitle>
             <DialogDescription>
-              {(idsQ.data ?? []).length} nouveau{(idsQ.data ?? []).length !== 1 ? "x" : ""} IDS
-              {" · "}{totalDecisions} décision{totalDecisions !== 1 ? "s" : ""}
-              {recorder.blob ? ` · Enregistré (${formatDuration(recorder.durationSeconds)})` : ""}
+              {t("report.meeting.closeDialog.description", {
+                idsCount: (idsQ.data ?? []).length,
+                idsPlural: (idsQ.data ?? []).length !== 1 ? "x" : "",
+                decisionCount: totalDecisions,
+                decisionPlural: totalDecisions !== 1 ? "s" : "",
+              })}
+              {recorder.blob ? ` · ${t("report.meeting.closeDialog.audioInfo", { duration: formatDuration(recorder.durationSeconds) })}` : ""}
             </DialogDescription>
           </DialogHeader>
 
           <Alert className="border-red-300 bg-red-50 text-red-900">
             <AlertCircle className="h-4 w-4 text-red-600" />
             <AlertDescription>
-              <strong>⚠️ Cette action est irréversible.</strong> Toutes les slides doivent être complètes avant de continuer. Une fois clôturée, vous ne pourrez plus modifier les données saisies (KPI, check-in, todos, objectifs, IDS…).
+              {t("report.meeting.closeDialog.warning")}
             </AlertDescription>
           </Alert>
 
           <p className="text-sm text-muted-foreground">
-            La synthèse IA sera générée automatiquement après la clôture.
+            {t("report.meeting.closeDialog.aiNote")}
           </p>
 
           <label className="flex items-start gap-2 text-sm text-foreground cursor-pointer select-none">
@@ -1295,12 +1308,12 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
               onCheckedChange={(v) => setCloseAck(v === true)}
               className="mt-0.5"
             />
-            <span>Je confirme avoir vérifié toutes les slides et comprendre que cette action est irréversible.</span>
+            <span>{t("report.meeting.closeDialog.ackLabel")}</span>
           </label>
 
           <DialogFooter className="gap-2 sm:gap-2">
             <Button variant="outline" onClick={() => { setCloseConfirm(false); setCloseAck(false); }}>
-              Annuler
+              {t("report.meeting.closeDialog.cancel")}
             </Button>
             <Button
               className="bg-teal-600 hover:bg-teal-700 text-white gap-1.5"
@@ -1310,7 +1323,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
               {closeMeeting.isPending
                 ? <Loader2 className="h-4 w-4 animate-spin" />
                 : <CheckCircle className="h-4 w-4" />}
-              Confirmer la clôture
+              {t("report.meeting.closeDialog.confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>
