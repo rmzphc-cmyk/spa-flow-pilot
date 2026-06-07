@@ -376,18 +376,24 @@ export default function Rapports() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Un rapport {blockedInfo?.type === "weekly" ? "Weekly" : "Monthly"} est déjà en cours
+              {t("report.blockedTitle", {
+                type: blockedInfo?.type === "weekly" ? t("reportType.weekly") : t("reportType.monthly"),
+              })}
             </AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription asChild>
               {blockedInfo?.label ? (
-                <>
-                  Le rapport <strong>« {blockedInfo.label} »</strong>
-                  {blockedInfo.stateLabel ? <> est actuellement <strong>{blockedInfo.stateLabel.toLowerCase()}</strong></> : " est en cours"}.
-                  <br />
-                  Vous devez le finaliser (ou le valider) avant d'en créer un nouveau de ce type.
-                </>
+                <span
+                  dangerouslySetInnerHTML={{
+                    __html: t("report.blockedWithLabel", {
+                      label: blockedInfo.label,
+                      statePart: blockedInfo.stateLabel
+                        ? t("report.blockedStateCurrently", { state: blockedInfo.stateLabel.toLowerCase() })
+                        : t("report.blockedInProgress"),
+                    }),
+                  }}
+                />
               ) : (
-                <>Vous avez déjà un rapport de ce type en cours. Finalisez-le avant d'en créer un nouveau.</>
+                <span>{t("report.blockedGeneric")}</span>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -403,11 +409,11 @@ export default function Rapports() {
                 }}
               >
                 <Eye className="h-4 w-4 mr-1.5" />
-                Voir le rapport
+                {t("report.viewReport")}
               </Button>
             )}
             <AlertDialogAction onClick={() => setBlockedInfo(null)}>
-              Compris
+              {t("report.understood")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -415,21 +421,21 @@ export default function Rapports() {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20 text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin mr-2" /> Chargement…
+          <Loader2 className="h-5 w-5 animate-spin mr-2" /> {t("report.loading")}
         </div>
       ) : error ? (
-        <div className="py-20 text-center text-destructive">Erreur de chargement des rapports.</div>
+        <div className="py-20 text-center text-destructive">{t("report.loadError")}</div>
       ) : (
         <Tabs value={tab} onValueChange={(v) => setTab(v as "prep" | "consult")} className="w-full">
           <TabsList className="mb-5">
             <TabsTrigger value="prep" className="gap-2">
-              À compléter
+              {t("report.tabPrep")}
               <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">
                 {prepReports.length}
               </span>
             </TabsTrigger>
             <TabsTrigger value="consult" className="gap-2">
-              À consulter / En réunion
+              {t("report.tabConsult")}
               <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-muted text-muted-foreground text-xs font-semibold">
                 {consultReports.length}
               </span>
@@ -439,8 +445,8 @@ export default function Rapports() {
           <TabsContent value="prep">
             {prepReports.length === 0 ? (
               <EmptyState
-                title="Aucun rapport en préparation"
-                subtitle="Tous vos rapports sont finalisés. Créez le prochain rapport pour démarrer."
+                title={t("report.emptyPrepTitle")}
+                subtitle={t("report.emptyPrepSub")}
               />
             ) : (
               <div className="flex flex-col gap-3">
@@ -454,8 +460,8 @@ export default function Rapports() {
           <TabsContent value="consult">
             {consultReports.length === 0 ? (
               <EmptyState
-                title="Aucun rapport à consulter"
-                subtitle="Les rapports finalisés et validés apparaîtront ici."
+                title={t("report.emptyConsultTitle")}
+                subtitle={t("report.emptyConsultSub")}
               />
             ) : (
               <div className="flex flex-col gap-3">
