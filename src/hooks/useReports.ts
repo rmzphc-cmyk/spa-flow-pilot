@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Database } from "@/integrations/supabase/types";
+import { withTimeout } from "@/lib/withTimeout";
 import type { ReportRecord, ReportType, ReportState } from "@/lib/reportsStore";
 
 export type ReportRow = Database["public"]["Tables"]["reports"]["Row"];
