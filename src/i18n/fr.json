@@ -308,5 +308,81 @@
       "copy": "Copier",
       "copied": "Copié"
     }
+  },
+  "kpiConfig": {
+    "title": "Configuration des KPI",
+    "subtitle": "Définir et planifier les KPI de votre spa",
+    "hideInactive": "Masquer les désactivés",
+    "showInactive": "Afficher les désactivés ({{count}})",
+    "selectSpa": "Sélectionner un spa",
+    "selectSpaPrompt": "Sélectionner un spa",
+    "seedRolesTest": "🧪 Seed rôles test",
+    "addKpi": "Ajouter un KPI",
+    "planningMonthly": "Planification mensuelle",
+    "colName": "Nom",
+    "colUnit": "Unité",
+    "colGroup": "Groupe",
+    "colActive": "Actif",
+    "colMonthly": "Mensuel",
+    "colMode": "Mode",
+    "colWeekly": "Hebdo",
+    "sectionSpa": "KPI Spa",
+    "sectionManager": "KPI Manager",
+    "groupLabelSpa": "KPI Spa",
+    "groupLabelManager": "KPI Manager",
+    "groupShortSpa": "Spa",
+    "groupShortManager": "Manager",
+    "emptyGroup": "Aucun KPI dans ce groupe.",
+    "placeholderKpiName": "Nom du KPI",
+    "placeholderName": "CA Global",
+    "mode": {
+      "divide": "÷ 4",
+      "fixed": "Fixe"
+    },
+    "manual": "Manuel",
+    "toast": {
+      "saved": "Sauvegardé ✓",
+      "saveError": "Erreur de sauvegarde",
+      "deactivated": "KPI désactivé",
+      "seedSuccess": "Données test insérées",
+      "seedNone": "Aucun KPI ne correspond aux mots-clés de test"
+    },
+    "settingsTitle": "Paramètres — {{name}}",
+    "labelCategory": "Catégorie",
+    "labelDirection": "Direction",
+    "higherIsBetter": "Plus = mieux",
+    "lowerIsBetter": "Moins = mieux",
+    "labelExcellent": "Excellent si ≥",
+    "hintExcellent": "Vert foncé • valeur la plus haute",
+    "labelGood": "Bien si ≥",
+    "hintGood": "Vert • objectif atteint",
+    "labelCorrect": "Correct si ≥",
+    "hintCorrect": "Orange • acceptable",
+    "belowCorrect": "En dessous de \"Correct\" →",
+    "insufficient": "Insuffisant",
+    "roleAssignment": "Assignation par rôle",
+    "add": "Ajouter",
+    "addKpiTitle": "Ajouter un KPI",
+    "labelName": "Nom *",
+    "labelUnit": "Unité",
+    "labelGroup": "Groupe",
+    "category": {
+      "financial": "Financier",
+      "operational": "Opérationnel",
+      "customer": "Client",
+      "hr": "RH",
+      "custom": "Autre"
+    },
+    "role": {
+      "therapist": "Thérapeute",
+      "spa_concierge": "Concierge",
+      "spa_manager": "Manager",
+      "ambassador": "Ambassadeur"
+    },
+    "niveau": {
+      "prioritaire": "Prioritaire",
+      "secondaire": "Secondaire",
+      "suivi": "Suivi"
+    }
   }
 }

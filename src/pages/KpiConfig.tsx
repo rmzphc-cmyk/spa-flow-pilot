@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 import {
   Plus,
   Trash2,
@@ -12,8 +13,8 @@ import {
   ChevronRight,
   Settings2,
 } from "lucide-react";
-import { format, parseISO } from "date-fns";
-import { fr } from "date-fns/locale";
+import { format, parseISO, type Locale } from "date-fns";
+import { fr, enUS, es } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -54,28 +55,20 @@ import {
   useKpiRoleAssignments,
   useUpsertKpiRoleAssignment,
   useDeleteKpiRoleAssignment,
-  ROLE_LABELS,
-  NIVEAU_LABELS,
   NIVEAU_COLORS,
   type KpiRole,
   type KpiNiveau,
   type KpiRoleAssignment,
 } from "@/hooks/useKpiRoleAssignments";
 
-
-
 const UNIT_OPTIONS = ["€", "%", "nb", "/10", "j", "pts"] as const;
-const CATEGORY_LABELS: Record<KpiCategoryDb, string> = {
-  financial: "Financier",
-  operational: "Opérationnel",
-  customer: "Client",
-  hr: "RH",
-  custom: "Autre",
-};
+
+const DATE_FNS_LOCALES: Record<string, Locale> = { fr, en: enUS, es };
 
 type KpiGroup = "spa" | "manager";
 
 export default function KpiConfig() {
+  const { t, i18n } = useTranslation();
   const { user, userRole, spaId: authSpaId } = useAuth();
   const [adminSpaId, setAdminSpaId] = useState<string | null>(null);
   const [yearMonth, setYearMonth] = useState(() => {
@@ -148,10 +141,10 @@ export default function KpiConfig() {
     }
 
     if (matchCount > 0) {
-      toast.success("Données test insérées");
+      toast.success(t("kpiConfig.toast.seedSuccess"));
       queryClient.invalidateQueries({ queryKey: ["kpi_role_assignments"] });
     } else {
-      toast.info("Aucun KPI ne correspond aux mots-clés de test");
+      toast.info(t("kpiConfig.toast.seedNone"));
     }
   };
 
@@ -170,8 +163,8 @@ export default function KpiConfig() {
     updateMut.mutate(
       { id, spaId, ...fields } as any,
       {
-        onSuccess: () => toastIt && toast.success("Sauvegardé ✓"),
-        onError: (e: any) => toast.error(e?.message ?? "Erreur"),
+        onSuccess: () => toastIt && toast.success(t("kpiConfig.toast.saved")),
+        onError: (e: any) => toast.error(e?.message ?? t("common.error")),
       },
     );
   };
@@ -190,7 +183,8 @@ export default function KpiConfig() {
     setYearMonth(m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`);
   };
 
-  const monthLabel = format(parseISO(`${yearMonth}-01`), "MMMM yyyy", { locale: fr });
+  const dateLocale = DATE_FNS_LOCALES[i18n.language] ?? fr;
+  const monthLabel = format(parseISO(`${yearMonth}-01`), "MMMM yyyy", { locale: dateLocale });
   const monthLabelCap = monthLabel.charAt(0).toUpperCase() + monthLabel.slice(1);
 
   const renderSectionRows = (label: string, list: KpiDefinitionFull[]) => (
@@ -206,7 +200,7 @@ export default function KpiConfig() {
       {list.length === 0 ? (
         <tr>
           <td colSpan={9} className="px-3 py-2.5 text-xs text-muted-foreground italic">
-            Aucun KPI dans ce groupe.
+            {t("kpiConfig.emptyGroup")}
           </td>
         </tr>
       ) : (
@@ -228,8 +222,8 @@ export default function KpiConfig() {
               deleteMut.mutate(
                 { id: k.id, spaId: spaId! },
                 {
-                  onSuccess: () => toast.success("KPI désactivé"),
-                  onError: (e: any) => toast.error(e?.message ?? "Erreur"),
+                  onSuccess: () => toast.success(t("kpiConfig.toast.deactivated")),
+                  onError: (e: any) => toast.error(e?.message ?? t("common.error")),
                 },
               )
             }
@@ -246,9 +240,9 @@ export default function KpiConfig() {
       <header className="flex items-center justify-between gap-4 mb-5">
 
         <div>
-          <h1 className="text-xl font-bold text-foreground">Configuration des KPI</h1>
+          <h1 className="text-xl font-bold text-foreground">{t("kpiConfig.title")}</h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Définir et planifier les KPI de votre spa
+            {t("kpiConfig.subtitle")}
           </p>
         </div>
         <div className="flex items-center gap-1 border border-border rounded-lg px-3 py-1.5 bg-background shadow-sm">
@@ -266,13 +260,13 @@ export default function KpiConfig() {
               onClick={() => setShowInactive((v) => !v)}
               className="text-xs text-muted-foreground underline cursor-pointer"
             >
-              {showInactive ? "Masquer les désactivés" : `Afficher les désactivés (${inactiveCount})`}
+              {showInactive ? t("kpiConfig.hideInactive") : t("kpiConfig.showInactive", { count: inactiveCount })}
             </button>
           )}
           {userRole === "admin" && (
             <Select value={adminSpaId ?? ""} onValueChange={(v) => setAdminSpaId(v || null)}>
               <SelectTrigger className="w-56 h-9">
-                <SelectValue placeholder="Sélectionner un spa" />
+                <SelectValue placeholder={t("kpiConfig.selectSpa")} />
               </SelectTrigger>
               <SelectContent>
                 {(spas ?? []).map((s: any) => (
@@ -291,7 +285,7 @@ export default function KpiConfig() {
               onClick={seedTestRoleAssignments}
               disabled={!spaId || items.length === 0}
             >
-              🧪 Seed rôles test
+              {t("kpiConfig.seedRolesTest")}
             </Button>
           )}
           <Button
@@ -300,18 +294,18 @@ export default function KpiConfig() {
             onClick={() => setAddOpen(true)}
             disabled={!spaId}
           >
-            <Plus className="h-4 w-4" /> Ajouter un KPI
+            <Plus className="h-4 w-4" /> {t("kpiConfig.addKpi")}
           </Button>
         </div>
       </header>
 
       {!spaId ? (
         <div className="border border-border rounded-xl p-12 text-center text-muted-foreground">
-          Sélectionner un spa
+          {t("kpiConfig.selectSpaPrompt")}
         </div>
       ) : isLoading || targetsLoading ? (
         <div className="border border-border rounded-xl p-12 text-center text-muted-foreground">
-          Chargement…
+          {t("common.loading")}
         </div>
       ) : (
         <div className="border border-border rounded-xl overflow-x-auto shadow-sm">
@@ -324,19 +318,19 @@ export default function KpiConfig() {
                   colSpan={3}
                   className="text-center text-[10px] font-semibold text-teal-700 bg-teal-50/60 px-2 py-1.5 uppercase tracking-wide border-b border-teal-100"
                 >
-                  Planification mensuelle
+                  {t("kpiConfig.planningMonthly")}
                 </th>
                 <th className="bg-muted/60 p-0" />
               </tr>
               <tr>
-                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ minWidth: "200px" }}>Nom</th>
-                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "70px", minWidth: "60px" }}>Unité</th>
-                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "90px", minWidth: "80px" }}>Groupe</th>
-                <th className="text-center px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "52px", minWidth: "48px" }}>Actif</th>
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ minWidth: "200px" }}>{t("kpiConfig.colName")}</th>
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "70px", minWidth: "60px" }}>{t("kpiConfig.colUnit")}</th>
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "90px", minWidth: "80px" }}>{t("kpiConfig.colGroup")}</th>
+                <th className="text-center px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "52px", minWidth: "48px" }}>{t("kpiConfig.colActive")}</th>
                 <th className="p-0 bg-border" style={{ width: "1px" }} />
-                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "110px", minWidth: "100px" }}>Mensuel</th>
-                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "76px", minWidth: "68px" }}>Mode</th>
-                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "110px", minWidth: "100px" }}>Hebdo</th>
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "110px", minWidth: "100px" }}>{t("kpiConfig.colMonthly")}</th>
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "76px", minWidth: "68px" }}>{t("kpiConfig.colMode")}</th>
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "110px", minWidth: "100px" }}>{t("kpiConfig.colWeekly")}</th>
                 <th className="text-center px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "88px", minWidth: "80px" }} />
 
 
@@ -345,8 +339,8 @@ export default function KpiConfig() {
 
 
             <tbody>
-              {renderSectionRows("KPI Spa", spaKpis)}
-              {renderSectionRows("KPI Manager", managerKpis)}
+              {renderSectionRows(t("kpiConfig.sectionSpa"), spaKpis)}
+              {renderSectionRows(t("kpiConfig.sectionManager"), managerKpis)}
             </tbody>
           </table>
         </div>
@@ -370,10 +364,10 @@ export default function KpiConfig() {
             },
             {
               onSuccess: () => {
-                toast.success("KPI ajouté ✓");
+                toast.success(t("kpiConfig.toast.saved"));
                 setAddOpen(false);
               },
-              onError: (e: any) => toast.error(e?.message ?? "Erreur"),
+              onError: (e: any) => toast.error(e?.message ?? t("common.error")),
             },
           );
         }}
@@ -428,6 +422,7 @@ function UnifiedKpiRow({
   onDelete,
   upsertMut,
 }: UnifiedKpiRowProps) {
+  const { t } = useTranslation();
   const [name, setName] = useState(kpi.name);
   const [monthlyLocal, setMonthlyLocal] = useState<string>(
     current?.monthly_value != null ? String(current.monthly_value) : "",
@@ -446,7 +441,7 @@ function UnifiedKpiRow({
 
   const disabled = current?.monthly_value == null;
   const computed = getWeeklyTarget(current);
-  const onError = (e: any) => toast.error(e?.message ?? "Erreur de sauvegarde");
+  const onError = (e: any) => toast.error(e?.message ?? t("kpiConfig.toast.saveError"));
 
   const handleMonthlyBlur = () => {
     const newVal = monthlyLocal === "" ? null : Number(monthlyLocal);
@@ -517,7 +512,7 @@ function UnifiedKpiRow({
             if (name !== kpi.name) onUpdate({ name });
           }}
           className="h-8 text-sm w-full min-w-40"
-          placeholder="Nom du KPI"
+          placeholder={t("kpiConfig.placeholderKpiName")}
         />
       </td>
 
@@ -545,8 +540,8 @@ function UnifiedKpiRow({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="spa">Spa</SelectItem>
-            <SelectItem value="manager">Manager</SelectItem>
+            <SelectItem value="spa">{t("kpiConfig.groupShortSpa")}</SelectItem>
+            <SelectItem value="manager">{t("kpiConfig.groupShortManager")}</SelectItem>
           </SelectContent>
         </Select>
       </td>
@@ -580,8 +575,8 @@ function UnifiedKpiRow({
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="divide">÷ 4</SelectItem>
-            <SelectItem value="fixed">Fixe</SelectItem>
+            <SelectItem value="divide">{t("kpiConfig.mode.divide")}</SelectItem>
+            <SelectItem value="fixed">{t("kpiConfig.mode.fixed")}</SelectItem>
           </SelectContent>
         </Select>
       </td>
@@ -599,7 +594,7 @@ function UnifiedKpiRow({
           />
           {current?.weekly_override != null && (
             <span className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[9px] font-medium text-teal-700 bg-teal-50 rounded px-1 py-0.5 pointer-events-none">
-              Manuel
+              {t("kpiConfig.manual")}
             </span>
           )}
         </div>
@@ -642,6 +637,7 @@ function SettingsDialog({
   onSave: (fields: Partial<KpiDefinitionFull>) => void;
   assignments: KpiRoleAssignment[];
 }) {
+  const { t } = useTranslation();
   const [category, setCategory] = useState<KpiCategoryDb>("operational");
   const [direction, setDirection] = useState<ComparisonDirection>("higher_is_better");
   const [amber, setAmber] = useState("");
@@ -672,22 +668,22 @@ function SettingsDialog({
     <Dialog open={!!kpi} onOpenChange={(v) => !v && onClose()}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Paramètres — {kpi?.name}</DialogTitle>
+          <DialogTitle>{t("kpiConfig.settingsTitle", { name: kpi?.name ?? "" })}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4">
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Catégorie</label>
+            <label className="text-xs font-medium text-muted-foreground">{t("kpiConfig.labelCategory")}</label>
             <Select value={category} onValueChange={(v) => setCategory(v as KpiCategoryDb)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {(Object.keys(CATEGORY_LABELS) as KpiCategoryDb[]).map((c) => (
-                  <SelectItem key={c} value={c}>{CATEGORY_LABELS[c]}</SelectItem>
+                {(["financial", "operational", "customer", "hr", "custom"] as KpiCategoryDb[]).map((c) => (
+                  <SelectItem key={c} value={c}>{t(`kpiConfig.category.${c}`)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">Direction</label>
+            <label className="text-xs font-medium text-muted-foreground block mb-1">{t("kpiConfig.labelDirection")}</label>
             <button
               onClick={() =>
                 setDirection(direction === "higher_is_better" ? "lower_is_better" : "higher_is_better")
@@ -695,37 +691,37 @@ function SettingsDialog({
               className="text-xs font-medium px-3 py-1.5 rounded-md bg-muted hover:bg-muted/70 inline-flex items-center gap-1.5"
             >
               {direction === "higher_is_better" ? (
-                <><ArrowUpNarrowWide className="h-3.5 w-3.5" /> Plus = mieux</>
+                <><ArrowUpNarrowWide className="h-3.5 w-3.5" /> {t("kpiConfig.higherIsBetter")}</>
               ) : (
-                <><ArrowDownNarrowWide className="h-3.5 w-3.5" /> Moins = mieux</>
+                <><ArrowDownNarrowWide className="h-3.5 w-3.5" /> {t("kpiConfig.lowerIsBetter")}</>
               )}
             </button>
           </div>
           <div className="grid grid-cols-3 gap-3">
             <div>
-              <label className="text-xs font-medium text-teal-700">Excellent si ≥</label>
+              <label className="text-xs font-medium text-teal-700">{t("kpiConfig.labelExcellent")}</label>
               <Input type="number" value={excellent} onChange={(e) => setExcellent(e.target.value)} placeholder="—" />
-              <p className="text-[10px] text-muted-foreground mt-1">Vert foncé • valeur la plus haute</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{t("kpiConfig.hintExcellent")}</p>
             </div>
             <div>
-              <label className="text-xs font-medium text-green-700">Bien si ≥</label>
+              <label className="text-xs font-medium text-green-700">{t("kpiConfig.labelGood")}</label>
               <Input type="number" value={amber} onChange={(e) => setAmber(e.target.value)} placeholder="—" />
-              <p className="text-[10px] text-muted-foreground mt-1">Vert • objectif atteint</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{t("kpiConfig.hintGood")}</p>
             </div>
             <div>
-              <label className="text-xs font-medium text-orange-600">Correct si ≥</label>
+              <label className="text-xs font-medium text-orange-600">{t("kpiConfig.labelCorrect")}</label>
               <Input type="number" value={red} onChange={(e) => setRed(e.target.value)} placeholder="—" />
-              <p className="text-[10px] text-muted-foreground mt-1">Orange • acceptable</p>
+              <p className="text-[10px] text-muted-foreground mt-1">{t("kpiConfig.hintCorrect")}</p>
             </div>
           </div>
           <p className="text-xs text-muted-foreground">
-            En dessous de "Correct" → <span className="text-red-500 font-medium">Insuffisant</span>
+            {t("kpiConfig.belowCorrect")} <span className="text-red-500 font-medium">{t("kpiConfig.insufficient")}</span>
           </p>
 
           {/* Section Rôles */}
           <div className="border-t pt-4">
             <label className="text-xs font-medium text-muted-foreground block mb-2">
-              Assignation par rôle
+              {t("kpiConfig.roleAssignment")}
             </label>
 
             {assignments.length > 0 && (
@@ -735,7 +731,7 @@ function SettingsDialog({
                     key={a.id}
                     className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium ${NIVEAU_COLORS[a.niveau]}`}
                   >
-                    {ROLE_LABELS[a.role]} — {NIVEAU_LABELS[a.niveau]}
+                    {t(`kpiConfig.role.${a.role}`)} — {t(`kpiConfig.niveau.${a.niveau}`)}
                     <button
                       type="button"
                       className="ml-0.5 hover:opacity-70 cursor-pointer"
@@ -744,7 +740,7 @@ function SettingsDialog({
                         e.stopPropagation();
                         deleteRole.mutate(a.id);
                       }}
-                      aria-label="Supprimer"
+                      aria-label={t("common.delete")}
                     >
                       ×
                     </button>
@@ -759,9 +755,9 @@ function SettingsDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(Object.keys(ROLE_LABELS) as KpiRole[]).map((r) => (
+                  {(["therapist", "spa_concierge", "spa_manager", "ambassador"] as KpiRole[]).map((r) => (
                     <SelectItem key={r} value={r} className="text-xs">
-                      {ROLE_LABELS[r]}
+                      {t(`kpiConfig.role.${r}`)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -772,9 +768,9 @@ function SettingsDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {(Object.keys(NIVEAU_LABELS) as KpiNiveau[]).map((n) => (
+                  {(["prioritaire", "secondaire", "suivi"] as KpiNiveau[]).map((n) => (
                     <SelectItem key={n} value={n} className="text-xs">
-                      {NIVEAU_LABELS[n]}
+                      {t(`kpiConfig.niveau.${n}`)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -786,14 +782,14 @@ function SettingsDialog({
                 onClick={handleAddAssignment}
                 disabled={upsertRole.isPending}
               >
-                + Ajouter
+                + {t("kpiConfig.add")}
               </Button>
             </div>
           </div>
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>Annuler</Button>
+          <Button variant="outline" onClick={onClose}>{t("common.cancel")}</Button>
           <Button
             className="bg-teal-600 hover:bg-teal-700 text-white"
             onClick={() =>
@@ -806,7 +802,7 @@ function SettingsDialog({
               })
             }
           >
-            Enregistrer
+            {t("common.save")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -833,6 +829,7 @@ function AddKpiDialog({
   onOpenChange: (v: boolean) => void;
   onSubmit: (payload: AddKpiPayload) => void;
 }) {
+  const { t } = useTranslation();
   const [name, setName] = useState("");
   const [unit, setUnit] = useState<string>("");
   const [category, setCategory] = useState<KpiCategoryDb>("operational");
@@ -857,16 +854,16 @@ function AddKpiDialog({
     >
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Ajouter un KPI</DialogTitle>
+          <DialogTitle>{t("kpiConfig.addKpiTitle")}</DialogTitle>
         </DialogHeader>
         <div className="grid gap-4">
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Nom *</label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="CA Global" />
+            <label className="text-xs font-medium text-muted-foreground">{t("kpiConfig.labelName")}</label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("kpiConfig.placeholderName")} />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Unité</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("kpiConfig.labelUnit")}</label>
               <Select value={unit} onValueChange={setUnit}>
                 <SelectTrigger><SelectValue placeholder="—" /></SelectTrigger>
                 <SelectContent>
@@ -877,29 +874,29 @@ function AddKpiDialog({
               </Select>
             </div>
             <div>
-              <label className="text-xs font-medium text-muted-foreground">Groupe</label>
+              <label className="text-xs font-medium text-muted-foreground">{t("kpiConfig.labelGroup")}</label>
               <Select value={group} onValueChange={(v) => setGroup(v as KpiGroup)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="spa">KPI Spa</SelectItem>
-                  <SelectItem value="manager">KPI Manager</SelectItem>
+                  <SelectItem value="spa">{t("kpiConfig.groupLabelSpa")}</SelectItem>
+                  <SelectItem value="manager">{t("kpiConfig.groupLabelManager")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground">Catégorie</label>
+            <label className="text-xs font-medium text-muted-foreground">{t("kpiConfig.labelCategory")}</label>
             <Select value={category} onValueChange={(v) => setCategory(v as KpiCategoryDb)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
               <SelectContent>
-                {(Object.keys(CATEGORY_LABELS) as KpiCategoryDb[]).map((c) => (
-                  <SelectItem key={c} value={c}>{CATEGORY_LABELS[c]}</SelectItem>
+                {(["financial", "operational", "customer", "hr", "custom"] as KpiCategoryDb[]).map((c) => (
+                  <SelectItem key={c} value={c}>{t(`kpiConfig.category.${c}`)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div>
-            <label className="text-xs font-medium text-muted-foreground block mb-1">Direction</label>
+            <label className="text-xs font-medium text-muted-foreground block mb-1">{t("kpiConfig.labelDirection")}</label>
             <button
               onClick={() =>
                 setDirection(direction === "higher_is_better" ? "lower_is_better" : "higher_is_better")
@@ -907,15 +904,15 @@ function AddKpiDialog({
               className="text-xs font-medium px-3 py-1.5 rounded-md bg-muted hover:bg-muted/70 inline-flex items-center gap-1.5"
             >
               {direction === "higher_is_better" ? (
-                <><ArrowUpNarrowWide className="h-3.5 w-3.5" /> Plus = mieux</>
+                <><ArrowUpNarrowWide className="h-3.5 w-3.5" /> {t("kpiConfig.higherIsBetter")}</>
               ) : (
-                <><ArrowDownNarrowWide className="h-3.5 w-3.5" /> Moins = mieux</>
+                <><ArrowDownNarrowWide className="h-3.5 w-3.5" /> {t("kpiConfig.lowerIsBetter")}</>
               )}
             </button>
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>Annuler</Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>{t("common.cancel")}</Button>
           <Button
             className="bg-teal-600 hover:bg-teal-700 text-white"
             disabled={!name.trim()}
@@ -929,7 +926,7 @@ function AddKpiDialog({
               })
             }
           >
-            Ajouter
+            {t("kpiConfig.add")}
           </Button>
         </DialogFooter>
       </DialogContent>
