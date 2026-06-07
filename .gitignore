@@ -22,3 +22,7 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Harnais d'audit local — contient des credentials de test en clair
+tests/audit/
+test-results/
