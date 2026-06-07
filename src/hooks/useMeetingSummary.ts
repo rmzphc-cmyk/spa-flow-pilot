@@ -147,9 +147,12 @@ export function useValidateMonthlySummary() {
   const navigate = useNavigate();
   return useMutation({
     mutationFn: async (input: { reportId: string }) => {
-      const { data, error } = await supabase.functions.invoke("validate-final-report", {
-        body: { report_id: input.reportId },
-      });
+      const { data, error } = await withTimeout(
+        supabase.functions.invoke("validate-final-report", {
+          body: { report_id: input.reportId },
+        }),
+        "La validation du rapport",
+      );
       if (error) {
         const msg = data?.error ?? error.message ?? "Erreur validation";
         throw new Error(msg);
