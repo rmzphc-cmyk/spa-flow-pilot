@@ -279,31 +279,31 @@ export default function Rapports() {
   return (
     <>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Rapports</h1>
+        <h1 className="text-2xl font-bold text-foreground">{t("report.title")}</h1>
         <Button className="gap-1.5" onClick={() => setDialogOpen(true)}>
-          <Plus className="h-4 w-4" /> Nouveau rapport
+          <Plus className="h-4 w-4" /> {t("report.newReport")}
         </Button>
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nouveau rapport</DialogTitle>
+            <DialogTitle>{t("report.newReport")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div>
-              <Label className="text-sm mb-1.5 block">Type de cycle</Label>
+              <Label className="text-sm mb-1.5 block">{t("report.cycleType")}</Label>
               <Select value={newType} onValueChange={(v) => setNewType(v as ReportType)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="weekly">🟢 Weekly</SelectItem>
-                  <SelectItem value="monthly">🔵 Monthly</SelectItem>
+                  <SelectItem value="weekly">🟢 {t("reportType.weekly")}</SelectItem>
+                  <SelectItem value="monthly">🔵 {t("reportType.monthly")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             {newType === "weekly" ? (
               <div>
-                <Label className="text-sm mb-1.5 block">Période de la réunion</Label>
+                <Label className="text-sm mb-1.5 block">{t("report.meetingPeriod")}</Label>
                 <Select
                   value={selectedWeeklyPeriod?.periodStart ?? ""}
                   onValueChange={(v) => {
@@ -311,10 +311,10 @@ export default function Rapports() {
                     setSelectedWeeklyPeriod(opt);
                   }}
                 >
-                  <SelectTrigger><SelectValue placeholder="Sélectionner une période…" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("report.selectPeriod")} /></SelectTrigger>
                   <SelectContent>
                     {weeklyOptions.length === 0 ? (
-                      <div className="px-2 py-1.5 text-sm text-muted-foreground">Aucune période disponible</div>
+                      <div className="px-2 py-1.5 text-sm text-muted-foreground">{t("report.noPeriodAvailable")}</div>
                     ) : (
                       weeklyOptions.map((opt) => (
                         <SelectItem key={opt.periodStart} value={opt.periodStart}>
@@ -325,12 +325,12 @@ export default function Rapports() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground mt-1.5">
-                  Calculé automatiquement selon votre calendrier de réunions.
+                  {t("report.autoCalculated")}
                 </p>
               </div>
             ) : (
               <div>
-                <Label className="text-sm mb-1.5 block">Mois du rapport</Label>
+                <Label className="text-sm mb-1.5 block">{t("report.monthOfReport")}</Label>
                 <Select
                   value={selectedMonthlyPeriod?.yearMonth ?? ""}
                   onValueChange={(v) => {
@@ -338,10 +338,10 @@ export default function Rapports() {
                     setSelectedMonthlyPeriod(opt);
                   }}
                 >
-                  <SelectTrigger><SelectValue placeholder="Sélectionner un mois…" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("report.selectMonth")} /></SelectTrigger>
                   <SelectContent>
                     {monthlyOptions.length === 0 ? (
-                      <div className="px-2 py-1.5 text-sm text-muted-foreground">Aucun mois disponible</div>
+                      <div className="px-2 py-1.5 text-sm text-muted-foreground">{t("report.noMonthAvailable")}</div>
                     ) : (
                       monthlyOptions.map((opt) => (
                         <SelectItem key={opt.yearMonth} value={opt.yearMonth}>
@@ -355,7 +355,7 @@ export default function Rapports() {
             )}
           </div>
           <DialogFooter className="mt-4">
-            <Button variant="ghost" onClick={() => setDialogOpen(false)} disabled={createReport.isPending}>Annuler</Button>
+            <Button variant="ghost" onClick={() => setDialogOpen(false)} disabled={createReport.isPending}>{t("common.cancel")}</Button>
             <Button
               onClick={handleCreate}
               disabled={
@@ -365,7 +365,7 @@ export default function Rapports() {
               }
             >
               {createReport.isPending && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
-              Créer et ouvrir
+              {t("report.createAndOpen")}
             </Button>
           </DialogFooter>
         </DialogContent>
