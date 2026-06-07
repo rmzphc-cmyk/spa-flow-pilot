@@ -268,8 +268,8 @@ export default function Rapports() {
         }
       } else {
         toast({
-          title: "Erreur lors de la création",
-          description: message || "Impossible de créer le rapport.",
+          title: t("report.createError"),
+          description: message || t("report.createErrorDesc"),
           variant: "destructive",
         });
       }
