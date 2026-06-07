@@ -155,6 +155,23 @@ export function useStartMeeting() {
   });
 }
 
+const TIMEOUT_MS = 30_000;
+
+async function withTimeout<T>(p: Promise<T>, label: string): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  const timeout = new Promise<never>((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error(`${label} prend plus de temps que prévu, réessayez.`)),
+      TIMEOUT_MS,
+    );
+  });
+  try {
+    return (await Promise.race([p, timeout])) as T;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
 export function useCloseMeeting() {
   const qc = useQueryClient();
   return useMutation({
@@ -164,14 +181,17 @@ export function useCloseMeeting() {
       audioMimeType?: string;
       audioDurationS?: number;
     }) => {
-      const { data, error } = await supabase.functions.invoke("close-monthly-meeting", {
-        body: {
-          report_id: input.reportId,
-          audio_storage_path: input.audioStoragePath,
-          audio_mime_type: input.audioMimeType,
-          audio_duration_s: input.audioDurationS,
-        },
-      });
+      const { data, error } = await withTimeout(
+        supabase.functions.invoke("close-monthly-meeting", {
+          body: {
+            report_id: input.reportId,
+            audio_storage_path: input.audioStoragePath,
+            audio_mime_type: input.audioMimeType,
+            audio_duration_s: input.audioDurationS,
+          },
+        }),
+        "La clôture",
+      );
       if (error) throw new Error(data?.error ?? error.message ?? "Erreur clôture réunion");
       if (data?.error) throw new Error(data.error);
       return data as { data: ReportRow; warning?: string };
@@ -182,6 +202,8 @@ export function useCloseMeeting() {
     },
   });
 }
+
+export { withTimeout as __withTimeout };
 
 export function useReopenMeeting() {
   const qc = useQueryClient();
