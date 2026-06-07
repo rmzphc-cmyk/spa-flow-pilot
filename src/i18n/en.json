@@ -383,5 +383,107 @@
       "secondaire": "Secondary",
       "suivi": "Monitoring"
     }
+  },
+  "respConfig": {
+    "title": "Manager Responsibilities",
+    "subtitle": "Manage templates and meeting recurrence",
+    "tabs": {
+      "templates": "Templates",
+      "calendar": "Meeting Calendar"
+    },
+    "selectSpa": "Select a spa",
+    "selectSpaPrompt": "Select a spa",
+    "loading": "Loading…",
+    "emptyTemplates": "No template. Click « Add a template ».",
+    "addTemplate": "Add a template",
+    "table": {
+      "title": "Title",
+      "category": "Category",
+      "active": "Active",
+      "actions": "Actions"
+    },
+    "saveSuccess": "Saved ✓",
+    "editSuccess": "Template updated ✓",
+    "addSuccess": "Template added ✓",
+    "deactivateSuccess": "Template deactivated",
+    "deactivateTitle": "Deactivate this template?",
+    "deactivateDesc": "« {{title}} » will no longer be offered in new reports. History remains intact.",
+    "deactivate": "Deactivate",
+    "sheet": {
+      "editTitle": "Edit template",
+      "addTitle": "Add a template",
+      "titleLabel": "Title *",
+      "titlePlaceholder": "E.g. Weekly team meeting",
+      "descriptionLabel": "Description",
+      "descriptionPlaceholder": "Details about this responsibility (optional)",
+      "categoryLabel": "Category",
+      "frequencyLabel": "Frequency",
+      "activeLabel": "Active"
+    },
+    "scheduleSaved": "Calendar saved",
+    "scheduleSavedDesc": "Synced across all your devices.",
+    "scheduleSaveError": "Save error",
+    "calendarTitle": "Set the recurrence for Weekly and Monthly meetings. The dashboard uses these settings to display the next meeting and send reminders.",
+    "weeklyLabel": "🟢 Weekly",
+    "monthlyLabel": "🔵 Monthly",
+    "recurrentDayLabel": "Weekly recurring day",
+    "recurrentDayHint": "E.g. every Thursday",
+    "recurrenceTypeLabel": "Recurrence type",
+    "recurrenceTypeWeekday": "Nth weekday of month (e.g. 1st Monday)",
+    "recurrenceTypeDate": "Exact date (e.g. the 15th)",
+    "occurrenceLabel": "Occurrence",
+    "dayLabel": "Day",
+    "ofTheMonth": "of the month",
+    "monthDateLabel": "Day of month (1 – 31, or « Last »)",
+    "lastDayOfMonth": "Last day of month",
+    "theDay": "The {{day}}",
+    "frequency": {
+      "daily": "Daily",
+      "weekly": "Weekly",
+      "biweekly": "Bi-weekly",
+      "monthly": "Monthly"
+    },
+    "unit": {
+      "day": "day",
+      "week": "wk",
+      "fortnight": "fn",
+      "month": "mo"
+    },
+    "expectedTotal": "= {{total}}/month",
+    "countLabel": {
+      "daily": "Count per day",
+      "weekly": "Count per week",
+      "biweekly": "Count per fortnight",
+      "monthly": "Count per month"
+    },
+    "schedule": {
+      "monthlyLastDay": "The last day of the month",
+      "monthlyDate": "The {{date}} of every month",
+      "monthlyWeekday": "{{occurrence}} {{day}} of the month"
+    },
+    "occurrence": {
+      "1er": "1st",
+      "2eme": "2nd",
+      "3eme": "3rd",
+      "4eme": "4th",
+      "last": "Last"
+    },
+    "weeklyDayOption": {
+      "lundi": "Every Monday",
+      "mardi": "Every Tuesday",
+      "mercredi": "Every Wednesday",
+      "jeudi": "Every Thursday",
+      "vendredi": "Every Friday",
+      "samedi": "Every Saturday",
+      "dimanche": "Every Sunday"
+    },
+    "category": {
+      "RH": "HR",
+      "Commercial": "Commercial",
+      "Opérationnel": "Operational",
+      "Qualité": "Quality",
+      "Formation": "Training",
+      "Administratif": "Administrative"
+    }
   }
 }
