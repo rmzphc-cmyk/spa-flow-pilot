@@ -70,7 +70,9 @@ export const sourceDbToUi = (s: DbTodoSource): "ids" | "ia" | undefined => {
 
 export function useTodos(reportId: string, spaId: string | null) {
   return useQuery({
-    queryKey: ["todos", reportId],
+    // Les todos sont au niveau du SPA (report-over carry). La clé suit donc spaId
+    // (et non reportId) pour rester cohérente avec la requête et l'invalidation.
+    queryKey: ["todos", spaId],
     enabled: !!spaId,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -113,7 +115,7 @@ export function useAddTodo(reportId: string) {
       if (error) throw error;
       return data;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["todos", reportId] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["todos"] }),
   });
 }
 
@@ -178,7 +180,7 @@ export function useUpdateTodoStatus(reportId: string) {
       const { error } = await supabase.from("todos").update(patch).eq("id", input.id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["todos", reportId] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["todos"] }),
   });
 }
 
@@ -226,7 +228,7 @@ export function useUpdateFollowUp(reportId: string) {
         .eq("id", input.id);
       if (error) throw error;
     },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["todos", reportId] }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["todos"] }),
   });
 }
 

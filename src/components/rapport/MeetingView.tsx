@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import {
   useKpiRoleAssignments,
   ROLE_LABELS,
@@ -152,6 +152,32 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
   const updateSummary   = useUpdateMeetingSummary();
   const validateMonthly = useValidateMonthlySummary();
   const updateIdsStructure = useUpdateIdsStructure();
+
+  // Sauvegarde debouncée de la synthèse éditée (évitait 1 requête réseau par frappe)
+  const summaryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingSummaryRef = useRef<{ summary: string; decisions: string[] } | null>(null);
+  const updateSummaryRef = useRef(updateSummary);
+  updateSummaryRef.current = updateSummary;
+
+  const flushSummary = useCallback(() => {
+    if (summaryTimerRef.current) { clearTimeout(summaryTimerRef.current); summaryTimerRef.current = null; }
+    const p = pendingSummaryRef.current;
+    if (!p) return;
+    pendingSummaryRef.current = null;
+    updateSummaryRef.current.mutate(
+      { reportId: report.id, newSummary: p.summary, newKeyActions: p.decisions },
+      { onError: (e) => toast({ title: "Sauvegarde de la synthèse échouée", description: (e as Error).message, variant: "destructive" }) },
+    );
+  }, [report.id]);
+
+  const scheduleSummarySave = useCallback((summary: string, decisions: string[]) => {
+    pendingSummaryRef.current = { summary, decisions };
+    if (summaryTimerRef.current) clearTimeout(summaryTimerRef.current);
+    summaryTimerRef.current = setTimeout(flushSummary, 800);
+  }, [flushSummary]);
+
+  // Flush la sauvegarde en attente au démontage (sinon dernière frappe perdue)
+  useEffect(() => () => flushSummary(), [flushSummary]);
 
 
   /* auto-start enregistrement dès le lancement de la réunion */
@@ -869,7 +895,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                     value={editedSummary}
                     onChange={(e) => {
                       setEditedSummary(e.target.value);
-                      updateSummary.mutate({ reportId: report.id, newSummary: e.target.value, newKeyActions: editedDecisions });
+                      scheduleSummarySave(e.target.value, editedDecisions);
                     }}
                     placeholder="Résumé de la réunion…"
                   />
