@@ -307,5 +307,81 @@
       "copy": "Copy",
       "copied": "Copied"
     }
+  },
+  "kpiConfig": {
+    "title": "KPI Configuration",
+    "subtitle": "Define and plan your spa KPIs",
+    "hideInactive": "Hide inactive",
+    "showInactive": "Show inactive ({{count}})",
+    "selectSpa": "Select a spa",
+    "selectSpaPrompt": "Select a spa",
+    "seedRolesTest": "🧪 Seed test roles",
+    "addKpi": "Add a KPI",
+    "planningMonthly": "Monthly Planning",
+    "colName": "Name",
+    "colUnit": "Unit",
+    "colGroup": "Group",
+    "colActive": "Active",
+    "colMonthly": "Monthly",
+    "colMode": "Mode",
+    "colWeekly": "Weekly",
+    "sectionSpa": "Spa KPI",
+    "sectionManager": "Manager KPI",
+    "groupLabelSpa": "Spa KPI",
+    "groupLabelManager": "Manager KPI",
+    "groupShortSpa": "Spa",
+    "groupShortManager": "Manager",
+    "emptyGroup": "No KPI in this group.",
+    "placeholderKpiName": "KPI name",
+    "placeholderName": "Global Revenue",
+    "mode": {
+      "divide": "÷ 4",
+      "fixed": "Fixed"
+    },
+    "manual": "Manual",
+    "toast": {
+      "saved": "Saved ✓",
+      "saveError": "Save error",
+      "deactivated": "KPI deactivated",
+      "seedSuccess": "Test data inserted",
+      "seedNone": "No KPI matches the test keywords"
+    },
+    "settingsTitle": "Settings — {{name}}",
+    "labelCategory": "Category",
+    "labelDirection": "Direction",
+    "higherIsBetter": "Higher = better",
+    "lowerIsBetter": "Lower = better",
+    "labelExcellent": "Excellent if ≥",
+    "hintExcellent": "Dark green • highest value",
+    "labelGood": "Good if ≥",
+    "hintGood": "Green • target reached",
+    "labelCorrect": "Correct if ≥",
+    "hintCorrect": "Orange • acceptable",
+    "belowCorrect": "Below \"Correct\" →",
+    "insufficient": "Insufficient",
+    "roleAssignment": "Role assignment",
+    "add": "Add",
+    "addKpiTitle": "Add a KPI",
+    "labelName": "Name *",
+    "labelUnit": "Unit",
+    "labelGroup": "Group",
+    "category": {
+      "financial": "Financial",
+      "operational": "Operational",
+      "customer": "Customer",
+      "hr": "HR",
+      "custom": "Other"
+    },
+    "role": {
+      "therapist": "Therapist",
+      "spa_concierge": "Concierge",
+      "spa_manager": "Manager",
+      "ambassador": "Ambassador"
+    },
+    "niveau": {
+      "prioritaire": "Primary",
+      "secondaire": "Secondary",
+      "suivi": "Monitoring"
+    }
   }
 }

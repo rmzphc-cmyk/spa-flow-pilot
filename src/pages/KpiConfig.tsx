@@ -13,7 +13,7 @@ import {
   ChevronRight,
   Settings2,
 } from "lucide-react";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, type Locale } from "date-fns";
 import { fr, enUS, es } from "date-fns/locale";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
