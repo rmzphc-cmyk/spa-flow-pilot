@@ -98,8 +98,8 @@ function SpaCard({ spa }: { spa: SpaOverview }) {
         {/* KPI summary */}
         <div className="grid grid-cols-3 gap-3 mb-3">
           {[
-            { label: "CA", value: spa.kpis.ca },
-            { label: "NPS", value: spa.kpis.nps },
+            { label: t("direction.kpiCA"), value: spa.kpis.ca },
+            { label: t("direction.kpiNPS"), value: spa.kpis.nps },
             { label: t("direction.kpiResp"), value: spa.kpis.responsabilites },
           ].map((kpi) => (
             <div key={kpi.label} className="bg-muted/50 rounded-lg p-2.5 text-center">
@@ -120,7 +120,7 @@ function SpaCard({ spa }: { spa: SpaOverview }) {
 }
 
 export default function DirectionOverview() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { data: spas = [], isLoading } = useDirectionSpas();
 
   const sorted = [...spas].sort((a, b) => {
@@ -143,9 +143,9 @@ export default function DirectionOverview() {
           </p>
         </div>
         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-          🔵 Monthly — {
+          🔵 {t("reportType.monthly")} — {
             spas.find((s) => s.report && s.report !== "Aucun rapport")?.report
-              ?? new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(new Date())
+              ?? new Intl.DateTimeFormat(i18n.language, { month: "long", year: "numeric" }).format(new Date())
           }
         </span>
       </div>
