@@ -16,7 +16,7 @@ interface Props {
 }
 
 export function SectionNotes({ reportId, onStatusChange, isLocked = false }: Props) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const speechLang = i18n.language === "es" ? "es-ES" : i18n.language === "en" ? "en-US" : "fr-FR";
   const { data: row, isFetching } = useCheckin(reportId);
   const { debouncedUpsert } = useUpsertCheckin();
@@ -67,22 +67,22 @@ export function SectionNotes({ reportId, onStatusChange, isLocked = false }: Pro
     <section className="mb-8">
       <div className="flex items-center gap-2">
         <PenLine className="h-5 w-5 text-muted-foreground" />
-        <h2 className="text-lg font-semibold text-foreground">Notes libres</h2>
+        <h2 className="text-lg font-semibold text-foreground">{t("report.notes.title")}</h2>
       </div>
-      <p className="text-sm text-muted-foreground mb-4">Informations complémentaires pour la Direction</p>
+      <p className="text-sm text-muted-foreground mb-4">{t("report.notes.subtitle")}</p>
 
       <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
         <div className="flex items-center justify-between mb-3">
-          <label className="font-medium text-foreground text-sm">Vos notes</label>
-          <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">Optionnel</span>
+          <label className="font-medium text-foreground text-sm">{t("report.notes.label")}</label>
+          <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">{t("common.optional")}</span>
         </div>
 
         <div className="flex flex-row gap-2 mb-2">
           <VoiceRecordButton
             context="free_note"
             lang={speechLang}
-            onTranscript={(t) =>
-              setNote((prev) => (prev ? (prev + " " + t).slice(0, MAX_LENGTH) : t.slice(0, MAX_LENGTH)))
+            onTranscript={(transcript) =>
+              setNote((prev) => (prev ? (prev + " " + transcript).slice(0, MAX_LENGTH) : transcript.slice(0, MAX_LENGTH)))
             }
           />
           <Button
@@ -96,21 +96,20 @@ export function SectionNotes({ reportId, onStatusChange, isLocked = false }: Pro
             {structureMutation.isPending ? (
               <>
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                Structuration…
+                {t("common.structuring")}
               </>
             ) : (
               <>
                 <Sparkles className="h-3.5 w-3.5 text-violet-500" />
-                Structurer avec l'IA
+                {t("common.structureWithAI")}
               </>
             )}
           </Button>
         </div>
 
-
         <Textarea
           className="text-sm min-h-[140px]"
-          placeholder="Ex : Retour sur la visite du directeur hôtel. Point sur la commande produits… Tout ce qui ne rentre pas ailleurs."
+          placeholder={t("report.notes.placeholder")}
           maxLength={3000}
           value={note}
           onChange={(e) => setNote(e.target.value)}
@@ -118,7 +117,7 @@ export function SectionNotes({ reportId, onStatusChange, isLocked = false }: Pro
         <div className="text-xs text-muted-foreground text-right mt-0.5">{note.length}/3000</div>
 
         <p className="text-xs text-muted-foreground mt-3 bg-muted/40 rounded-lg px-3 py-2">
-          ℹ️ Ce bloc est transmis tel quel à la Direction. L'IA peut reformuler vos notes dictées.
+          {t("report.notes.info")}
         </p>
       </div>
     </section>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Lightbulb, Plus, Check, AlertCircle, Loader2 } from "lucide-react";
@@ -38,6 +39,7 @@ const TRIAGE_SORT_ORDER: Record<string, number> = {
 };
 
 export function SectionIds({ reportId, reportType, periodStart, periodEnd, onStatusChange }: Props) {
+  const { t } = useTranslation();
   const { spaId } = useAuth();
   const { data: rawIssues = [], isLoading: isLoadingWeekly } = useIdsItems(reportId);
   const { data: monthlyPreviewItems, isLoading: isLoadingPreview } = useIdsItemsForMonthlyPeriod(
@@ -118,10 +120,10 @@ export function SectionIds({ reportId, reportType, periodStart, periodEnd, onSta
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle className="text-base font-semibold">
-            Comment qualifier cet IDS ?
+            {t("report.ids.triage.dialogTitle")}
           </DialogTitle>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Est-ce urgent · important · à déléguer ?
+            {t("report.ids.triage.dialogSubtitle")}
           </p>
         </DialogHeader>
 
@@ -157,7 +159,7 @@ export function SectionIds({ reportId, reportType, periodStart, periodEnd, onSta
               onClick={closeTriage}
               className="w-full text-center text-xs text-muted-foreground py-2 hover:underline"
             >
-              Plus tard
+              {t("report.ids.triage.later")}
             </button>
           </div>
         )}
@@ -167,7 +169,7 @@ export function SectionIds({ reportId, reportType, periodStart, periodEnd, onSta
             <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${TRIAGE_CONFIG[selectedMode].color}`}>
               <span>{TRIAGE_CONFIG[selectedMode].icon}</span>
               <span className={`text-sm font-semibold ${TRIAGE_CONFIG[selectedMode].textColor}`}>
-                Marqué {TRIAGE_CONFIG[selectedMode].label} ✓
+                {t("report.ids.triage.marked", { label: TRIAGE_CONFIG[selectedMode].label })}
               </span>
             </div>
 
@@ -182,7 +184,7 @@ export function SectionIds({ reportId, reportType, periodStart, periodEnd, onSta
                   onClick={handleConversion}
                   disabled={convertToTodo.isPending || convertToObjective.isPending}
                 >
-                  ✓ Oui, tout de suite
+                  {t("report.ids.triage.confirmYes")}
                 </Button>
                 <Button
                   size="sm"
@@ -190,7 +192,7 @@ export function SectionIds({ reportId, reportType, periodStart, periodEnd, onSta
                   className="flex-1 text-xs"
                   onClick={closeTriage}
                 >
-                  → Je le ferai plus tard
+                  {t("report.ids.triage.confirmLater")}
                 </Button>
               </div>
             </div>
@@ -223,19 +225,19 @@ export function SectionIds({ reportId, reportType, periodStart, periodEnd, onSta
                     ? `${cfg.color} ${cfg.textColor} ${cfg.borderColor}`
                     : "bg-gray-100 text-gray-500 border-gray-300 border-dashed"
                 }`}
-                title={cfg ? "Cliquer pour re-qualifier" : "Cliquer pour qualifier"}
+                title={cfg ? t("report.ids.triage.requalify") : t("report.ids.triage.qualify")}
               >
-                {cfg ? `${cfg.icon} ${cfg.label}` : "❓ À trier"}
+                {cfg ? `${cfg.icon} ${cfg.label}` : `❓ ${t("report.ids.triage.toSort")}`}
               </button>
 
               {hasTodo && (
                 <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
-                  <Check className="h-3 w-3" /> To-Do créée
+                  <Check className="h-3 w-3" /> {t("report.ids.todoDone")}
                 </span>
               )}
               {hasObj && (
                 <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-300">
-                  <Check className="h-3 w-3" /> Objectif créé
+                  <Check className="h-3 w-3" /> {t("report.ids.objectiveDone")}
                 </span>
               )}
             </div>
@@ -249,7 +251,7 @@ export function SectionIds({ reportId, reportType, periodStart, periodEnd, onSta
                     onClick={() => convertToTodo.mutate(item)}
                     className="text-[10px] text-teal-700 underline hover:no-underline"
                   >
-                    → Créer une To-Do
+                    {t("report.ids.createTodo")}
                   </button>
                 )}
                 {item.triage_mode === "priorite" && (
@@ -257,7 +259,7 @@ export function SectionIds({ reportId, reportType, periodStart, periodEnd, onSta
                     onClick={() => convertToObjective.mutate(item)}
                     className="text-[10px] text-teal-700 underline hover:no-underline"
                   >
-                    → Créer un Objectif
+                    {t("report.ids.createObjective")}
                   </button>
                 )}
               </div>
@@ -271,9 +273,9 @@ export function SectionIds({ reportId, reportType, periodStart, periodEnd, onSta
   if (reportType === "monthly") {
     return (
       <section className="mb-8">
-        <h2 className="text-lg font-semibold text-foreground">IDS — Problèmes du mois</h2>
+        <h2 className="text-lg font-semibold text-foreground">{t("report.ids.monthlyTitle")}</h2>
         <p className="text-sm text-muted-foreground mb-4">
-          Récapitulatif des problèmes remontés lors des réunions weekly — lecture seule
+          {t("report.ids.monthlySubtitle")}
         </p>
 
         {isLoadingPreview ? (
@@ -283,9 +285,9 @@ export function SectionIds({ reportId, reportType, periodStart, periodEnd, onSta
         ) : sortedMonthlyItems.length === 0 ? (
           <div className="bg-muted/50 border border-border rounded-xl p-8 text-center">
             <Lightbulb className="h-8 w-8 text-muted-foreground/40 mx-auto mb-3" />
-            <p className="text-foreground font-medium">Aucun problème signalé ce mois</p>
+            <p className="text-foreground font-medium">{t("report.ids.monthlyEmpty")}</p>
             <p className="text-sm text-muted-foreground mt-1">
-              Les problèmes remontés lors des weekly apparaîtront ici.
+              {t("report.ids.monthlyEmptyHint")}
             </p>
           </div>
         ) : (
@@ -301,7 +303,7 @@ export function SectionIds({ reportId, reportType, periodStart, periodEnd, onSta
                     </span>
                     {isUnresolved && (
                       <span className="inline-flex items-center gap-1 text-xs font-medium text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-                        <AlertCircle className="h-3 w-3" /> À traiter en réunion
+                        <AlertCircle className="h-3 w-3" /> {t("report.ids.toProcess")}
                       </span>
                     )}
                   </div>
@@ -320,16 +322,16 @@ export function SectionIds({ reportId, reportType, periodStart, periodEnd, onSta
   // Weekly
   return (
     <section className="mb-8">
-      <h2 className="text-lg font-semibold text-foreground">IDS — Problèmes à remonter</h2>
+      <h2 className="text-lg font-semibold text-foreground">{t("report.ids.weeklyTitle")}</h2>
       <p className="text-sm text-muted-foreground mb-4">
-        Capture seule — traitement lors de la prochaine réunion Monthly
+        {t("report.ids.weeklySubtitle")}
       </p>
 
       <div className="space-y-2 mb-4">{issues.map(renderIssueRow)}</div>
 
       <div className="flex gap-2">
         <Input
-          placeholder="Signaler un problème (max 150 car.)"
+          placeholder={t("report.ids.placeholder")}
           maxLength={150}
           value={newIssue}
           onChange={(e) => setNewIssue(e.target.value)}
@@ -337,7 +339,7 @@ export function SectionIds({ reportId, reportType, periodStart, periodEnd, onSta
           className="flex-1"
         />
         <Button size="sm" onClick={addIssue} className="gap-1.5">
-          <Plus className="h-4 w-4" /> Signaler
+          <Plus className="h-4 w-4" /> {t("report.ids.signaler")}
         </Button>
       </div>
 
