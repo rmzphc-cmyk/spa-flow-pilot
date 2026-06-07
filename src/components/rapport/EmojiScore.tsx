@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 
 const EMOJIS = ["😫", "😕", "😐", "😊", "🌟"] as const;
@@ -9,6 +10,15 @@ interface Props {
 }
 
 export function EmojiScore({ value, onChange }: Props) {
+  const { t } = useTranslation();
+  const labelKeys = [
+    "report.emojiScore.label1",
+    "report.emojiScore.label2",
+    "report.emojiScore.label3",
+    "report.emojiScore.label4",
+    "report.emojiScore.label5",
+  ] as const;
+
   return (
     <div>
       <div className="flex items-center gap-2">
@@ -20,7 +30,7 @@ export function EmojiScore({ value, onChange }: Props) {
               key={score}
               type="button"
               onClick={() => onChange(score)}
-              aria-label={`${score} — ${LABELS[i]}`}
+              aria-label={`${score} — ${t(labelKeys[i])}`}
               className={cn(
                 "flex-1 h-14 rounded-xl border-2 text-2xl transition-all flex items-center justify-center",
                 selected
@@ -34,7 +44,7 @@ export function EmojiScore({ value, onChange }: Props) {
         })}
       </div>
       <p className="text-xs text-center mt-2 text-muted-foreground min-h-[1rem]">
-        {value > 0 ? LABELS[value - 1] : "Sélectionnez votre ressenti"}
+        {value > 0 ? t(labelKeys[value - 1]) : t("report.emojiScore.selectPrompt")}
       </p>
     </div>
   );
