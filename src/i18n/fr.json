@@ -151,5 +151,46 @@
     "respGlobal": "Score global responsabilités",
     "resolved": "Résolu",
     "inProgress": "En cours"
+  },
+  "reportType": {
+    "monthly": "Mensuel",
+    "weekly": "Hebdomadaire"
+  },
+  "report": {
+    "title": "Rapports",
+    "newReport": "Nouveau rapport",
+    "meetingLabel": "Réunion",
+    "completion": "Complétion",
+    "resumePrep": "Reprendre la préparation",
+    "open": "Ouvrir",
+    "cycleType": "Type de cycle",
+    "meetingPeriod": "Période de la réunion",
+    "selectPeriod": "Sélectionner une période…",
+    "noPeriodAvailable": "Aucune période disponible",
+    "autoCalculated": "Calculé automatiquement selon votre calendrier de réunions.",
+    "monthOfReport": "Mois du rapport",
+    "selectMonth": "Sélectionner un mois…",
+    "noMonthAvailable": "Aucun mois disponible",
+    "createAndOpen": "Créer et ouvrir",
+    "blockedTitle": "Un rapport {{type}} est déjà en cours",
+    "blockedWithLabel": "Le rapport <strong>« {{label}} »</strong> {{statePart}}.<br/>Vous devez le finaliser (ou le valider) avant d'en créer un nouveau de ce type.",
+    "blockedStateCurrently": "est actuellement <strong>{{state}}</strong>",
+    "blockedInProgress": "est en cours",
+    "blockedGeneric": "Vous avez déjà un rapport de ce type en cours. Finalisez-le avant d'en créer un nouveau.",
+    "viewReport": "Voir le rapport",
+    "understood": "Compris",
+    "createError": "Erreur lors de la création",
+    "createErrorDesc": "Impossible de créer le rapport.",
+    "loading": "Chargement…",
+    "loadError": "Erreur de chargement des rapports.",
+    "tabPrep": "À compléter",
+    "tabConsult": "À consulter / En réunion",
+    "emptyPrepTitle": "Aucun rapport en préparation",
+    "emptyPrepSub": "Tous vos rapports sont finalisés. Créez le prochain rapport pour démarrer.",
+    "emptyConsultTitle": "Aucun rapport à consulter",
+    "emptyConsultSub": "Les rapports finalisés et validés apparaîtront ici."
+  },
+  "common": {
+    "cancel": "Annuler"
   }
 }
