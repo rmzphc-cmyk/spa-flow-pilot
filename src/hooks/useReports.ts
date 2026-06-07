@@ -155,22 +155,7 @@ export function useStartMeeting() {
   });
 }
 
-const TIMEOUT_MS = 30_000;
-
-async function withTimeout<T>(p: Promise<T>, label: string): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | null = null;
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(
-      () => reject(new Error(`${label} prend plus de temps que prévu, réessayez.`)),
-      TIMEOUT_MS,
-    );
-  });
-  try {
-    return (await Promise.race([p, timeout])) as T;
-  } finally {
-    if (timer) clearTimeout(timer);
-  }
-}
+import { withTimeout } from "@/lib/withTimeout";
 
 export function useCloseMeeting() {
   const qc = useQueryClient();
