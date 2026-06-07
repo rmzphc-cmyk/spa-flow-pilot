@@ -105,7 +105,8 @@
   },
   "ai": {
     "badge": "Suggestion IA",
-    "tooltip": "Ce contenu a été généré par l'IA. Vous pouvez le modifier ou l'ignorer."
+    "tooltip": "Ce contenu a été généré par l'IA. Vous pouvez le modifier ou l'ignorer.",
+    "executiveSummary": "Synthèse IA"
   },
   "period": {
     "march2026": "Mars 2026"
