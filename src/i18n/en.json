@@ -193,6 +193,119 @@
     "emptyConsultSub": "Finalized and validated reports will appear here."
   },
   "common": {
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "loading": "Loading…",
+    "error": "Error"
+  },
+  "admin": {
+    "title": "Organization",
+    "subtitle": "Manage destinations, spas and directors.",
+    "subtitleReadOnly": "Read-only — management is restricted to administrators.",
+    "orgPlaceholder": "Organization",
+    "noOrgs": "No accessible organization.",
+    "tabs": {
+      "destinations": "Destinations",
+      "spas": "Spas",
+      "managers": "Managers",
+      "directors": "Directors"
+    },
+    "destinations": {
+      "count": "{{count}} destination(s)",
+      "new": "New destination",
+      "empty": "No destination.",
+      "detachFirst": "Detach spas first",
+      "editTitle": "Edit destination",
+      "newTitle": "New destination",
+      "deleteTitle": "Delete this destination?",
+      "deleteDesc": "\"{{name}}\" will be deleted. This action is irreversible.",
+      "createdToast": "Destination created",
+      "updatedToast": "Destination updated",
+      "deletedToast": "Destination deleted",
+      "nameRequired": "Name required",
+      "fields": {
+        "name": "Name",
+        "namePlaceholder": "E.g. Tenerife",
+        "country": "Country",
+        "countryPlaceholder": "ES",
+        "timezone": "Timezone"
+      }
+    },
+    "spas": {
+      "count": "{{count}} spa(s)",
+      "new": "New spa",
+      "empty": "No spa.",
+      "editTitle": "Edit spa",
+      "newTitle": "New spa",
+      "deleteTitle": "Delete this spa?",
+      "deleteDesc": "\"{{name}}\" and all its data (reports, KPIs…) will be lost.",
+      "createdToast": "Spa created",
+      "updatedToast": "Spa updated",
+      "deletedToast": "Spa deleted",
+      "nameDestRequired": "Name and destination required",
+      "fields": {
+        "name": "Name",
+        "namePlaceholder": "E.g. Sanagua Par Tenerife",
+        "destination": "Destination",
+        "active": "Active spa"
+      }
+    },
+    "directors": {
+      "count": "{{count}} director(s)",
+      "invite": "Invite a director",
+      "empty": "No director.",
+      "wholeOrg": "Entire organization",
+      "editTitle": "Edit director",
+      "inviteTitle": "Invite a director",
+      "deleteTitle": "Delete this director?",
+      "deleteDesc": "{{name}} will lose access to the application.",
+      "invitedToast": "Director invited",
+      "updatedToast": "Director updated",
+      "deletedToast": "Director deleted",
+      "fields": {
+        "email": "Email",
+        "emailPlaceholder": "director@example.com",
+        "fullName": "Full name",
+        "fullNamePlaceholder": "Ana Sanagua",
+        "destination": "Destination"
+      }
+    },
+    "managers": {
+      "count": "{{count}} manager(s)",
+      "invite": "Invite a manager",
+      "empty": "No manager.",
+      "noSpa": "No spa",
+      "unknownSpa": "Unknown spa",
+      "editTitle": "Edit manager",
+      "inviteTitle": "Invite a manager",
+      "deleteTitle": "Delete this manager?",
+      "deleteDesc": "{{name}} will lose access to the application.",
+      "invitedToast": "Manager invited",
+      "updatedToast": "Manager updated",
+      "deletedToast": "Manager deleted",
+      "spaRequired": "Spa required",
+      "fields": {
+        "email": "Email",
+        "emailPlaceholder": "manager@example.com",
+        "fullName": "Full name",
+        "fullNamePlaceholder": "Sophie Marchand",
+        "spa": "Assigned spa",
+        "spaPlaceholder": "Select a spa"
+      }
+    },
+    "invite": "Invite",
+    "emailRequired": "Email required",
+    "destRequired": "Destination required",
+    "tempCreds": {
+      "title": "Temporary credentials",
+      "desc": "Share these credentials with the director. The password will not be shown again.",
+      "emailLabel": "Email:",
+      "passwordLabel": "Password:",
+      "copy": "Copy",
+      "copied": "Copied"
+    }
   }
 }
