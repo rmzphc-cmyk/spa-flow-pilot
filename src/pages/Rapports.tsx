@@ -42,6 +42,7 @@ import { useMeetingSchedule, getAvailableWeeklyPeriods, type WeeklyPeriodOption 
 
 function ReportCard({ report, mode }: { report: ReportRecord; mode: "prep" | "consult" }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const sc = stateConfig[report.state];
   const target = `/rapport/${report.id}`;
 
@@ -57,7 +58,7 @@ function ReportCard({ report, mode }: { report: ReportRecord; mode: "prep" | "co
                   : "bg-blue-100 text-blue-800"
               }`}
             >
-              {report.type === "weekly" ? "🟢 Weekly" : "🔵 Monthly"}
+              {report.type === "weekly" ? `🟢 ${t("reportType.weekly")}` : `🔵 ${t("reportType.monthly")}`}
             </span>
             <span
               className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full ${sc.bg} ${sc.text}`}
@@ -70,14 +71,14 @@ function ReportCard({ report, mode }: { report: ReportRecord; mode: "prep" | "co
           {report.meetingDate && (
             <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
               <Calendar className="h-3 w-3" />
-              Réunion : {report.meetingDate}
+              {t("report.meetingLabel")} : {report.meetingDate}
             </p>
           )}
         </div>
 
         {mode === "prep" && (
           <div className="w-[140px] shrink-0">
-            <p className="text-xs text-muted-foreground mb-1">Complétion</p>
+            <p className="text-xs text-muted-foreground mb-1">{t("report.completion")}</p>
             <div className="flex items-center gap-2">
               <div className="flex-1 h-1.5 bg-border rounded-full overflow-hidden">
                 <div
@@ -94,13 +95,13 @@ function ReportCard({ report, mode }: { report: ReportRecord; mode: "prep" | "co
           {mode === "prep" ? (
             <Button size="sm" className="gap-1.5" onClick={() => navigate(target)}>
               <Edit3 className="h-4 w-4" />
-              Reprendre la préparation
+              {t("report.resumePrep")}
               <ArrowRight className="h-4 w-4" />
             </Button>
           ) : (
             <Button size="sm" variant="outline" className="gap-1.5" onClick={() => navigate(target)}>
               <Eye className="h-4 w-4" />
-              Ouvrir
+              {t("report.open")}
               <ArrowRight className="h-4 w-4" />
             </Button>
           )}
