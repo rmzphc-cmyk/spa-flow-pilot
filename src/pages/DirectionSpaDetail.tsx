@@ -153,7 +153,7 @@ export default function DirectionSpaDetail() {
           <AiBadge />
           <div className="p-4 pr-24">
             <h3 className="text-sm font-semibold text-foreground mb-2">
-              {t("ai.executiveSummary", { defaultValue: "Synthèse IA" })}
+              {t("ai.executiveSummary")}
             </h3>
             <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
               {detail.executiveSummary}
@@ -175,10 +175,10 @@ export default function DirectionSpaDetail() {
 
       <Tabs defaultValue="kpi">
         <TabsList className="mb-4">
-          <TabsTrigger value="kpi">KPI</TabsTrigger>
+          <TabsTrigger value="kpi">{t("sections.kpi")}</TabsTrigger>
           <TabsTrigger value="resp">{t("sections.responsabilites")}</TabsTrigger>
           <TabsTrigger value="obj">{t("sections.objectifs")}</TabsTrigger>
-          <TabsTrigger value="ids">IDS</TabsTrigger>
+          <TabsTrigger value="ids">{t("sections.ids")}</TabsTrigger>
         </TabsList>
 
         {/* KPI Tab */}
@@ -188,7 +188,7 @@ export default function DirectionSpaDetail() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-border text-left">
-                    <th className="px-4 py-3 font-medium text-muted-foreground">KPI</th>
+                    <th className="px-4 py-3 font-medium text-muted-foreground">{t("sections.kpi")}</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground">{t("direction.kpiValue")}</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground">{t("direction.kpiTarget")}</th>
                     <th className="px-4 py-3 font-medium text-muted-foreground">{t("direction.kpiGap")}</th>
