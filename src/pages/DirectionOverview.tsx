@@ -143,7 +143,10 @@ export default function DirectionOverview() {
           </p>
         </div>
         <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-          🔵 Monthly — {t("period.march2026")}
+          🔵 Monthly — {
+            spas.find((s) => s.report && s.report !== "Aucun rapport")?.report
+              ?? new Intl.DateTimeFormat("fr-FR", { month: "long", year: "numeric" }).format(new Date())
+          }
         </span>
       </div>
 
