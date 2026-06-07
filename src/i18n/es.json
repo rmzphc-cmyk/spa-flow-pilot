@@ -580,7 +580,43 @@
         "deferAgain": "Aplazar de nuevo",
         "statusHint": "El estado de cada acción (realizado, en curso, aplazado) se comunica a la Dirección.",
         "createHint": "💡 Para crear nuevas acciones → informe Monthly",
-        "toastDeferred": "Acción aplazada"
+        "toastDeferred": "Acción aplazada",
+        "overdueFor": "Atrasado desde {{date}}"
+      }
+    },
+    "responsabilites": {
+      "title": "Responsabilidades",
+      "titleWeekly": "Responsabilidades",
+      "subtitleMonthly": "Evalúe la realización de cada responsabilidad",
+      "subtitleWeekly": "Evalúe la realización de cada responsabilidad esta semana",
+      "lockedBadge": "Informe validado — solo lectura",
+      "empty": "Ninguna responsabilidad configurada para este spa",
+      "emptyWeekly": "Ninguna responsabilidad diaria o semanal configurada",
+      "scoreCounter": "{{evaluated}}/{{total}} responsabilidad(es) evaluada(s)",
+      "realized": "Realizado",
+      "expectedMonth": "/ {{count}} esperados este mes",
+      "expectedWeek": "/ {{count}} esperados esta semana",
+      "perMonth": "= {{count}}/mes",
+      "noPrefill": "○ Ningún informe semanal completado este mes",
+      "prefillModified": "(modificado)",
+      "button": {
+        "done": "Realizado ✓",
+        "partial": "Parcial ◐",
+        "notDone": "No realizado ✗"
+      },
+      "freq": {
+        "daily": "Diario",
+        "weekly": "Semanal",
+        "biweekly": "Quincenal",
+        "monthly": "Mensual",
+        "unitDay": "/día",
+        "unitWeek": "/sem"
+      },
+      "placeholder": {
+        "blocked": "¿Qué lo bloqueó?",
+        "missing": "¿Qué falta para alcanzar el objetivo?",
+        "optional": "Comentario (opcional)",
+        "whatDone": "¿Qué se hizo? ¿Qué falta?"
       }
     }
   },

@@ -580,7 +580,43 @@
         "deferAgain": "Defer again",
         "statusHint": "The status of each action (done, in progress, deferred) is shared with Management.",
         "createHint": "💡 To create new actions → Monthly report",
-        "toastDeferred": "Action deferred"
+        "toastDeferred": "Action deferred",
+        "overdueFor": "Overdue since {{date}}"
+      }
+    },
+    "responsabilites": {
+      "title": "Responsibilities",
+      "titleWeekly": "Responsibilities",
+      "subtitleMonthly": "Evaluate the completion of each responsibility",
+      "subtitleWeekly": "Evaluate the completion of each responsibility this week",
+      "lockedBadge": "Report validated — read only",
+      "empty": "No responsibility configured for this spa",
+      "emptyWeekly": "No daily or weekly responsibility configured",
+      "scoreCounter": "{{evaluated}}/{{total}} responsibility(ies) evaluated",
+      "realized": "Completed",
+      "expectedMonth": "/ {{count}} expected this month",
+      "expectedWeek": "/ {{count}} expected this week",
+      "perMonth": "= {{count}}/month",
+      "noPrefill": "○ No weekly report filled this month",
+      "prefillModified": "(modified)",
+      "button": {
+        "done": "Completed ✓",
+        "partial": "Partial ◐",
+        "notDone": "Not done ✗"
+      },
+      "freq": {
+        "daily": "Daily",
+        "weekly": "Weekly",
+        "biweekly": "Bi-monthly",
+        "monthly": "Monthly",
+        "unitDay": "/day",
+        "unitWeek": "/wk"
+      },
+      "placeholder": {
+        "blocked": "What blocked you?",
+        "missing": "What's missing to reach the goal?",
+        "optional": "Comment (optional)",
+        "whatDone": "What was done? What's missing?"
       }
     }
   },

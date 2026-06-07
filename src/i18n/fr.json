@@ -581,7 +581,43 @@
         "deferAgain": "Reporter à nouveau",
         "statusHint": "Le statut de chaque action (fait, en cours, reporté) est transmis à la Direction.",
         "createHint": "💡 Pour créer de nouvelles actions → rapport Monthly",
-        "toastDeferred": "Action reportée"
+        "toastDeferred": "Action reportée",
+        "overdueFor": "En retard depuis {{date}}"
+      }
+    },
+    "responsabilites": {
+      "title": "Responsabilités",
+      "titleWeekly": "Responsabilités",
+      "subtitleMonthly": "Évaluez la réalisation de chaque responsabilité",
+      "subtitleWeekly": "Évaluez la réalisation de chaque responsabilité cette semaine",
+      "lockedBadge": "Rapport validé — lecture seule",
+      "empty": "Aucune responsabilité configurée pour ce spa",
+      "emptyWeekly": "Aucune responsabilité journalière ou hebdomadaire configurée",
+      "scoreCounter": "{{evaluated}}/{{total}} responsabilité(s) évaluée(s)",
+      "realized": "Réalisé",
+      "expectedMonth": "/ {{count}} attendus ce mois",
+      "expectedWeek": "/ {{count}} attendus cette semaine",
+      "perMonth": "= {{count}}/mois",
+      "noPrefill": "○ Aucun rapport weekly renseigné ce mois",
+      "prefillModified": "(modifié)",
+      "button": {
+        "done": "Réalisé ✓",
+        "partial": "Partiel ◐",
+        "notDone": "Non réalisé ✗"
+      },
+      "freq": {
+        "daily": "Journalier",
+        "weekly": "Hebdo",
+        "biweekly": "Bimensuel",
+        "monthly": "Mensuel",
+        "unitDay": "/jour",
+        "unitWeek": "/sem"
+      },
+      "placeholder": {
+        "blocked": "Qu'est-ce qui a bloqué ?",
+        "missing": "Qu'est-ce qui manque pour atteindre l'objectif ?",
+        "optional": "Commentaire (optionnel)",
+        "whatDone": "Qu'est-ce qui a été fait ? Qu'est-ce qui manque ?"
       }
     }
   },
