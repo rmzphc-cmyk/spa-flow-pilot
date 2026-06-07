@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { withTimeout } from "@/lib/withTimeout";
@@ -50,11 +51,13 @@ export function useMeetingSummary(reportId: string | undefined) {
 
 export function useGenerateMeetingSummary() {
   const qc = useQueryClient();
+  const { i18n } = useTranslation();
   return useMutation({
-    mutationFn: async (input: { reportId: string }) => {
+    mutationFn: async (input: { reportId: string; language?: string }) => {
+      const lang = (input.language ?? i18n.language ?? "fr").slice(0, 2).toLowerCase();
       const { data, error } = await withTimeout(
         supabase.functions.invoke("generate-meeting-summary", {
-          body: { report_id: input.reportId },
+          body: { report_id: input.reportId, language: lang },
         }),
         "La génération de la synthèse",
       );
