@@ -486,5 +486,10 @@
       "Formation": "Formation",
       "Administratif": "Administratif"
     }
+  },
+  "notFound": {
+    "title": "404",
+    "message": "Oups ! Page introuvable",
+    "returnHome": "Retour à l'accueil"
   }
 }

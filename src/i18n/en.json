@@ -485,5 +485,10 @@
       "Formation": "Training",
       "Administratif": "Administrative"
     }
+  },
+  "notFound": {
+    "title": "404",
+    "message": "Oops! Page not found",
+    "returnHome": "Return to Home"
   }
 }
