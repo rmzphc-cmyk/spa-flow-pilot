@@ -52,9 +52,12 @@ export function useGenerateMeetingSummary() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (input: { reportId: string }) => {
-      const { data, error } = await supabase.functions.invoke("generate-meeting-summary", {
-        body: { report_id: input.reportId },
-      });
+      const { data, error } = await withTimeout(
+        supabase.functions.invoke("generate-meeting-summary", {
+          body: { report_id: input.reportId },
+        }),
+        "La génération de la synthèse",
+      );
       if (error) throw new Error(data?.error ?? error.message ?? "Erreur génération");
       if (data?.error) throw new Error(data.error);
       return data.data as MeetingSummaryRow;
