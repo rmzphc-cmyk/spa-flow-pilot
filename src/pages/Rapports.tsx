@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { FileText, ArrowRight, Eye, Plus, Calendar, Edit3, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,7 @@ import { useMeetingSchedule, getAvailableWeeklyPeriods, type WeeklyPeriodOption 
 
 function ReportCard({ report, mode }: { report: ReportRecord; mode: "prep" | "consult" }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const sc = stateConfig[report.state];
   const target = `/rapport/${report.id}`;
 
@@ -56,7 +58,7 @@ function ReportCard({ report, mode }: { report: ReportRecord; mode: "prep" | "co
                   : "bg-blue-100 text-blue-800"
               }`}
             >
-              {report.type === "weekly" ? "🟢 Weekly" : "🔵 Monthly"}
+              {report.type === "weekly" ? `🟢 ${t("reportType.weekly")}` : `🔵 ${t("reportType.monthly")}`}
             </span>
             <span
               className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full ${sc.bg} ${sc.text}`}
@@ -69,14 +71,14 @@ function ReportCard({ report, mode }: { report: ReportRecord; mode: "prep" | "co
           {report.meetingDate && (
             <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
               <Calendar className="h-3 w-3" />
-              Réunion : {report.meetingDate}
+              {t("report.meetingLabel")} : {report.meetingDate}
             </p>
           )}
         </div>
 
         {mode === "prep" && (
           <div className="w-[140px] shrink-0">
-            <p className="text-xs text-muted-foreground mb-1">Complétion</p>
+            <p className="text-xs text-muted-foreground mb-1">{t("report.completion")}</p>
             <div className="flex items-center gap-2">
               <div className="flex-1 h-1.5 bg-border rounded-full overflow-hidden">
                 <div
@@ -93,13 +95,13 @@ function ReportCard({ report, mode }: { report: ReportRecord; mode: "prep" | "co
           {mode === "prep" ? (
             <Button size="sm" className="gap-1.5" onClick={() => navigate(target)}>
               <Edit3 className="h-4 w-4" />
-              Reprendre la préparation
+              {t("report.resumePrep")}
               <ArrowRight className="h-4 w-4" />
             </Button>
           ) : (
             <Button size="sm" variant="outline" className="gap-1.5" onClick={() => navigate(target)}>
               <Eye className="h-4 w-4" />
-              Ouvrir
+              {t("report.open")}
               <ArrowRight className="h-4 w-4" />
             </Button>
           )}
@@ -154,10 +156,12 @@ function defaultLabel(type: ReportType, start: string): string {
 
 export default function Rapports() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [tab, setTab] = useState<"prep" | "consult">("prep");
   const { data: rows = [], isLoading, error } = useReports();
   const createReport = useCreateReport();
   const schedule = useMeetingSchedule();
+
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newType, setNewType] = useState<ReportType>("monthly");
@@ -264,8 +268,8 @@ export default function Rapports() {
         }
       } else {
         toast({
-          title: "Erreur lors de la création",
-          description: message || "Impossible de créer le rapport.",
+          title: t("report.createError"),
+          description: message || t("report.createErrorDesc"),
           variant: "destructive",
         });
       }
@@ -275,31 +279,31 @@ export default function Rapports() {
   return (
     <>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold text-foreground">Rapports</h1>
+        <h1 className="text-2xl font-bold text-foreground">{t("report.title")}</h1>
         <Button className="gap-1.5" onClick={() => setDialogOpen(true)}>
-          <Plus className="h-4 w-4" /> Nouveau rapport
+          <Plus className="h-4 w-4" /> {t("report.newReport")}
         </Button>
       </div>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Nouveau rapport</DialogTitle>
+            <DialogTitle>{t("report.newReport")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div>
-              <Label className="text-sm mb-1.5 block">Type de cycle</Label>
+              <Label className="text-sm mb-1.5 block">{t("report.cycleType")}</Label>
               <Select value={newType} onValueChange={(v) => setNewType(v as ReportType)}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="weekly">🟢 Weekly</SelectItem>
-                  <SelectItem value="monthly">🔵 Monthly</SelectItem>
+                  <SelectItem value="weekly">🟢 {t("reportType.weekly")}</SelectItem>
+                  <SelectItem value="monthly">🔵 {t("reportType.monthly")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             {newType === "weekly" ? (
               <div>
-                <Label className="text-sm mb-1.5 block">Période de la réunion</Label>
+                <Label className="text-sm mb-1.5 block">{t("report.meetingPeriod")}</Label>
                 <Select
                   value={selectedWeeklyPeriod?.periodStart ?? ""}
                   onValueChange={(v) => {
@@ -307,10 +311,10 @@ export default function Rapports() {
                     setSelectedWeeklyPeriod(opt);
                   }}
                 >
-                  <SelectTrigger><SelectValue placeholder="Sélectionner une période…" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("report.selectPeriod")} /></SelectTrigger>
                   <SelectContent>
                     {weeklyOptions.length === 0 ? (
-                      <div className="px-2 py-1.5 text-sm text-muted-foreground">Aucune période disponible</div>
+                      <div className="px-2 py-1.5 text-sm text-muted-foreground">{t("report.noPeriodAvailable")}</div>
                     ) : (
                       weeklyOptions.map((opt) => (
                         <SelectItem key={opt.periodStart} value={opt.periodStart}>
@@ -321,12 +325,12 @@ export default function Rapports() {
                   </SelectContent>
                 </Select>
                 <p className="text-xs text-muted-foreground mt-1.5">
-                  Calculé automatiquement selon votre calendrier de réunions.
+                  {t("report.autoCalculated")}
                 </p>
               </div>
             ) : (
               <div>
-                <Label className="text-sm mb-1.5 block">Mois du rapport</Label>
+                <Label className="text-sm mb-1.5 block">{t("report.monthOfReport")}</Label>
                 <Select
                   value={selectedMonthlyPeriod?.yearMonth ?? ""}
                   onValueChange={(v) => {
@@ -334,10 +338,10 @@ export default function Rapports() {
                     setSelectedMonthlyPeriod(opt);
                   }}
                 >
-                  <SelectTrigger><SelectValue placeholder="Sélectionner un mois…" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder={t("report.selectMonth")} /></SelectTrigger>
                   <SelectContent>
                     {monthlyOptions.length === 0 ? (
-                      <div className="px-2 py-1.5 text-sm text-muted-foreground">Aucun mois disponible</div>
+                      <div className="px-2 py-1.5 text-sm text-muted-foreground">{t("report.noMonthAvailable")}</div>
                     ) : (
                       monthlyOptions.map((opt) => (
                         <SelectItem key={opt.yearMonth} value={opt.yearMonth}>
@@ -351,7 +355,7 @@ export default function Rapports() {
             )}
           </div>
           <DialogFooter className="mt-4">
-            <Button variant="ghost" onClick={() => setDialogOpen(false)} disabled={createReport.isPending}>Annuler</Button>
+            <Button variant="ghost" onClick={() => setDialogOpen(false)} disabled={createReport.isPending}>{t("common.cancel")}</Button>
             <Button
               onClick={handleCreate}
               disabled={
@@ -361,7 +365,7 @@ export default function Rapports() {
               }
             >
               {createReport.isPending && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
-              Créer et ouvrir
+              {t("report.createAndOpen")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -372,18 +376,24 @@ export default function Rapports() {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Un rapport {blockedInfo?.type === "weekly" ? "Weekly" : "Monthly"} est déjà en cours
+              {t("report.blockedTitle", {
+                type: blockedInfo?.type === "weekly" ? t("reportType.weekly") : t("reportType.monthly"),
+              })}
             </AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogDescription asChild>
               {blockedInfo?.label ? (
-                <>
-                  Le rapport <strong>« {blockedInfo.label} »</strong>
-                  {blockedInfo.stateLabel ? <> est actuellement <strong>{blockedInfo.stateLabel.toLowerCase()}</strong></> : " est en cours"}.
-                  <br />
-                  Vous devez le finaliser (ou le valider) avant d'en créer un nouveau de ce type.
-                </>
+                <span
+                  dangerouslySetInnerHTML={{
+                    __html: t("report.blockedWithLabel", {
+                      label: blockedInfo.label,
+                      statePart: blockedInfo.stateLabel
+                        ? t("report.blockedStateCurrently", { state: blockedInfo.stateLabel.toLowerCase() })
+                        : t("report.blockedInProgress"),
+                    }),
+                  }}
+                />
               ) : (
-                <>Vous avez déjà un rapport de ce type en cours. Finalisez-le avant d'en créer un nouveau.</>
+                <span>{t("report.blockedGeneric")}</span>
               )}
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -399,11 +409,11 @@ export default function Rapports() {
                 }}
               >
                 <Eye className="h-4 w-4 mr-1.5" />
-                Voir le rapport
+                {t("report.viewReport")}
               </Button>
             )}
             <AlertDialogAction onClick={() => setBlockedInfo(null)}>
-              Compris
+              {t("report.understood")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -411,21 +421,21 @@ export default function Rapports() {
 
       {isLoading ? (
         <div className="flex items-center justify-center py-20 text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin mr-2" /> Chargement…
+          <Loader2 className="h-5 w-5 animate-spin mr-2" /> {t("report.loading")}
         </div>
       ) : error ? (
-        <div className="py-20 text-center text-destructive">Erreur de chargement des rapports.</div>
+        <div className="py-20 text-center text-destructive">{t("report.loadError")}</div>
       ) : (
         <Tabs value={tab} onValueChange={(v) => setTab(v as "prep" | "consult")} className="w-full">
           <TabsList className="mb-5">
             <TabsTrigger value="prep" className="gap-2">
-              À compléter
+              {t("report.tabPrep")}
               <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-primary/10 text-primary text-xs font-semibold">
                 {prepReports.length}
               </span>
             </TabsTrigger>
             <TabsTrigger value="consult" className="gap-2">
-              À consulter / En réunion
+              {t("report.tabConsult")}
               <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-muted text-muted-foreground text-xs font-semibold">
                 {consultReports.length}
               </span>
@@ -435,8 +445,8 @@ export default function Rapports() {
           <TabsContent value="prep">
             {prepReports.length === 0 ? (
               <EmptyState
-                title="Aucun rapport en préparation"
-                subtitle="Tous vos rapports sont finalisés. Créez le prochain rapport pour démarrer."
+                title={t("report.emptyPrepTitle")}
+                subtitle={t("report.emptyPrepSub")}
               />
             ) : (
               <div className="flex flex-col gap-3">
@@ -450,8 +460,8 @@ export default function Rapports() {
           <TabsContent value="consult">
             {consultReports.length === 0 ? (
               <EmptyState
-                title="Aucun rapport à consulter"
-                subtitle="Les rapports finalisés et validés apparaîtront ici."
+                title={t("report.emptyConsultTitle")}
+                subtitle={t("report.emptyConsultSub")}
               />
             ) : (
               <div className="flex flex-col gap-3">

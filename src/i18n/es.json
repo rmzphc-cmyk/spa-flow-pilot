@@ -150,5 +150,46 @@
     "respGlobal": "Puntuación global de responsabilidades",
     "resolved": "Resuelto",
     "inProgress": "En curso"
+  },
+  "reportType": {
+    "monthly": "Mensual",
+    "weekly": "Semanal"
+  },
+  "report": {
+    "title": "Informes",
+    "newReport": "Nuevo informe",
+    "meetingLabel": "Reunión",
+    "completion": "Completitud",
+    "resumePrep": "Retomar la preparación",
+    "open": "Abrir",
+    "cycleType": "Tipo de ciclo",
+    "meetingPeriod": "Período de la reunión",
+    "selectPeriod": "Seleccionar un período…",
+    "noPeriodAvailable": "Ningún período disponible",
+    "autoCalculated": "Calculado automáticamente según su calendario de reuniones.",
+    "monthOfReport": "Mes del informe",
+    "selectMonth": "Seleccionar un mes…",
+    "noMonthAvailable": "Ningún mes disponible",
+    "createAndOpen": "Crear y abrir",
+    "blockedTitle": "Ya hay un informe {{type}} en curso",
+    "blockedWithLabel": "El informe <strong>«{{label}}»</strong> {{statePart}}.<br/>Debe finalizarlo (o validarlo) antes de crear uno nuevo de este tipo.",
+    "blockedStateCurrently": "está actualmente <strong>{{state}}</strong>",
+    "blockedInProgress": "está en curso",
+    "blockedGeneric": "Ya tiene un informe de este tipo en curso. Finalícelo antes de crear uno nuevo.",
+    "viewReport": "Ver informe",
+    "understood": "Entendido",
+    "createError": "Error durante la creación",
+    "createErrorDesc": "No se puede crear el informe.",
+    "loading": "Cargando…",
+    "loadError": "Error al cargar los informes.",
+    "tabPrep": "Por completar",
+    "tabConsult": "Para consultar / En reunión",
+    "emptyPrepTitle": "Ningún informe en preparación",
+    "emptyPrepSub": "Todos sus informes están finalizados. Cree el próximo informe para comenzar.",
+    "emptyConsultTitle": "Ningún informe para consultar",
+    "emptyConsultSub": "Los informes finalizados y validados aparecerán aquí."
+  },
+  "common": {
+    "cancel": "Cancelar"
   }
 }

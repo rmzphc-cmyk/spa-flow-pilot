@@ -150,5 +150,46 @@
     "respGlobal": "Overall responsibility score",
     "resolved": "Resolved",
     "inProgress": "In progress"
+  },
+  "reportType": {
+    "monthly": "Monthly",
+    "weekly": "Weekly"
+  },
+  "report": {
+    "title": "Reports",
+    "newReport": "New report",
+    "meetingLabel": "Meeting",
+    "completion": "Completion",
+    "resumePrep": "Resume preparation",
+    "open": "Open",
+    "cycleType": "Cycle type",
+    "meetingPeriod": "Meeting period",
+    "selectPeriod": "Select a period…",
+    "noPeriodAvailable": "No period available",
+    "autoCalculated": "Automatically calculated based on your meeting calendar.",
+    "monthOfReport": "Report month",
+    "selectMonth": "Select a month…",
+    "noMonthAvailable": "No month available",
+    "createAndOpen": "Create and open",
+    "blockedTitle": "A {{type}} report is already in progress",
+    "blockedWithLabel": "The report <strong>“{{label}}”</strong> {{statePart}}.<br/>You must finalize (or validate) it before creating a new one of this type.",
+    "blockedStateCurrently": "is currently <strong>{{state}}</strong>",
+    "blockedInProgress": "is in progress",
+    "blockedGeneric": "You already have a report of this type in progress. Finalize it before creating a new one.",
+    "viewReport": "View report",
+    "understood": "Got it",
+    "createError": "Error during creation",
+    "createErrorDesc": "Unable to create the report.",
+    "loading": "Loading…",
+    "loadError": "Error loading reports.",
+    "tabPrep": "To complete",
+    "tabConsult": "To consult / In meeting",
+    "emptyPrepTitle": "No report in preparation",
+    "emptyPrepSub": "All your reports are finalized. Create the next report to get started.",
+    "emptyConsultTitle": "No report to consult",
+    "emptyConsultSub": "Finalized and validated reports will appear here."
+  },
+  "common": {
+    "cancel": "Cancel"
   }
 }
