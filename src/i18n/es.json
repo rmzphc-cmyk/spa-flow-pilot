@@ -383,5 +383,107 @@
       "secondaire": "Secundario",
       "suivi": "Seguimiento"
     }
+  },
+  "respConfig": {
+    "title": "Responsabilidades de gestión",
+    "subtitle": "Gestionar plantillas y recurrencia de reuniones",
+    "tabs": {
+      "templates": "Plantillas",
+      "calendar": "Calendario de reuniones"
+    },
+    "selectSpa": "Seleccionar un spa",
+    "selectSpaPrompt": "Seleccionar un spa",
+    "loading": "Cargando…",
+    "emptyTemplates": "Ninguna plantilla. Haga clic en « Añadir una plantilla ».",
+    "addTemplate": "Añadir una plantilla",
+    "table": {
+      "title": "Título",
+      "category": "Categoría",
+      "active": "Activo",
+      "actions": "Acciones"
+    },
+    "saveSuccess": "Guardado ✓",
+    "editSuccess": "Plantilla actualizada ✓",
+    "addSuccess": "Plantilla añadida ✓",
+    "deactivateSuccess": "Plantilla desactivada",
+    "deactivateTitle": "¿Desactivar esta plantilla?",
+    "deactivateDesc": "« {{title}} » ya no se propondrá en los nuevos informes. El historial permanece intacto.",
+    "deactivate": "Desactivar",
+    "sheet": {
+      "editTitle": "Editar plantilla",
+      "addTitle": "Añadir una plantilla",
+      "titleLabel": "Título *",
+      "titlePlaceholder": "Ej. Reunión de equipo semanal",
+      "descriptionLabel": "Descripción",
+      "descriptionPlaceholder": "Detalles sobre esta responsabilidad (opcional)",
+      "categoryLabel": "Categoría",
+      "frequencyLabel": "Frecuencia",
+      "activeLabel": "Activo"
+    },
+    "scheduleSaved": "Calendario guardado",
+    "scheduleSavedDesc": "Sincronizado en todos sus dispositivos.",
+    "scheduleSaveError": "Error al guardar",
+    "calendarTitle": "Defina la recurrencia de las reuniones Semanal y Mensual. El panel de control utiliza estos ajustes para mostrar la próxima reunión y enviar recordatorios.",
+    "weeklyLabel": "🟢 Semanal",
+    "monthlyLabel": "🔵 Mensual",
+    "recurrentDayLabel": "Día de la semana recurrente",
+    "recurrentDayHint": "Ej. todos los jueves",
+    "recurrenceTypeLabel": "Tipo de recurrencia",
+    "recurrenceTypeWeekday": "Enésimo día de la semana (ej. 1.º lunes)",
+    "recurrenceTypeDate": "Fecha exacta (ej. el 15)",
+    "occurrenceLabel": "Ocurrencia",
+    "dayLabel": "Día",
+    "ofTheMonth": "del mes",
+    "monthDateLabel": "Día del mes (1 – 31, o « Último »)",
+    "lastDayOfMonth": "Último día del mes",
+    "theDay": "El {{day}}",
+    "frequency": {
+      "daily": "Diario",
+      "weekly": "Semanal",
+      "biweekly": "Quincenal",
+      "monthly": "Mensual"
+    },
+    "unit": {
+      "day": "día",
+      "week": "sem",
+      "fortnight": "quinc.",
+      "month": "mes"
+    },
+    "expectedTotal": "= {{total}}/mes",
+    "countLabel": {
+      "daily": "Cantidad por día",
+      "weekly": "Cantidad por semana",
+      "biweekly": "Cantidad por quincena",
+      "monthly": "Cantidad por mes"
+    },
+    "schedule": {
+      "monthlyLastDay": "El último día del mes",
+      "monthlyDate": "El {{date}} de cada mes",
+      "monthlyWeekday": "{{occurrence}} {{day}} del mes"
+    },
+    "occurrence": {
+      "1er": "1.º",
+      "2eme": "2.º",
+      "3eme": "3.º",
+      "4eme": "4.º",
+      "last": "Último"
+    },
+    "weeklyDayOption": {
+      "lundi": "Todos los lunes",
+      "mardi": "Todos los martes",
+      "mercredi": "Todos los miércoles",
+      "jeudi": "Todos los jueves",
+      "vendredi": "Todos los viernes",
+      "samedi": "Todos los sábados",
+      "dimanche": "Todos los domingos"
+    },
+    "category": {
+      "RH": "RRHH",
+      "Commercial": "Comercial",
+      "Opérationnel": "Operativo",
+      "Qualité": "Calidad",
+      "Formation": "Formación",
+      "Administratif": "Administrativo"
+    }
   }
 }
