@@ -190,7 +190,335 @@
     "emptyPrepTitle": "Ningún informe en preparación",
     "emptyPrepSub": "Todos sus informes están finalizados. Cree el próximo informe para comenzar.",
     "emptyConsultTitle": "Ningún informe para consultar",
-    "emptyConsultSub": "Los informes finalizados y validados aparecerán aquí."
+    "emptyConsultSub": "Los informes finalizados y validados aparecerán aquí.",
+    "header": {
+      "breadcrumb": {
+        "org": "Par Gran Canaria",
+        "reports": "Informes"
+      },
+      "badge": {
+        "enPreparation": "En preparación"
+      },
+      "sections": "{{completed}}/{{total}} secciones",
+      "sectionLabels": {
+        "kpi": "KPI",
+        "checkin": "Check-in",
+        "responsabilites": "Responsabilidades",
+        "todo": "Tareas",
+        "objectifs": "Objetivos",
+        "ids": "IDS",
+        "notes": "Notas libres",
+        "cloture": "Cierre"
+      }
+    },
+    "checkin": {
+      "title": "Check-in humano",
+      "subtitle": "Estado del equipo y energía del mánager",
+      "equipe": {
+        "label": "Clima del equipo",
+        "sublabel": "¿Cómo está el equipo este ciclo?",
+        "placeholder": "¿Qué está pesando en el equipo ahora mismo?"
+      },
+      "manager": {
+        "label": "Energía del mánager",
+        "sublabel": "¿Cómo se siente este ciclo?",
+        "placeholder": "¿Qué está afectando su energía?"
+      },
+      "commentRequired": "Comentario requerido",
+      "commentError": "Se requiere un comentario para una puntuación ≤ 2",
+      "situation": {
+        "label": "Situación global",
+        "sublabel": "En una frase, ¿cómo está el spa este ciclo?",
+        "visible": "Será visible para la Dirección",
+        "placeholder": "En una frase, ¿cómo está el spa este ciclo?"
+      }
+    },
+    "checkinWeekly": {
+      "title": "Check-in rápido",
+      "subtitle": "30 segundos · Su estado y el del equipo",
+      "meteo": {
+        "label": "Clima del equipo esta semana",
+        "sublabel": "¿Cómo está el equipo esta semana?"
+      },
+      "context": {
+        "label": "Contexto del equipo",
+        "sublabel": "Clima, ambiente, breve actualización de cada colaborador…",
+        "placeholder": "Ej: Buena semana en general. Marie muy comprometida con los tratamientos duo. Thomas retraído — a vigilar. Julie gestionó el incidente de la piscina con calma. Moral general positivo a pesar de la carga."
+      }
+    },
+    "notes": {
+      "title": "Notas libres",
+      "subtitle": "Información adicional para la Dirección",
+      "label": "Sus notas",
+      "placeholder": "Ej: Seguimiento de la visita del director del hotel. Punto sobre el pedido de productos… Todo lo que no encaja en otro lugar.",
+      "info": "ℹ️ Este bloque se envía tal cual a la Dirección. La IA puede reformular sus notas dictadas."
+    },
+    "objectifs": {
+      "title": "Objetivos",
+      "active": "{{count}}/3 activos",
+      "subtitle": "Seguimiento de objetivos del ciclo",
+      "info": "Los objetivos se definen en reunión o en la sección Cierre post-reunión.",
+      "loading": "Cargando objetivos…",
+      "empty": {
+        "title": "Sin objetivos activos para este ciclo",
+        "subtitle": "A definir en la próxima reunión"
+      },
+      "cible": "Objetivo",
+      "comment": {
+        "placeholder": "Comentario corto"
+      },
+      "status": {
+        "onTrack": "En buen camino",
+        "atRisk": "En riesgo",
+        "behind": "Retrasado"
+      }
+    },
+    "cloture": {
+      "title": {
+        "monthly": "Cierre & compromisos",
+        "weekly": "Cierre — Resumen de la semana"
+      },
+      "subtitle": {
+        "monthly": "Síntesis, compromisos tomados en reunión y próxima fecha límite",
+        "weekly": "Resumen pre-rellenado a partir de sus entradas, editable"
+      },
+      "aiSuggestion": "Sugerencia IA",
+      "summary": {
+        "monthly": "Síntesis del mes",
+        "weekly": "Resumen semanal"
+      },
+      "words": "palabras",
+      "engagements": {
+        "title": "Compromisos — quién hace qué y cuándo",
+        "subtitle": "Consolidado desde las secciones IDS, Objetivos y Tareas de este ciclo."
+      },
+      "nextMeeting": "Próxima reunión mensual",
+      "validate": "Validar y enviar a la Dirección",
+      "toast": {
+        "validated": "Informe validado — visible para la Dirección"
+      },
+      "generated": {
+        "weekly": "Esta semana:",
+        "monthly": "Este mes:",
+        "kpiLabel": "KPI clave:",
+        "above": "por encima",
+        "below": "por debajo",
+        "actionsLabel": "Acciones completadas",
+        "idsLabel": "Problemas IDS resueltos",
+        "noData": "No hay datos ingresados para generar un resumen automático. Redacte su resumen a continuación."
+      }
+    },
+    "ids": {
+      "triage": {
+        "dialogTitle": "¿Cómo calificar este IDS?",
+        "dialogSubtitle": "¿Es urgente · importante · para delegar?",
+        "later": "Más tarde",
+        "marked": "Marcado {{label}} ✓",
+        "confirmYes": "✓ Sí, ahora mismo",
+        "confirmLater": "→ Lo haré más tarde",
+        "requalify": "Clic para recalificar",
+        "qualify": "Clic para calificar",
+        "toSort": "Por clasificar"
+      },
+      "todoDone": "To-Do creada",
+      "objectiveDone": "Objetivo creado",
+      "createTodo": "→ Crear un To-Do",
+      "createObjective": "→ Crear un Objetivo",
+      "monthlyTitle": "IDS — Problemas del mes",
+      "monthlySubtitle": "Resumen de problemas reportados en reuniones weekly — solo lectura",
+      "monthlyEmpty": "Ningún problema reportado este mes",
+      "monthlyEmptyHint": "Los problemas reportados en los weeklies aparecerán aquí.",
+      "toProcess": "A tratar en reunión",
+      "weeklyTitle": "IDS — Problemas a reportar",
+      "weeklySubtitle": "Solo captura — procesamiento en la próxima reunión Monthly",
+      "placeholder": "Reportar un problema (máx. 150 car.)",
+      "signaler": "Reportar",
+      "identifiedTitle": "Problemas identificados",
+      "identifiedSubtitle": "Captura rápida — convierte en to-do u objetivo si es necesario",
+      "identified": "Identificado",
+      "todoDoneWeekly": "To-do creado",
+      "toTodo": "→ To-do",
+      "toObjectif": "→ Objetivo",
+      "describePlaceholder": "Describe el problema en una frase...",
+      "confirm": "Confirmar",
+      "cancel": "Cancelar",
+      "addProblem": "Añadir un problema",
+      "counter": "{{count}} problema(s) · {{todoCount}} to-do(s) creado(s) · {{objectifCount}} objetivo(s) creado(s)",
+      "hint": "Los problemas identificados aquí se tratarán en la próxima reunión Monthly.",
+      "toastTodoTitle": "To-do creado",
+      "toastTodoDesc": "Visible en la sección Acciones del informe Monthly",
+      "toastObjectifTitle": "Objetivo creado",
+      "toastObjectifDesc": "Visible en la sección Objetivos del informe Monthly",
+      "toastError": "Error",
+      "convertTodoTitle": "Convertir en To-do",
+      "labelTitle": "Título *",
+      "labelResponsible": "Responsable",
+      "placeholderResponsible": "Nombre del responsable",
+      "labelDueDate": "Fecha límite *",
+      "createTodoBtn": "Crear el to-do",
+      "convertObjectifTitle": "Convertir en Objetivo",
+      "labelTargetDate": "Fecha objetivo *",
+      "maxObjectifs": "ℹ️ Máx. 3 objetivos activos por spa",
+      "createObjectifBtn": "Crear el objetivo"
+    },
+    "kpi": {
+      "title": "KPI del mes",
+      "subtitle": "Introduzca los indicadores clave de rendimiento de este mes",
+      "weeklyTitle": "📅 KPI de la semana",
+      "weeklySubtitle": "Comparación vs objetivo semanal (÷4 o fijo según config)",
+      "missingComment": "{{count}} KPI(s) requieren un comentario para continuar",
+      "commentRequired": "Comentario requerido",
+      "othersTitle": "Otros KPIs"
+    },
+    "meeting": {
+      "slides": {
+        "kpi": "KPI",
+        "checkin": "Check-in",
+        "responsabilities": "Responsabilidades",
+        "todos": "Tareas",
+        "objectives": "Objetivos",
+        "ids": "IDS",
+        "notes": "Notas",
+        "closure": "Cierre",
+        "summary": "Resumen IA",
+        "idsStructure": "IDS — Estructuración",
+        "validation": "Validación"
+      },
+      "kpi": {
+        "noData": "No hay KPIs registrados.",
+        "otherKpis": "Otros KPIs",
+        "colIndicator": "Indicador",
+        "colN1": "N-1",
+        "colReal": "Real",
+        "colEvolution": "Evolución"
+      },
+      "checkin": {
+        "noData": "No hay check-in registrado.",
+        "teamMood": "Clima del equipo",
+        "managerEnergy": "Energía del responsable",
+        "globalSituation": "Situación global"
+      },
+      "responsabilities": {
+        "noData": "No hay responsabilidades configuradas."
+      },
+      "todos": {
+        "noData": "No hay tareas activas.",
+        "inProgress": "En progreso",
+        "todo": "Por hacer"
+      },
+      "objectives": {
+        "noData": "No hay objetivos activos.",
+        "onTrack": "En camino",
+        "atRisk": "En riesgo",
+        "behind": "Retrasado"
+      },
+      "ids": {
+        "monthlyProblems": "Problemas del mes (semanal)",
+        "loading": "Cargando…",
+        "noMonthlyIds": "No se registraron IDS durante las reuniones semanales de este mes.",
+        "badgeTodo": "Tarea",
+        "badgeObjective": "Objetivo",
+        "badgeUntreated": "Sin tratar",
+        "convertToTodo": "→ Tarea",
+        "convertToObjective": "→ Objetivo",
+        "newPoints": "Nuevos puntos planteados en la reunión",
+        "addPlaceholder": "Describir el problema (máx. 150 car.)",
+        "add": "Añadir",
+        "noNewPoints": "No se capturaron nuevos puntos."
+      },
+      "notes": {
+        "title": "Notas libres",
+        "noData": "No se registraron notas libres en la preparación."
+      },
+      "closure": {
+        "idsMonth": "IDS del mes",
+        "newIds": "Nuevos IDS",
+        "decisions": "Decisiones tomadas",
+        "meetingDecisions": "Decisiones de la reunión",
+        "audioSection": "Grabación de audio",
+        "audioRecordedInApp": "Grabado en la app ({{duration}})",
+        "audioSave": "Guardar",
+        "audioImport": "Importar archivo de audio (MP3, M4A, MP4, WAV)",
+        "audioSavedMsg": "Audio guardado — transcripción disponible tras el cierre",
+        "audioHint": "Use la grabación integrada (cabecera) o importe un archivo de audio externo.",
+        "closeMeetingBtn": "Cerrar la reunión"
+      },
+      "aiSummary": {
+        "reviewLabel": "← Revisar:",
+        "slideTooltip": "Revisar diapositiva {{n}} — {{label}} (solo lectura)",
+        "executiveSummary": "Resumen ejecutivo",
+        "aiBadge": "Resumen IA",
+        "summaryPlaceholder": "Resumen de la reunión…",
+        "keyDecisions": "Decisiones clave",
+        "goToIds": "Ir a la estructuración de IDS →",
+        "errorMessage": "No se pudo generar el resumen. Compruebe su conexión e inténtelo de nuevo.",
+        "retry": "Reintentar",
+        "generating": "Generando resumen IA…",
+        "generatingHint": "~10–15 segundos (tiempo límite 30s)"
+      },
+      "idsStructure": {
+        "untriagedAlert": "{{count}} IDS sin clasificar — ordene antes de cerrar",
+        "untriagedSection": "❓ POR CLASIFICAR",
+        "goToValidation": "Ir a la validación →",
+        "noIds": "No se registraron IDS este mes.",
+        "toConvert": "Por convertir",
+        "todoBadge": "Tarea ✓",
+        "objectiveBadge": "Objetivo ✓"
+      },
+      "validation": {
+        "aiSummaryLabel": "Resumen IA",
+        "idsStructured": "IDS estructurados",
+        "decisionsLabel": "Decisiones",
+        "incompleteSolutions": "{{count}} IDS sin solución — el informe se distribuirá de todas formas.",
+        "summaryRequired": "El resumen IA es obligatorio antes de la validación.",
+        "validateBtn": "Validar y distribuir a la Dirección"
+      },
+      "header": {
+        "weekly": "🟢 Semanal",
+        "monthly": "🔵 Mensual",
+        "readOnlyBadge": "📋 Presentación archivada — solo lectura",
+        "closingPhaseBadge": "Fase 2 — Cierre",
+        "close": "Cerrar",
+        "viewReport": "Ver el informe",
+        "closeMeeting": "Cerrar",
+        "readOnlyAlert": "Solo lectura — está consultando una diapositiva de la fase 1. Los cambios ya no se tienen en cuenta.",
+        "backToSummary": "Volver al resumen →"
+      },
+      "panel": {
+        "title": "Decisiones & notas — {{label}}",
+        "placeholder": "Anote una decisión o un punto planteado por la Dirección…",
+        "add": "Añadir"
+      },
+      "closeDialog": {
+        "title": "¿Cerrar la reunión?",
+        "description": "{{idsCount}} nuevo{{idsPlural}} IDS · {{decisionCount}} decisión{{decisionPlural}}",
+        "audioInfo": "Grabado ({{duration}})",
+        "warning": "⚠️ Esta acción es irreversible. Todas las diapositivas deben estar completas antes de continuar. Una vez cerrada, no podrá modificar los datos introducidos (KPIs, check-in, tareas, objetivos, IDS…).",
+        "aiNote": "El resumen IA se generará automáticamente tras el cierre.",
+        "ackLabel": "Confirmo que he revisado todas las diapositivas y entiendo que esta acción es irreversible.",
+        "cancel": "Cancelar",
+        "confirm": "Confirmar el cierre"
+      },
+      "recording": {
+        "start": "Grabar",
+        "acquiring": "Accediendo al micrófono…",
+        "pauseTitle": "Pausa",
+        "resumeTitle": "Reanudar",
+        "stopTitle": "Detener",
+        "recorded": "Grabado ({{duration}})",
+        "retry": "Reintentar"
+      },
+      "toasts": {
+        "summarySaveFailed": "Error al guardar el resumen",
+        "meetingClosed": "Reunión cerrada",
+        "meetingClosedSuccess": "Reunión cerrada ✓",
+        "meetingClosedDesc": "Generando resumen IA…",
+        "error": "Error",
+        "audioSaved": "Audio guardado ✓",
+        "fileTooLarge": "Archivo demasiado grande",
+        "fileTooLargeDesc": "Archivo de audio demasiado grande (máx. 20 MB)."
+      }
+    }
   },
   "common": {
     "cancel": "Cancelar",
@@ -199,7 +527,11 @@
     "edit": "Editar",
     "close": "Cerrar",
     "loading": "Cargando…",
-    "error": "Error"
+    "error": "Error",
+    "optional": "Opcional",
+    "required": "Requerido",
+    "structuring": "Estructurando…",
+    "structureWithAI": "Estructurar con IA"
   },
   "admin": {
     "title": "Organización",
