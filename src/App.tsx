@@ -78,7 +78,7 @@ const App = () => (
                 </Route>
                 <Route path="/reunion/:id" element={<MeetingMode />} />
                 <Route path="/post-reunion/:id" element={<PostMeetingMode />} />
-                <Route path="/historique/:spa" element={<SpaHistory />} />
+                <Route path="/historique" element={<SpaHistory />} />
               </Route>
 
               <Route element={<RoleGuard allow={["manager", "admin"]} />}>

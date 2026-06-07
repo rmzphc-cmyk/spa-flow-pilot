@@ -1,109 +1,21 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import { Skeleton } from "@/components/ui/skeleton";
 import { ChevronLeft, Download, ChevronRight, X } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ReferenceLine, ResponsiveContainer, Tooltip as RTooltip, Legend } from "recharts";
+import { useAuth } from "@/contexts/AuthContext";
+import { useSpaHistory, type HistoryReport, type HistoryKpiStatus } from "@/hooks/useSpaHistory";
 
-// --- Types & Mock Data ---
+// --- Types ---
 
 type CycleType = "monthly" | "weekly";
-type KpiStatus = "green" | "amber" | "red";
-
-interface HistoryReport {
-  id: string;
-  period: string;
-  type: CycleType;
-  status: "validated" | "post_meeting_generated";
-  meteoEquipe: number;
-  energieManager: number;
-  respCompletion: number;
-  summary: string;
-  kpis: { label: string; unit: string; value: number; target: number; status: KpiStatus }[];
-}
-
-const spaData: Record<string, { name: string; reports: HistoryReport[] }> = {
-  "par-gran-canaria": {
-    name: "Par Gran Canaria",
-    reports: [
-      {
-        id: "r-jan", period: "Janvier 2026", type: "monthly", status: "validated",
-        meteoEquipe: 6, energieManager: 5, respCompletion: 65,
-        summary: "Mois de reprise difficile après les fêtes. L'équipe a mis du temps à retrouver son rythme.",
-        kpis: [
-          { label: "CA du mois", unit: "€", value: 38000, target: 45000, status: "red" },
-          { label: "Taux d'occupation", unit: "%", value: 68, target: 80, status: "red" },
-          { label: "Panier moyen", unit: "€", value: 115, target: 120, status: "amber" },
-          { label: "NPS clients", unit: "/10", value: 7.8, target: 8.5, status: "amber" },
-          { label: "Ventes produits", unit: "€", value: 6500, target: 8000, status: "red" },
-          { label: "Absentéisme", unit: "j", value: 6, target: 2, status: "red" },
-        ],
-      },
-      {
-        id: "r-w4jan", period: "25-31 Jan 2026", type: "weekly", status: "validated",
-        meteoEquipe: 7, energieManager: 6, respCompletion: 70,
-        summary: "Semaine de fin de mois en amélioration. Le rythme reprend progressivement.",
-        kpis: [
-          { label: "CA hebdo", unit: "€", value: 10200, target: 11000, status: "amber" },
-          { label: "Taux d'occupation", unit: "%", value: 72, target: 80, status: "amber" },
-          { label: "Panier moyen", unit: "€", value: 117, target: 120, status: "amber" },
-          { label: "NPS clients", unit: "/10", value: 8.0, target: 8.5, status: "amber" },
-        ],
-      },
-      {
-        id: "r-feb", period: "Février 2026", type: "monthly", status: "validated",
-        meteoEquipe: 7, energieManager: 7, respCompletion: 72,
-        summary: "Le spa retrouve sa dynamique. Les vacances d'hiver ont boosté l'occupation.",
-        kpis: [
-          { label: "CA du mois", unit: "€", value: 44000, target: 45000, status: "amber" },
-          { label: "Taux d'occupation", unit: "%", value: 79, target: 80, status: "amber" },
-          { label: "Panier moyen", unit: "€", value: 122, target: 120, status: "green" },
-          { label: "NPS clients", unit: "/10", value: 8.3, target: 8.5, status: "amber" },
-          { label: "Ventes produits", unit: "€", value: 8200, target: 8000, status: "green" },
-          { label: "Absentéisme", unit: "j", value: 3, target: 2, status: "amber" },
-        ],
-      },
-      {
-        id: "r-w2feb", period: "8-14 Fév 2026", type: "weekly", status: "validated",
-        meteoEquipe: 7, energieManager: 7, respCompletion: 75,
-        summary: "Semaine solide portée par les vacances d'hiver.",
-        kpis: [
-          { label: "CA hebdo", unit: "€", value: 11500, target: 11000, status: "green" },
-          { label: "Taux d'occupation", unit: "%", value: 84, target: 80, status: "green" },
-          { label: "Panier moyen", unit: "€", value: 124, target: 120, status: "green" },
-          { label: "NPS clients", unit: "/10", value: 8.4, target: 8.5, status: "amber" },
-        ],
-      },
-      {
-        id: "r-mar", period: "Mars 2026", type: "monthly", status: "validated",
-        meteoEquipe: 7, energieManager: 6, respCompletion: 73,
-        summary: "Mois correct malgré deux arrêts maladie. Les ventes produits dépassent l'objectif.",
-        kpis: [
-          { label: "CA du mois", unit: "€", value: 42000, target: 45000, status: "amber" },
-          { label: "Taux d'occupation", unit: "%", value: 78, target: 80, status: "amber" },
-          { label: "Panier moyen", unit: "€", value: 125, target: 120, status: "green" },
-          { label: "NPS clients", unit: "/10", value: 8.2, target: 8.5, status: "amber" },
-          { label: "Ventes produits", unit: "€", value: 9200, target: 8000, status: "green" },
-          { label: "Absentéisme", unit: "j", value: 4, target: 2, status: "red" },
-        ],
-      },
-      {
-        id: "r-w3mar", period: "18-24 Mar 2026", type: "weekly", status: "validated",
-        meteoEquipe: 8, energieManager: 7, respCompletion: 88,
-        summary: "Semaine stable, bonne dynamique commerciale.",
-        kpis: [
-          { label: "CA hebdo", unit: "€", value: 11200, target: 11000, status: "green" },
-          { label: "Taux d'occupation", unit: "%", value: 82, target: 80, status: "green" },
-          { label: "Panier moyen", unit: "€", value: 118, target: 120, status: "amber" },
-          { label: "NPS clients", unit: "/10", value: 8.6, target: 8.5, status: "green" },
-        ],
-      },
-    ],
-  },
-};
+type KpiStatus = HistoryKpiStatus;
 
 // --- Helpers ---
+
 
 const meteoColor = (v: number) => (v >= 7 ? "bg-emerald-500" : v >= 5 ? "bg-amber-500" : "bg-red-500");
 const statusDot: Record<KpiStatus, string> = { green: "bg-emerald-500", amber: "bg-amber-500", red: "bg-red-500" };
@@ -203,10 +115,10 @@ function SidePanel({ report, onClose }: { report: HistoryReport; onClose: () => 
 // --- Main ---
 
 export default function SpaHistory() {
-  const { spa } = useParams<{ spa: string }>();
   const navigate = useNavigate();
+  const { spaId } = useAuth();
+  const { data, isLoading, isError } = useSpaHistory(spaId);
 
-  const data = spaData[spa ?? ""];
   const [periodFilter, setPeriodFilter] = useState<"3" | "6" | "12">("6");
   const [cycleFilter, setCycleFilter] = useState<"all" | "weekly" | "monthly">("all");
   const [selectedReportId, setSelectedReportId] = useState<string | null>(null);
@@ -217,7 +129,6 @@ export default function SpaHistory() {
     if (!data) return [];
     let reports = data.reports;
     if (cycleFilter !== "all") reports = reports.filter((r) => r.type === cycleFilter);
-    // Period filter would use real dates; with mock data we just slice
     const maxItems = periodFilter === "3" ? 3 : periodFilter === "6" ? 6 : 12;
     return reports.slice(-maxItems);
   }, [data, cycleFilter, periodFilter]);
@@ -229,7 +140,6 @@ export default function SpaHistory() {
     return Array.from(labels);
   }, [data]);
 
-  // Set default KPI selection
   const activeKpi = selectedKpi || allKpiLabels[0] || "";
 
   const kpiChartData = useMemo(() => {
@@ -255,10 +165,21 @@ export default function SpaHistory() {
 
   const selectedReport = filteredReports.find((r) => r.id === selectedReportId) ?? null;
 
-  if (!data) {
+  if (isLoading) {
+    return (
+      <div className="max-w-[860px] mx-auto px-6 py-6 space-y-4">
+        <Skeleton className="h-10 w-1/2" />
+        <Skeleton className="h-32 w-full" />
+        <Skeleton className="h-56 w-full" />
+        <Skeleton className="h-56 w-full" />
+      </div>
+    );
+  }
+
+  if (isError || !data) {
     return (
       <div className="max-w-[860px] mx-auto px-6 py-12 text-center">
-        <p className="text-foreground font-medium">Spa introuvable</p>
+        <p className="text-foreground font-medium">Historique indisponible</p>
         <Button variant="outline" className="mt-4" onClick={() => navigate("/rapports")}>
           Retour aux rapports
         </Button>
@@ -293,7 +214,7 @@ export default function SpaHistory() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `historique-${spa}.csv`;
+    a.download = `historique-${data.name.toLowerCase().replace(/\s+/g, "-")}.csv`;
     a.click();
     URL.revokeObjectURL(url);
   };
