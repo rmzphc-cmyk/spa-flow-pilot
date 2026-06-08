@@ -242,9 +242,13 @@ export default function MeetingMode() {
                   La synthèse IA sera générée automatiquement (notification sous 2h max).
                 </p>
                 <div className="flex gap-2 justify-end">
-                  <Button variant="outline" onClick={() => setCloseOpen(false)}>Annuler</Button>
-                  <Button onClick={handleClose} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">
-                    Confirmer la clôture
+                  <Button variant="outline" onClick={() => setCloseOpen(false)} disabled={closeMutation.isPending}>Annuler</Button>
+                  <Button
+                    onClick={handleClose}
+                    disabled={closeMutation.isPending}
+                    className="bg-destructive hover:bg-destructive/90 text-destructive-foreground"
+                  >
+                    {closeMutation.isPending ? "Clôture en cours…" : "Confirmer la clôture"}
                   </Button>
                 </div>
               </div>
