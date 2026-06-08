@@ -135,35 +135,69 @@ export default function MeetingMode() {
     return list;
   }, [JSON.stringify(objSection)]);
 
-  const persistedIds = (getReportSection(id ?? "", "ids") as Array<string | { text: string }> | null) ?? [];
-  const initialIssues = persistedIds.map((x) => (typeof x === "string" ? x : x.text));
+  const { user } = useAuth();
+  const qc = useQueryClient();
+  const idsQuery = useIdsItems(id);
+  const addIdsItem = useAddIdsItem(id ?? "", "monthly");
+  const dbIssues: DbIdsItem[] = idsQuery.data ?? [];
+  const issues = dbIssues.map((it) => it.capture_text);
 
-  const [issues, setIssues] = useState<string[]>(initialIssues);
   const [newIssue, setNewIssue] = useState("");
   const [closeOpen, setCloseOpen] = useState(false);
 
   const addIssue = () => {
-    if (!newIssue.trim()) return;
-    const next = [...issues, newIssue.trim()];
-    setIssues(next);
+    const text = newIssue.trim();
+    if (!text || !id) return;
     setNewIssue("");
-    if (id) updateReportSection(id, "ids", next);
+    addIdsItem.mutate(text, {
+      onError: (e: unknown) => {
+        const msg = e instanceof Error ? e.message : "Erreur d'ajout";
+        toast.error(msg);
+        setNewIssue(text);
+      },
+    });
   };
 
-  const removeIssue = (i: number) => {
-    const next = issues.filter((_, idx) => idx !== i);
-    setIssues(next);
-    if (id) updateReportSection(id, "ids", next);
+  const removeIssue = async (i: number) => {
+    const item = dbIssues[i];
+    if (!item) return;
+    const { error } = await supabase.from("ids_items").delete().eq("id", item.id);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    qc.invalidateQueries({ queryKey: ["ids_items", id] });
   };
 
   const overdueCount = todos.filter((t) => t.overdueDays && t.overdueDays > 0).length;
 
+  const closeMutation = useMutation({
+    mutationFn: async () => {
+      if (!id) throw new Error("Missing report id");
+      const { data, error } = await supabase.functions.invoke("close-monthly-meeting", {
+        body: { report_id: id },
+      });
+      if (error) throw new Error(error.message);
+      if (data && typeof data === "object" && "error" in data && data.error) {
+        throw new Error(String((data as { error: unknown }).error));
+      }
+      return data;
+    },
+    onSuccess: () => {
+      setCloseOpen(false);
+      toast.success("Réunion clôturée — synthèse en cours");
+      navigate(`/rapport/${id}`);
+    },
+    onError: (e: unknown) => {
+      const msg = e instanceof Error ? e.message : "Erreur lors de la clôture";
+      toast.error(msg);
+    },
+  });
+
   const handleClose = () => {
-    setCloseOpen(false);
-    if (id) updateReportStatus(id, "post_meeting_generated");
-    toast.success("Réunion clôturée — synthèse en cours");
-    navigate(`/rapport/${id}`);
+    closeMutation.mutate();
   };
+
 
 
   return (
