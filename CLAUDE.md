@@ -37,7 +37,7 @@ Le repo est édité **à la fois par Lovable et en local (VS Code)**. Lovable po
 - `src/components/rapport/` — sections de rapport (weekly + monthly) + `MeetingView.tsx` (mode réunion plein écran)
 - `src/components/pdf/WeeklyReportPdf.tsx` — rendu PDF
 - `src/hooks/useReports.ts`, `useKpi*.ts`, `useIdsItems.ts` — accès données par domaine
-- ⚠️ `src/data/directionMockData.ts` — `DirectionView.tsx` est **encore en mock**, non branché Supabase
+- - `src/data/directionMockData.ts` — réservoir de types TypeScript (`SpaOverview`, `SpaDetail`, `SpaAlert`, `SpaKpiRow`) utilisés par `useDirectionData.ts` et `DirectionOverview.tsx`
 
 ## Règles métier
 - **Rapport Monthly = mois PRÉCÉDANT la réunion.** Réunion le 2 juin → couvre mai (`period_start = 2026-05-01`).
