@@ -30,7 +30,6 @@ import {
 import { baseKpis } from "@/components/rapport/SectionKpi";
 import type { KpiCardValue } from "@/components/KpiCard";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuth } from "@/contexts/AuthContext";
 import { useIdsItems, useAddIdsItem, type DbIdsItem } from "@/hooks/useIdsItems";
 
 // --- Status colors ---
