@@ -135,7 +135,6 @@ export default function MeetingMode() {
     return list;
   }, [JSON.stringify(objSection)]);
 
-  const { user } = useAuth();
   const qc = useQueryClient();
   const idsQuery = useIdsItems(id);
   const addIdsItem = useAddIdsItem(id ?? "", "monthly");
