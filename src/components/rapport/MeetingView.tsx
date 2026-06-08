@@ -907,6 +907,24 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                     placeholder={t("report.meeting.aiSummary.summaryPlaceholder")}
                   />
                 </div>
+                {summaryQ.data?.kpi_synthesis && (
+                  <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
+                    <p className="text-sm font-semibold text-foreground mb-2">{t("report.meeting.aiSummary.kpiSynthesis")}</p>
+                    <p className="text-sm text-foreground leading-relaxed">{summaryQ.data.kpi_synthesis}</p>
+                  </div>
+                )}
+                {summaryQ.data?.management_synthesis && (
+                  <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
+                    <p className="text-sm font-semibold text-foreground mb-2">{t("report.meeting.aiSummary.managementSynthesis")}</p>
+                    <p className="text-sm text-foreground leading-relaxed">{summaryQ.data.management_synthesis}</p>
+                  </div>
+                )}
+                {summaryQ.data?.ids_synthesis && (
+                  <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
+                    <p className="text-sm font-semibold text-foreground mb-2">{t("report.meeting.aiSummary.idsSynthesis")}</p>
+                    <p className="text-sm text-foreground leading-relaxed">{summaryQ.data.ids_synthesis}</p>
+                  </div>
+                )}
                 {editedDecisions.length > 0 && (
                   <div>
                     <h3 className="text-sm font-semibold text-foreground mb-3">{t("report.meeting.aiSummary.keyDecisions")}</h3>
