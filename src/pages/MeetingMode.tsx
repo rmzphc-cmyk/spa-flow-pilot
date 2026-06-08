@@ -26,11 +26,12 @@ import { toast } from "sonner";
 import {
   getReport,
   getReportSection,
-  updateReportSection,
-  updateReportStatus,
 } from "@/lib/reportsStore";
 import { baseKpis } from "@/components/rapport/SectionKpi";
 import type { KpiCardValue } from "@/components/KpiCard";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { useIdsItems, useAddIdsItem, type DbIdsItem } from "@/hooks/useIdsItems";
 
 // --- Status colors ---
 
