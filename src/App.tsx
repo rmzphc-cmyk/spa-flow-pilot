@@ -11,7 +11,7 @@ import Rapports from "./pages/Rapports";
 import RapportDetail from "./pages/RapportDetail";
 import MeetingMode from "./pages/MeetingMode";
 import PostMeetingMode from "./pages/PostMeetingMode";
-import DirectionView from "./pages/DirectionView";
+
 import DirectionOverview from "./pages/DirectionOverview";
 import DirectionSpaDetail from "./pages/DirectionSpaDetail";
 import SpaHistory from "./pages/SpaHistory";
@@ -94,7 +94,7 @@ const App = () => (
                   <Route path="/direction/spa/:id" element={<DirectionSpaDetail />} />
                   <Route path="/admin/organisation" element={<AdminOrganization />} />
                 </Route>
-                <Route path="/direction/:id" element={<DirectionView />} />
+                
               </Route>
             </Route>
 
