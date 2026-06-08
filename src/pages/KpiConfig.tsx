@@ -110,43 +110,6 @@ export default function KpiConfig() {
   const kpiIds = useMemo(() => items.map((i) => i.id), [items]);
   const { data: roleAssignments = [] } = useKpiRoleAssignments(kpiIds);
 
-  const seedTestRoleAssignments = () => {
-    if (!spaId || items.length === 0) return;
-
-    const rules: { keywords: string[]; role: KpiRole; niveau: KpiNiveau }[] = [
-      { keywords: ["ca", "chiffre"], role: "spa_manager", niveau: "prioritaire" },
-      { keywords: ["target", "objectif"], role: "spa_manager", niveau: "prioritaire" },
-      { keywords: ["présence", "taux"], role: "spa_manager", niveau: "secondaire" },
-      { keywords: ["rebooking"], role: "therapist", niveau: "prioritaire" },
-      { keywords: ["retail", "vente"], role: "therapist", niveau: "secondaire" },
-      { keywords: ["satisfaction", "nps"], role: "therapist", niveau: "secondaire" },
-      { keywords: ["review", "avis"], role: "therapist", niveau: "secondaire" },
-      { keywords: ["occupancy", "occupation"], role: "spa_concierge", niveau: "prioritaire" },
-      { keywords: ["panier", "basket"], role: "spa_concierge", niveau: "secondaire" },
-      { keywords: ["captation"], role: "ambassador", niveau: "prioritaire" },
-    ];
-
-    const activeItems = items.filter((i) => i.is_active);
-    let matchCount = 0;
-
-    for (const kpi of activeItems) {
-      const nameLower = kpi.name.toLowerCase();
-      for (const rule of rules) {
-        if (rule.keywords.some((kw) => nameLower.includes(kw))) {
-          upsertRole.mutate({ kpi_definition_id: kpi.id, role: rule.role, niveau: rule.niveau });
-          matchCount++;
-          break;
-        }
-      }
-    }
-
-    if (matchCount > 0) {
-      toast.success(t("kpiConfig.toast.seedSuccess"));
-      queryClient.invalidateQueries({ queryKey: ["kpi_role_assignments"] });
-    } else {
-      toast.info(t("kpiConfig.toast.seedNone"));
-    }
-  };
 
 
   const sortedItems = useMemo(
@@ -276,17 +239,6 @@ export default function KpiConfig() {
                 ))}
               </SelectContent>
             </Select>
-          )}
-          {userRole === "admin" && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 border-orange-500 text-orange-600 hover:bg-orange-50 hover:text-orange-700"
-              onClick={seedTestRoleAssignments}
-              disabled={!spaId || items.length === 0}
-            >
-              {t("kpiConfig.seedRolesTest")}
-            </Button>
           )}
           <Button
             size="sm"
