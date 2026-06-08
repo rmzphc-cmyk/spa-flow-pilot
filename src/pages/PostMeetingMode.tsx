@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useReport, useReopenMeeting } from "@/hooks/useReports";
 import {
   useMeetingSummary,
@@ -24,6 +25,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export default function PostMeetingMode() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   const { data: row } = useReport(id);
   const { data: summaryRow } = useMeetingSummary(id);
@@ -115,14 +117,32 @@ export default function PostMeetingMode() {
               <Skeleton className="h-4 w-3/4" />
             </div>
           ) : (
-            <div className="space-y-4">
+          <div className="space-y-4">
               <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
-                <p className="text-sm font-medium text-muted-foreground mb-2">Résumé exécutif</p>
+                <p className="text-sm font-medium text-muted-foreground mb-2">{t("report.meeting.aiSummary.executiveSummary")}</p>
                 <p className="text-sm text-foreground leading-relaxed">{summaryRow?.executive_summary}</p>
               </div>
+              {summaryRow?.kpi_synthesis && (
+                <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
+                  <p className="text-sm font-medium text-muted-foreground mb-2">{t("report.meeting.aiSummary.kpiSynthesis")}</p>
+                  <p className="text-sm text-foreground leading-relaxed">{summaryRow.kpi_synthesis}</p>
+                </div>
+              )}
+              {summaryRow?.management_synthesis && (
+                <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
+                  <p className="text-sm font-medium text-muted-foreground mb-2">{t("report.meeting.aiSummary.managementSynthesis")}</p>
+                  <p className="text-sm text-foreground leading-relaxed">{summaryRow.management_synthesis}</p>
+                </div>
+              )}
+              {summaryRow?.ids_synthesis && (
+                <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
+                  <p className="text-sm font-medium text-muted-foreground mb-2">{t("report.meeting.aiSummary.idsSynthesis")}</p>
+                  <p className="text-sm text-foreground leading-relaxed">{summaryRow.ids_synthesis}</p>
+                </div>
+              )}
               {decisionsFromAi.length > 0 && (
                 <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
-                  <p className="text-sm font-medium text-muted-foreground mb-3">Décisions clés</p>
+                  <p className="text-sm font-medium text-muted-foreground mb-3">{t("report.meeting.aiSummary.keyDecisions")}</p>
                   <ul className="space-y-2">
                     {decisionsFromAi.map((d, i) => (
                       <li key={i} className="flex items-start gap-2 text-sm">
