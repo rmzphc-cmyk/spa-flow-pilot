@@ -645,7 +645,8 @@
     "optional": "Opcional",
     "required": "Requerido",
     "structuring": "Estructurando…",
-    "structureWithAI": "Estructurar con IA"
+    "structureWithAI": "Estructurar con IA",
+    "saving": "Guardando..."
   },
   "admin": {
     "title": "Organización",
@@ -717,7 +718,11 @@
         "fullName": "Nombre completo",
         "fullNamePlaceholder": "Ana Sanagua",
         "destination": "Destino"
-      }
+      },
+      "manageSpaAccess": "Gestionar accesos spa",
+      "spaAccessTitle": "Accesos spa — {{name}}",
+      "noSpas": "No hay spas en esta organización.",
+      "spaAccessSaved": "Acceso actualizado."
     },
     "managers": {
       "count": "{{count}} manager(s)",

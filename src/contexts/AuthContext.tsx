@@ -6,6 +6,7 @@ export type AppRole = "manager" | "direction" | "admin";
 
 interface AuthContextValue {
   user: User | null;
+  userId: string | null;
   session: Session | null;
   userRole: AppRole | null;
   spaId: string | null;
@@ -56,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, userRole, spaId, mustChangePassword, isLoading, signOut }}>
+    <AuthContext.Provider value={{ user, userId: user?.id ?? null, session, userRole, spaId, mustChangePassword, isLoading, signOut }}>
       {children}
     </AuthContext.Provider>
   );

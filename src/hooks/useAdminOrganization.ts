@@ -274,3 +274,62 @@ export function useResetUserPassword() {
     mutationFn: async (user_id: string) => callManageUser({ action: "reset", user_id }),
   });
 }
+
+// ---------- Direction spa access ----------
+export function useDirectionSpaAccess(userId?: string) {
+  return useQuery({
+    queryKey: ["admin", "direction-spa-access", userId],
+    enabled: !!userId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("direction_spa_access")
+        .select("spa_id")
+        .eq("user_id", userId!);
+      if (error) throw error;
+      return (data ?? []).map((r) => r.spa_id as string);
+    },
+  });
+}
+
+export function useSetDirectionSpaAccess() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      userId,
+      spaIds,
+      grantedBy,
+    }: {
+      userId: string;
+      spaIds: string[];
+      grantedBy: string;
+    }) => {
+      const { data: current } = await supabase
+        .from("direction_spa_access")
+        .select("spa_id")
+        .eq("user_id", userId);
+      const currentSet = new Set((current ?? []).map((r) => r.spa_id as string));
+      const nextSet = new Set(spaIds);
+
+      const toRevoke = [...currentSet].filter((id) => !nextSet.has(id));
+      if (toRevoke.length > 0) {
+        const { error } = await supabase
+          .from("direction_spa_access")
+          .delete()
+          .eq("user_id", userId)
+          .in("spa_id", toRevoke);
+        if (error) throw error;
+      }
+
+      const toGrant = [...nextSet].filter((id) => !currentSet.has(id));
+      if (toGrant.length > 0) {
+        const { error } = await supabase.from("direction_spa_access").insert(
+          toGrant.map((spa_id) => ({ user_id: userId, spa_id, granted_by: grantedBy })),
+        );
+        if (error) throw error;
+      }
+    },
+    onSuccess: (_, { userId }) => {
+      qc.invalidateQueries({ queryKey: ["admin", "direction-spa-access", userId] });
+    },
+  });
+}

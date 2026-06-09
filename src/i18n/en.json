@@ -645,7 +645,8 @@
     "optional": "Optional",
     "required": "Required",
     "structuring": "Structuring…",
-    "structureWithAI": "Structure with AI"
+    "structureWithAI": "Structure with AI",
+    "saving": "Saving..."
   },
   "admin": {
     "title": "Organization",
@@ -717,7 +718,11 @@
         "fullName": "Full name",
         "fullNamePlaceholder": "Ana Sanagua",
         "destination": "Destination"
-      }
+      },
+      "manageSpaAccess": "Manage spa access",
+      "spaAccessTitle": "Spa access — {{name}}",
+      "noSpas": "No spas in this organisation.",
+      "spaAccessSaved": "Access updated."
     },
     "managers": {
       "count": "{{count}} manager(s)",

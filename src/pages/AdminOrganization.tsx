@@ -1,8 +1,9 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Pencil, Trash2, UserPlus, Copy, Check, KeyRound } from "lucide-react";
+import { Plus, Pencil, Trash2, UserPlus, Copy, Check, KeyRound, Building2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -58,6 +59,8 @@ import {
   useUpdateUser,
   useDeleteUser,
   useResetUserPassword,
+  useDirectionSpaAccess,
+  useSetDirectionSpaAccess,
   type Destination,
   type AdminSpa,
   type AdminUser,
@@ -519,8 +522,10 @@ function SpaEditDialog({
 // =================== Directors ===================
 function DirectorsTab({ organizationId, readOnly }: { organizationId: string; readOnly: boolean }) {
   const { t } = useTranslation();
+  const { userId } = useAuth();
   const { data: users = [], isLoading } = useAdminUsers(organizationId);
   const { data: destinations = [] } = useDestinations(organizationId);
+  const { data: spas = [] } = useAdminSpas(organizationId);
   const inviteMut = useInviteUser();
   const updateMut = useUpdateUser();
   const deleteMut = useDeleteUser();
@@ -531,6 +536,7 @@ function DirectorsTab({ organizationId, readOnly }: { organizationId: string; re
   const [inviting, setInviting] = useState(false);
   const [editing, setEditing] = useState<AdminUser | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
+  const [spaAccessTarget, setSpaAccessTarget] = useState<AdminUser | null>(null);
   const [tempCredentials, setTempCredentials] = useState<{ email: string; password: string } | null>(null);
 
   return (
@@ -560,6 +566,9 @@ function DirectorsTab({ organizationId, readOnly }: { organizationId: string; re
                 </div>
                 {!readOnly && (
                   <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" title={t("admin.directors.manageSpaAccess")} onClick={() => setSpaAccessTarget(u)}>
+                      <Building2 className="h-4 w-4" />
+                    </Button>
                     <Button variant="ghost" size="icon" onClick={() => setEditing(u)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -634,11 +643,97 @@ function DirectorsTab({ organizationId, readOnly }: { organizationId: string; re
         </AlertDialogContent>
       </AlertDialog>
 
+      <SpaAccessDialog
+        open={!!spaAccessTarget}
+        director={spaAccessTarget}
+        spas={spas}
+        grantedBy={userId ?? ""}
+        onClose={() => setSpaAccessTarget(null)}
+      />
+
       <TempCredentialsDialog
         credentials={tempCredentials}
         onClose={() => setTempCredentials(null)}
       />
     </Card>
+  );
+}
+
+function SpaAccessDialog({
+  open,
+  director,
+  spas,
+  grantedBy,
+  onClose,
+}: {
+  open: boolean;
+  director: AdminUser | null;
+  spas: AdminSpa[];
+  grantedBy: string;
+  onClose: () => void;
+}) {
+  const { t } = useTranslation();
+  const { data: currentAccess = [], isLoading } = useDirectionSpaAccess(director?.id);
+  const setAccess = useSetDirectionSpaAccess();
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+
+  useMemo(() => {
+    if (open) setSelected(new Set(currentAccess));
+  }, [open, currentAccess]);
+
+  const toggle = (spaId: string) =>
+    setSelected((prev) => {
+      const next = new Set(prev);
+      next.has(spaId) ? next.delete(spaId) : next.add(spaId);
+      return next;
+    });
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("admin.directors.spaAccessTitle", { name: director?.full_name || director?.email || "" })}</DialogTitle>
+        </DialogHeader>
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+        ) : spas.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t("admin.directors.noSpas")}</p>
+        ) : (
+          <div className="space-y-3 max-h-72 overflow-y-auto py-1">
+            {spas.map((s) => (
+              <div key={s.id} className="flex items-center gap-3">
+                <Checkbox
+                  id={`spa-${s.id}`}
+                  checked={selected.has(s.id)}
+                  onCheckedChange={() => toggle(s.id)}
+                />
+                <Label htmlFor={`spa-${s.id}`} className="cursor-pointer font-normal">
+                  {s.name}
+                </Label>
+              </div>
+            ))}
+          </div>
+        )}
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>{t("common.cancel")}</Button>
+          <Button
+            disabled={setAccess.isPending}
+            onClick={async () => {
+              if (!director) return;
+              try {
+                await setAccess.mutateAsync({ userId: director.id, spaIds: [...selected], grantedBy });
+                toast.success(t("admin.directors.spaAccessSaved"));
+                onClose();
+              } catch (e: any) {
+                toast.error(e.message ?? t("common.error"));
+              }
+            }}
+          >
+            {setAccess.isPending ? t("common.saving") : t("common.save")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
