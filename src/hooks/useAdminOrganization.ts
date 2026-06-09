@@ -264,3 +264,11 @@ export function useDeleteUser() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["admin", "users"] }),
   });
 }
+
+// Resets a user's password to a fresh temporary one (returned to the caller).
+// Backend scopes this: admin → anyone; direction → managers of its own spas.
+export function useResetUserPassword() {
+  return useMutation({
+    mutationFn: async (user_id: string) => callManageUser({ action: "reset", user_id }),
+  });
+}

@@ -1,11 +1,11 @@
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { toast } from "@/hooks/use-toast";
 import {
   loadSchedule,
   saveSchedule,
@@ -85,6 +85,7 @@ function loadUserSettings(fallbackLang: "fr" | "en" | "es"): UserSettingsData {
 
 export default function UserSettings() {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
 
   const [settings, setSettings] = useState<UserSettingsData>(() =>
     loadUserSettings((i18n.language as "fr" | "en" | "es") || "fr"),
@@ -114,7 +115,7 @@ export default function UserSettings() {
   };
 
   const handlePasswordChange = () => {
-    toast({ title: t("settings.passwordRedirect.title"), description: t("settings.passwordRedirect.description") });
+    navigate("/change-password");
   };
 
   return (

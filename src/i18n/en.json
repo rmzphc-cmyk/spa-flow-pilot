@@ -740,7 +740,12 @@
         "fullNamePlaceholder": "Sophie Marchand",
         "spa": "Assigned spa",
         "spaPlaceholder": "Select a spa"
-      }
+      },
+      "reset": "Reset password",
+      "resetTitle": "Reset password?",
+      "resetDesc": "A new temporary password will be generated for {{name}}. The old one stops working immediately and the manager must change it at next login.",
+      "resetConfirm": "Reset",
+      "resetToast": "Password reset."
     },
     "invite": "Invite",
     "emailRequired": "Email required",
@@ -1129,5 +1134,18 @@
     "csvPeriod": "Period",
     "csvType": "Type",
     "csvResp": "Resp %"
+  },
+  "changePassword": {
+    "subtitle": "Change your password",
+    "forcedSubtitle": "Set a new password",
+    "forcedDesc": "For security reasons, you must choose a new password before continuing.",
+    "newPassword": "New password",
+    "confirmPassword": "Confirm password",
+    "submit": "Save password",
+    "submitting": "Saving…",
+    "mismatch": "Passwords do not match.",
+    "tooShort": "Password must be at least {{count}} characters.",
+    "success": "Password updated.",
+    "signOut": "Sign out"
   }
 }

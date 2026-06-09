@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/AppLayout";
 import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import Login from "./pages/Login";
+import ChangePassword from "./pages/ChangePassword";
 import Dashboard from "./pages/Dashboard";
 import Rapports from "./pages/Rapports";
 import RapportDetail from "./pages/RapportDetail";
@@ -25,9 +26,14 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient();
 
 function ProtectedRoute() {
-  const { session, isLoading } = useAuth();
+  const { session, isLoading, mustChangePassword } = useAuth();
+  const location = useLocation();
   if (isLoading) return null;
   if (!session) return <Navigate to="/login" replace />;
+  // Force a password change before granting access to anything else.
+  if (mustChangePassword && location.pathname !== "/change-password") {
+    return <Navigate to="/change-password" replace />;
+  }
   return <Outlet />;
 }
 
@@ -63,6 +69,8 @@ const App = () => (
             <Route path="/login" element={<Login />} />
 
             <Route element={<ProtectedRoute />}>
+              <Route path="/change-password" element={<ChangePassword />} />
+
               <Route element={<AppLayout />}>
                 <Route path="/" element={<RootRedirect />} />
                 <Route path="/parametres" element={<UserSettingsPage />} />

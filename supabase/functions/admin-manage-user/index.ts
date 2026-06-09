@@ -1,6 +1,6 @@
 import { authenticate, corsHeaders, internalError, json } from "../_shared/auth.ts";
 
-type Action = "invite" | "update" | "delete";
+type Action = "invite" | "update" | "delete" | "reset";
 
 interface Payload {
   action: Action;
@@ -21,10 +21,14 @@ Deno.serve(async (req) => {
     if (!auth.ok) return auth.response;
     const { caller, admin } = auth;
 
-    if (caller.role !== "admin") return json({ error: "Forbidden" }, 403);
-
     const body = (await req.json()) as Payload;
     if (!body?.action) return json({ error: "Missing action" }, 400);
+
+    // Only admin manages users (invite/update/delete). "reset" is also allowed
+    // to direction, but scoped to their own spas — enforced inside that branch.
+    if (caller.role !== "admin" && body.action !== "reset") {
+      return json({ error: "Forbidden" }, 403);
+    }
 
     if (body.action === "invite") {
       if (!body.email || !body.role) return json({ error: "Missing email or role" }, 400);
@@ -46,6 +50,7 @@ Deno.serve(async (req) => {
         },
         user_metadata: {
           full_name: body.full_name ?? "",
+          must_change_password: true,
         },
       });
       if (createErr || !created?.user) {
@@ -105,6 +110,50 @@ Deno.serve(async (req) => {
       const { error: delErr } = await (admin as any).auth.admin.deleteUser(body.user_id);
       if (delErr) return json({ error: delErr.message }, 400);
       return json({ ok: true }, 200);
+    }
+
+    if (body.action === "reset") {
+      if (!body.user_id) return json({ error: "Missing user_id" }, 400);
+
+      // Load the target user to authorize + preserve existing metadata.
+      const { data: target, error: tErr } = await admin
+        .from("users")
+        .select("id, role, spa_id")
+        .eq("id", body.user_id)
+        .maybeSingle();
+      if (tErr) return json({ error: tErr.message }, 400);
+      if (!target) return json({ error: "Utilisateur introuvable." }, 404);
+
+      // Authorization: admin can reset anyone; direction only managers of the
+      // spas it is granted access to (direction_spa_access). No self-elevation.
+      if (caller.role === "direction") {
+        if (target.role !== "spa_manager" || !target.spa_id) {
+          return json({ error: "Forbidden" }, 403);
+        }
+        const { data: access, error: aErr } = await admin
+          .from("direction_spa_access")
+          .select("spa_id")
+          .eq("user_id", caller.userId)
+          .eq("spa_id", target.spa_id)
+          .maybeSingle();
+        if (aErr) return json({ error: aErr.message }, 400);
+        if (!access) return json({ error: "Forbidden" }, 403);
+      } else if (caller.role !== "admin") {
+        return json({ error: "Forbidden" }, 403);
+      }
+
+      // Preserve existing user_metadata (full_name, language…), flip the flag.
+      const { data: got } = await (admin as any).auth.admin.getUserById(body.user_id);
+      const existingMeta = (got?.user?.user_metadata ?? {}) as Record<string, unknown>;
+
+      const tempPassword = `Tmp-${crypto.randomUUID().slice(0, 12)}!A1`;
+      const { error: updErr } = await (admin as any).auth.admin.updateUserById(body.user_id, {
+        password: tempPassword,
+        user_metadata: { ...existingMeta, must_change_password: true },
+      });
+      if (updErr) return json({ error: updErr.message }, 400);
+
+      return json({ ok: true, user_id: body.user_id, temp_password: tempPassword }, 200);
     }
 
     return json({ error: "Unknown action" }, 400);

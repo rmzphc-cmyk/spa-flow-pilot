@@ -741,7 +741,12 @@
         "fullNamePlaceholder": "Sophie Marchand",
         "spa": "Spa rattaché",
         "spaPlaceholder": "Sélectionner un spa"
-      }
+      },
+      "reset": "Réinitialiser le mot de passe",
+      "resetTitle": "Réinitialiser le mot de passe ?",
+      "resetDesc": "Un nouveau mot de passe temporaire sera généré pour {{name}}. L'ancien cessera immédiatement de fonctionner et le manager devra le changer à sa prochaine connexion.",
+      "resetConfirm": "Réinitialiser",
+      "resetToast": "Mot de passe réinitialisé."
     },
     "invite": "Inviter",
     "emailRequired": "Email requis",
@@ -1130,5 +1135,18 @@
     "csvPeriod": "Période",
     "csvType": "Type",
     "csvResp": "Resp %"
+  },
+  "changePassword": {
+    "subtitle": "Changez votre mot de passe",
+    "forcedSubtitle": "Définissez un nouveau mot de passe",
+    "forcedDesc": "Pour des raisons de sécurité, vous devez choisir un nouveau mot de passe avant de continuer.",
+    "newPassword": "Nouveau mot de passe",
+    "confirmPassword": "Confirmer le mot de passe",
+    "submit": "Enregistrer le mot de passe",
+    "submitting": "Enregistrement…",
+    "mismatch": "Les mots de passe ne correspondent pas.",
+    "tooShort": "Le mot de passe doit contenir au moins {{count}} caractères.",
+    "success": "Mot de passe mis à jour.",
+    "signOut": "Se déconnecter"
   }
 }

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Plus, Pencil, Trash2, UserPlus, Copy, Check } from "lucide-react";
+import { Plus, Pencil, Trash2, UserPlus, Copy, Check, KeyRound } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -57,6 +57,7 @@ import {
   useInviteUser,
   useUpdateUser,
   useDeleteUser,
+  useResetUserPassword,
   type Destination,
   type AdminSpa,
   type AdminUser,
@@ -740,6 +741,7 @@ function ManagersTab({ organizationId, readOnly }: { organizationId: string; rea
   const inviteMut = useInviteUser();
   const updateMut = useUpdateUser();
   const deleteMut = useDeleteUser();
+  const resetMut = useResetUserPassword();
 
   const spaById = useMemo(() => new Map(spas.map((s) => [s.id, s])), [spas]);
   const managers = users.filter((u) => u.role === "spa_manager");
@@ -747,6 +749,7 @@ function ManagersTab({ organizationId, readOnly }: { organizationId: string; rea
   const [inviting, setInviting] = useState(false);
   const [editing, setEditing] = useState<AdminUser | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
+  const [resetTarget, setResetTarget] = useState<AdminUser | null>(null);
   const [tempCredentials, setTempCredentials] = useState<{ email: string; password: string } | null>(null);
 
   return (
@@ -774,16 +777,26 @@ function ManagersTab({ organizationId, readOnly }: { organizationId: string; rea
                     {u.email} · {u.spa_id ? (spaById.get(u.spa_id)?.name ?? t("admin.managers.unknownSpa")) : t("admin.managers.noSpa")}
                   </p>
                 </div>
-                {!readOnly && (
-                  <div className="flex items-center gap-2">
-                    <Button variant="ghost" size="icon" onClick={() => setEditing(u)}>
-                      <Pencil className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(u)}>
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                )}
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    title={t("admin.managers.reset")}
+                    onClick={() => setResetTarget(u)}
+                  >
+                    <KeyRound className="h-4 w-4" />
+                  </Button>
+                  {!readOnly && (
+                    <>
+                      <Button variant="ghost" size="icon" onClick={() => setEditing(u)}>
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" onClick={() => setDeleteTarget(u)}>
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
             ))}
           </div>
@@ -845,6 +858,37 @@ function ManagersTab({ organizationId, readOnly }: { organizationId: string; rea
               }}
             >
               {t("common.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!resetTarget} onOpenChange={(o) => !o && setResetTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("admin.managers.resetTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("admin.managers.resetDesc", { name: resetTarget?.full_name || resetTarget?.email || "" })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!resetTarget) return;
+                try {
+                  const res = await resetMut.mutateAsync(resetTarget.id);
+                  if (res?.temp_password) {
+                    setTempCredentials({ email: resetTarget.email, password: res.temp_password });
+                  }
+                  toast.success(t("admin.managers.resetToast"));
+                  setResetTarget(null);
+                } catch (e: any) {
+                  toast.error(e.message ?? t("common.error"));
+                }
+              }}
+            >
+              {t("admin.managers.resetConfirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

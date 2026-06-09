@@ -740,7 +740,12 @@
         "fullNamePlaceholder": "Sophie Marchand",
         "spa": "Spa asignado",
         "spaPlaceholder": "Seleccionar un spa"
-      }
+      },
+      "reset": "Restablecer contraseña",
+      "resetTitle": "¿Restablecer contraseña?",
+      "resetDesc": "Se generará una nueva contraseña temporal para {{name}}. La anterior dejará de funcionar de inmediato y el manager deberá cambiarla en su próximo inicio de sesión.",
+      "resetConfirm": "Restablecer",
+      "resetToast": "Contraseña restablecida."
     },
     "invite": "Invitar",
     "emailRequired": "Email requerido",
@@ -1129,5 +1134,18 @@
     "csvPeriod": "Período",
     "csvType": "Tipo",
     "csvResp": "Resp %"
+  },
+  "changePassword": {
+    "subtitle": "Cambia tu contraseña",
+    "forcedSubtitle": "Define una nueva contraseña",
+    "forcedDesc": "Por razones de seguridad, debes elegir una nueva contraseña antes de continuar.",
+    "newPassword": "Nueva contraseña",
+    "confirmPassword": "Confirmar contraseña",
+    "submit": "Guardar contraseña",
+    "submitting": "Guardando…",
+    "mismatch": "Las contraseñas no coinciden.",
+    "tooShort": "La contraseña debe tener al menos {{count}} caracteres.",
+    "success": "Contraseña actualizada.",
+    "signOut": "Cerrar sesión"
   }
 }

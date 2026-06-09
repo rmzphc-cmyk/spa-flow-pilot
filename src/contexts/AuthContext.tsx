@@ -9,6 +9,7 @@ interface AuthContextValue {
   session: Session | null;
   userRole: AppRole | null;
   spaId: string | null;
+  mustChangePassword: boolean;
   isLoading: boolean;
   signOut: () => Promise<void>;
 }
@@ -46,6 +47,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const userRole = mapRole(appMeta.role);
   const rawSpaId = appMeta.spa_id;
   const spaId = typeof rawSpaId === "string" && rawSpaId.length > 0 ? rawSpaId : null;
+  const userMeta = (user?.user_metadata ?? {}) as Record<string, unknown>;
+  const mustChangePassword = userMeta.must_change_password === true;
 
   const signOut = async () => {
     await supabase.auth.signOut();
@@ -53,7 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, userRole, spaId, isLoading, signOut }}>
+    <AuthContext.Provider value={{ user, session, userRole, spaId, mustChangePassword, isLoading, signOut }}>
       {children}
     </AuthContext.Provider>
   );
