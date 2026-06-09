@@ -62,17 +62,30 @@ Deno.serve(async (req) => {
         );
       }
 
-      // handle_new_user trigger has already inserted into public.users with role + spa_id.
-      // Now patch with destination_id / organization_id / full_name.
-      const update: Record<string, unknown> = {};
-      if (body.destination_id !== undefined) update.destination_id = body.destination_id;
-      if (body.organization_id !== undefined) update.organization_id = body.organization_id;
-      if (body.full_name) update.full_name = body.full_name;
-
-      if (Object.keys(update).length > 0) {
-        const { error: updErr } = await admin.from("users").update(update).eq("id", created.user.id);
-        if (updErr) return json({ error: updErr.message }, 400);
+      // handle_new_user only sets id/email/full_name/role — NOT spa_id/org/dest.
+      // Persist the full attribution here, otherwise the manager has no spa
+      // (invisible in admin/direction lists, no data access via the JWT hook).
+      // For a spa_manager, organization_id + destination_id are derived from the
+      // chosen spa (single source of truth). For direction, they come from input.
+      const update: Record<string, unknown> = { full_name: body.full_name ?? "" };
+      if (body.role === "spa_manager") {
+        update.spa_id = body.spa_id;
+        const { data: spa } = await admin
+          .from("spas")
+          .select("organization_id, destination_id")
+          .eq("id", body.spa_id)
+          .maybeSingle();
+        if (spa) {
+          update.organization_id = (spa as any).organization_id;
+          update.destination_id = (spa as any).destination_id;
+        }
+      } else if (body.role === "direction") {
+        if (body.organization_id !== undefined) update.organization_id = body.organization_id;
+        if (body.destination_id !== undefined) update.destination_id = body.destination_id;
       }
+
+      const { error: updErr } = await admin.from("users").update(update).eq("id", created.user.id);
+      if (updErr) return json({ error: updErr.message }, 400);
 
       return json({ ok: true, user_id: created.user.id, temp_password: tempPassword }, 200);
     }
@@ -83,7 +96,21 @@ Deno.serve(async (req) => {
       const update: Record<string, unknown> = {};
       if (body.full_name !== undefined) update.full_name = body.full_name;
       if (body.role !== undefined) update.role = body.role;
-      if (body.spa_id !== undefined) update.spa_id = body.spa_id;
+      if (body.spa_id !== undefined) {
+        update.spa_id = body.spa_id;
+        // Keep organization_id + destination_id in sync with the manager's spa.
+        if (body.spa_id) {
+          const { data: spa } = await admin
+            .from("spas")
+            .select("organization_id, destination_id")
+            .eq("id", body.spa_id)
+            .maybeSingle();
+          if (spa) {
+            update.organization_id = (spa as any).organization_id;
+            update.destination_id = (spa as any).destination_id;
+          }
+        }
+      }
       if (body.destination_id !== undefined) update.destination_id = body.destination_id;
       if (body.organization_id !== undefined) update.organization_id = body.organization_id;
 

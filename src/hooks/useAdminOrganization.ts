@@ -209,10 +209,12 @@ export function useAdminUsers(organizationId?: string) {
     queryKey: ["admin", "users", organizationId],
     enabled: !!organizationId,
     queryFn: async () => {
+      // Match the org, but also surface orphaned rows (organization_id NULL) so
+      // mis-attributed managers stay visible and fixable instead of vanishing.
       const { data, error } = await supabase
         .from("users")
         .select("id, email, full_name, role, spa_id, destination_id, organization_id, is_active")
-        .eq("organization_id", organizationId!)
+        .or(`organization_id.eq.${organizationId},organization_id.is.null`)
         .order("role")
         .order("full_name");
       if (error) throw error;
