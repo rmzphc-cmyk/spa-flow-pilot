@@ -152,7 +152,16 @@
     "kpiStatus": "Estado",
     "respGlobal": "Puntuación global de responsabilidades",
     "resolved": "Resuelto",
-    "inProgress": "En curso"
+    "inProgress": "En curso",
+    "network": {
+      "title": "Visión de red",
+      "networkRevenue": "Ingresos de red",
+      "avgRevenue": "Ingresos medios",
+      "avgSatisfaction": "Satisfacción media",
+      "green": "En verde",
+      "alert": "En alerta",
+      "validatedReports": "Informes validados"
+    }
   },
   "reportType": {
     "monthly": "Mensual",

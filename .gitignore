@@ -26,3 +26,7 @@ dist-ssr
 # Harnais d'audit local — contient des credentials de test en clair
 tests/audit/
 test-results/
+
+# Findings d'audit — backlog conservé en local, non versionné (décision produit)
+/AUDIT_FINDINGS*
+/AUDIT_SQL_FIXES*

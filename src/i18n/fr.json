@@ -153,7 +153,16 @@
     "kpiStatus": "Statut",
     "respGlobal": "Score global responsabilités",
     "resolved": "Résolu",
-    "inProgress": "En cours"
+    "inProgress": "En cours",
+    "network": {
+      "title": "Pilotage réseau",
+      "networkRevenue": "CA réseau",
+      "avgRevenue": "CA moyen",
+      "avgSatisfaction": "Satisfaction moy.",
+      "green": "Au vert",
+      "alert": "En alerte",
+      "validatedReports": "Rapports validés"
+    }
   },
   "reportType": {
     "monthly": "Mensuel",

@@ -119,6 +119,70 @@ function SpaCard({ spa }: { spa: SpaOverview }) {
   );
 }
 
+function parseNum(s: string): number | null {
+  const m = s.replace(/\s/g, "").match(/-?\d+([.,]\d+)?/);
+  return m ? parseFloat(m[0].replace(",", ".")) : null;
+}
+
+// Agrège un champ KPI string sur les spas : somme si tous en €, sinon moyenne (%/sans unité).
+function aggregateKpi(values: string[]): { mode: "sum" | "avg" | "none"; value: number; unit: string } {
+  const present = values.filter((v) => v && v !== "—");
+  const nums = present.map(parseNum).filter((n): n is number => n !== null);
+  if (!nums.length) return { mode: "none", value: 0, unit: "" };
+  const hasEuro = present.some((v) => v.includes("€"));
+  const hasPct = present.some((v) => v.includes("%"));
+  const sum = nums.reduce((a, b) => a + b, 0);
+  if (hasEuro && !hasPct) return { mode: "sum", value: Math.round(sum), unit: "€" };
+  return { mode: "avg", value: Math.round(sum / nums.length), unit: hasPct ? "%" : "" };
+}
+
+function NetworkSummary({ spas }: { spas: SpaOverview[] }) {
+  const { t, i18n } = useTranslation();
+  if (spas.length === 0) return null;
+
+  const total = spas.length;
+  const withRed = spas.filter((s) => s.alerts.some((a) => a.level === "red")).length;
+  const withAlerts = spas.filter((s) => s.alerts.length > 0).length;
+  const green = total - withAlerts;
+  const validated = spas.filter((s) => s.status === "validated").length;
+  const ca = aggregateKpi(spas.map((s) => s.kpis.ca));
+  const sat = aggregateKpi(spas.map((s) => s.kpis.satisfaction));
+
+  const stats: { label: string; value: string; tone?: "red" | "emerald" }[] = [
+    {
+      label: ca.mode === "sum" ? t("direction.network.networkRevenue") : t("direction.network.avgRevenue"),
+      value: ca.mode === "none" ? "—" : `${ca.value.toLocaleString(i18n.language)}${ca.unit}`,
+    },
+    {
+      label: t("direction.network.avgSatisfaction"),
+      value: sat.mode === "none" ? "—" : `${sat.value}${sat.unit}`,
+    },
+    { label: t("direction.network.green"), value: `${green}/${total}`, tone: green === total ? "emerald" : undefined },
+    { label: t("direction.network.alert"), value: String(withRed), tone: withRed > 0 ? "red" : undefined },
+    { label: t("direction.network.validatedReports"), value: `${validated}/${total}` },
+  ];
+
+  return (
+    <Card className="mb-6 p-5 shadow-sm">
+      <h2 className="text-sm font-semibold text-foreground mb-4">{t("direction.network.title")}</h2>
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
+        {stats.map((s) => (
+          <div key={s.label} className="text-center">
+            <p
+              className={`text-xl font-bold ${
+                s.tone === "red" ? "text-destructive" : s.tone === "emerald" ? "text-emerald-600" : "text-foreground"
+              }`}
+            >
+              {s.value}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 export default function DirectionOverview() {
   const { t, i18n } = useTranslation();
   const { data: spas = [], isLoading } = useDirectionSpas();
@@ -158,6 +222,7 @@ export default function DirectionOverview() {
         </div>
       ) : (
         <>
+          <NetworkSummary spas={spas} />
           <AlertBanner spas={spas} />
           <div className="space-y-4">
             {sorted.map((spa) => (

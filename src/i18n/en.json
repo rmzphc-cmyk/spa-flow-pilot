@@ -152,7 +152,16 @@
     "kpiStatus": "Status",
     "respGlobal": "Overall responsibility score",
     "resolved": "Resolved",
-    "inProgress": "In progress"
+    "inProgress": "In progress",
+    "network": {
+      "title": "Network overview",
+      "networkRevenue": "Network revenue",
+      "avgRevenue": "Avg. revenue",
+      "avgSatisfaction": "Avg. satisfaction",
+      "green": "On track",
+      "alert": "In alert",
+      "validatedReports": "Reports validated"
+    }
   },
   "reportType": {
     "monthly": "Monthly",
