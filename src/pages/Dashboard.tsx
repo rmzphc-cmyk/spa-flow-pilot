@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, AlertTriangle, Sparkles, CheckCircle2, Target, Calendar, Plus, FileText, Eye, Loader2, CalendarClock } from "lucide-react";
 import {
@@ -57,28 +58,28 @@ function computeCompletion(report: ReportRecord): { completed: number; total: nu
 
 // --- Status config ---
 
-const statusConfig: Record<ReportStatus, { label: string; bg: string; text: string }> = {
-  draft_preparation: { label: "En préparation", bg: "bg-muted", text: "text-muted-foreground" },
-  ready_for_review: { label: "Soumis pour revue", bg: "bg-blue-100", text: "text-blue-800" },
-  in_meeting: { label: "Réunion en cours", bg: "bg-orange-100", text: "text-orange-800" },
-  post_meeting_generated: { label: "Synthèse IA prête à valider", bg: "bg-violet-100", text: "text-violet-800" },
-  validated: { label: "Validé et diffusé", bg: "bg-emerald-100", text: "text-emerald-800" },
+const statusConfig: Record<ReportStatus, { labelKey: string; bg: string; text: string }> = {
+  draft_preparation: { labelKey: "status.draft_preparation", bg: "bg-muted", text: "text-muted-foreground" },
+  ready_for_review: { labelKey: "dashboard.statusSubmittedForReview", bg: "bg-blue-100", text: "text-blue-800" },
+  in_meeting: { labelKey: "dashboard.statusMeetingInProgress", bg: "bg-orange-100", text: "text-orange-800" },
+  post_meeting_generated: { labelKey: "dashboard.statusAiSummaryReady", bg: "bg-violet-100", text: "text-violet-800" },
+  validated: { labelKey: "dashboard.statusValidatedAndShared", bg: "bg-emerald-100", text: "text-emerald-800" },
 };
 
 function getCtaConfig(status: ReportStatus, type: "weekly" | "monthly") {
   switch (status) {
     case "draft_preparation":
       return type === "monthly"
-        ? { label: "Lancer la réunion", icon: ArrowRight }
-        : { label: "Continuer la préparation", icon: ArrowRight };
+        ? { labelKey: "dashboard.ctaStartMeeting", icon: ArrowRight }
+        : { labelKey: "dashboard.ctaContinuePreparation", icon: ArrowRight };
     case "ready_for_review":
-      return type === "monthly" ? { label: "Lancer la réunion", icon: ArrowRight } : null;
+      return type === "monthly" ? { labelKey: "dashboard.ctaStartMeeting", icon: ArrowRight } : null;
     case "in_meeting":
-      return { label: "Rejoindre la réunion →", icon: ArrowRight };
+      return { labelKey: "dashboard.ctaJoinMeeting", icon: ArrowRight };
     case "post_meeting_generated":
-      return { label: "Voir le compte-rendu", icon: ArrowRight };
+      return { labelKey: "dashboard.ctaViewReport", icon: ArrowRight };
     case "validated":
-      return { label: "Voir le rapport validé", icon: Eye };
+      return { labelKey: "dashboard.ctaViewValidatedReport", icon: Eye };
     default:
       return null;
   }
@@ -87,24 +88,25 @@ function getCtaConfig(status: ReportStatus, type: "weekly" | "monthly") {
 // --- Components ---
 
 function OverdueAlert({ todos }: { todos: OverdueTodo[] }) {
+  const { t } = useTranslation();
   if (todos.length === 0) return null;
   return (
     <div className="rounded-xl p-5 mb-4" style={{ backgroundColor: "#FEE2E2" }}>
       <h2 className="text-base font-bold text-destructive flex items-center gap-2 mb-3">
         <AlertTriangle className="h-5 w-5" />
-        {todos.length} action{todos.length > 1 ? "s" : ""} en retard
+        {t("dashboard.overdueActions", { count: todos.length })}
       </h2>
       <ul className="space-y-1.5">
         {todos.slice(0, 3).map((todo) => (
           <li key={todo.id} className="text-sm text-foreground flex justify-between">
             <span>{todo.title}</span>
-            <span className="text-destructive font-medium text-xs shrink-0 ml-3">+{todo.daysOverdue}j</span>
+            <span className="text-destructive font-medium text-xs shrink-0 ml-3">{t("dashboard.daysOverdueShort", { count: todo.daysOverdue })}</span>
           </li>
         ))}
       </ul>
       {todos.length > 3 && (
         <button className="text-sm text-destructive font-medium mt-3 hover:underline">
-          Voir tous les retards →
+          {t("dashboard.viewAllOverdue")}
         </button>
       )}
     </div>
@@ -113,6 +115,7 @@ function OverdueAlert({ todos }: { todos: OverdueTodo[] }) {
 
 function CurrentReportCard({ report }: { report: ReportRecord }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const status = statusConfig[report.state];
   const cta = getCtaConfig(report.state, report.type);
   const { completed, total } = computeCompletion(report);
@@ -132,20 +135,20 @@ function CurrentReportCard({ report }: { report: ReportRecord }) {
               report.type === "weekly" ? "bg-emerald-100 text-emerald-800" : "bg-blue-100 text-blue-800"
             }`}
           >
-            {report.type === "weekly" ? "🟢 Weekly" : "🔵 Monthly"}
+            {report.type === "weekly" ? t("dashboard.weeklyBadge") : t("dashboard.monthlyBadge")}
           </span>
           <span className="text-sm text-muted-foreground">{report.period}</span>
         </div>
         <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${status.bg} ${status.text}`}>
-          {status.label}
+          {t(status.labelKey)}
         </span>
       </div>
 
       {/* Progress bar */}
       <div className="mb-1">
         <div className="flex items-center justify-between mb-2">
-          <span className="text-sm font-medium text-foreground">Progression</span>
-          <span className="text-xs text-muted-foreground">{completed}/{total} sections</span>
+          <span className="text-sm font-medium text-foreground">{t("dashboard.progress")}</span>
+          <span className="text-xs text-muted-foreground">{t("dashboard.sectionsCount", { completed, total })}</span>
         </div>
         <div className="flex gap-1 h-2">
           {sectionColors.map((color, i) => (
@@ -163,13 +166,13 @@ function CurrentReportCard({ report }: { report: ReportRecord }) {
             size="lg"
           >
             <cta.icon className="h-4 w-4" />
-            {cta.label}
+            {t(cta.labelKey)}
           </Button>
           <button
             onClick={() => navigate(`/rapport/${report.id}`)}
             className="text-sm text-muted-foreground hover:text-foreground hover:underline transition-colors"
           >
-            Voir le rapport complet
+            {t("dashboard.viewFullReport")}
           </button>
         </div>
       )}
@@ -179,13 +182,14 @@ function CurrentReportCard({ report }: { report: ReportRecord }) {
 
 function NoCurrentReportCard() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   return (
     <div className="bg-card rounded-xl shadow-sm border border-dashed border-border p-8 mb-4 text-center">
       <FileText className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-      <p className="text-foreground font-medium">Aucun rapport en cours</p>
-      <p className="text-sm text-muted-foreground mt-1 mb-4">Créez un rapport pour démarrer un nouveau cycle.</p>
+      <p className="text-foreground font-medium">{t("dashboard.noCurrentReport")}</p>
+      <p className="text-sm text-muted-foreground mt-1 mb-4">{t("dashboard.noCurrentReportHint")}</p>
       <Button onClick={() => navigate("/rapports")} className="gap-1.5">
-        <Plus className="h-4 w-4" /> Créer un rapport
+        <Plus className="h-4 w-4" /> {t("dashboard.createReport")}
       </Button>
     </div>
   );
@@ -193,14 +197,15 @@ function NoCurrentReportCard() {
 
 function AiBriefCard({ items }: { items: AiBriefItem[] }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   if (items.length === 0) return null;
   return (
     <div className="rounded-xl border border-primary/20 p-5 mb-4" style={{ backgroundColor: "hsl(174, 95%, 95%)" }}>
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-base font-semibold text-foreground">Votre réunion est dans 2 jours</h2>
+        <h2 className="text-base font-semibold text-foreground">{t("dashboard.meetingInTwoDays")}</h2>
         <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
           <Sparkles className="h-3 w-3" />
-          Suggestion IA
+          {t("ai.badge")}
         </span>
       </div>
       <ul className="space-y-2 mb-4">
@@ -215,7 +220,7 @@ function AiBriefCard({ items }: { items: AiBriefItem[] }) {
         onClick={() => navigate("/rapport/r1")}
         className="text-sm text-primary font-medium hover:underline"
       >
-        Commencer la préparation →
+        {t("dashboard.startPreparation")}
       </button>
     </div>
   );
@@ -229,6 +234,7 @@ interface QuickMetricsProps {
 }
 
 function QuickMetrics({ respCompletionPct, todosDone, todosTotal, objectivesActive }: QuickMetricsProps) {
+  const { t } = useTranslation();
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
       {/* Responsabilités */}
@@ -248,8 +254,8 @@ function QuickMetrics({ respCompletionPct, todosDone, todosTotal, objectivesActi
           </span>
         </div>
         <div>
-          <p className="text-sm font-medium text-foreground">Responsabilités</p>
-          <p className="text-xs text-muted-foreground">complétion globale</p>
+          <p className="text-sm font-medium text-foreground">{t("dashboard.responsabilitiesTitle")}</p>
+          <p className="text-xs text-muted-foreground">{t("dashboard.globalCompletion")}</p>
         </div>
       </div>
 
@@ -270,8 +276,8 @@ function QuickMetrics({ respCompletionPct, todosDone, todosTotal, objectivesActi
           </span>
         </div>
         <div>
-          <p className="text-sm font-medium text-foreground">To-do actifs</p>
-          <p className="text-xs text-muted-foreground">faits / total actifs</p>
+          <p className="text-sm font-medium text-foreground">{t("dashboard.activeTodos")}</p>
+          <p className="text-xs text-muted-foreground">{t("dashboard.doneOverActive")}</p>
         </div>
       </div>
 
@@ -293,8 +299,8 @@ function QuickMetrics({ respCompletionPct, todosDone, todosTotal, objectivesActi
           })}
         </div>
         <div>
-          <p className="text-sm font-medium text-foreground">{objectivesActive}/3 objectifs</p>
-          <p className="text-xs text-muted-foreground">actifs ce mois</p>
+          <p className="text-sm font-medium text-foreground">{t("dashboard.objectivesCount", { count: objectivesActive })}</p>
+          <p className="text-xs text-muted-foreground">{t("dashboard.activeThisMonth")}</p>
         </div>
       </div>
     </div>
@@ -303,10 +309,11 @@ function QuickMetrics({ respCompletionPct, todosDone, todosTotal, objectivesActi
 
 function RecentActivity({ items }: { items: RecentActivityItem[] }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   if (items.length === 0) return null;
   return (
     <div className="bg-card rounded-xl shadow-sm border border-border p-5">
-      <h2 className="text-base font-semibold text-foreground mb-3">Activité récente</h2>
+      <h2 className="text-base font-semibold text-foreground mb-3">{t("dashboard.recentActivity")}</h2>
       <ul className="space-y-2">
         {items.map((item) => (
           <li key={item.id} className="flex items-center justify-between text-sm">
@@ -319,7 +326,7 @@ function RecentActivity({ items }: { items: RecentActivityItem[] }) {
               onClick={() => navigate(`/rapport/${item.id}`)}
               className="text-sm text-primary hover:underline font-medium"
             >
-              Voir
+              {t("dashboard.view")}
             </button>
           </li>
         ))}
@@ -342,6 +349,7 @@ type PendingDialog =
 
 function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows: ReportRow[] }) {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const schedule = useMeetingSchedule();
   const createReport = useCreateReport();
   const { toast: showToast } = useToast();
@@ -406,8 +414,8 @@ function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows
   };
 
   const meetings = [
-    { type: "weekly" as const, date: weeklyDate, label: "🟢 Weekly", chip: "bg-emerald-100 text-emerald-800" },
-    { type: "monthly" as const, date: monthlyDate, label: "🔵 Monthly", chip: "bg-blue-100 text-blue-800" },
+    { type: "weekly" as const, date: weeklyDate, label: t("dashboard.weeklyBadge"), chip: "bg-emerald-100 text-emerald-800" },
+    { type: "monthly" as const, date: monthlyDate, label: t("dashboard.monthlyBadge"), chip: "bg-blue-100 text-blue-800" },
   ];
 
   const fmt = FR_FULL;
@@ -496,7 +504,7 @@ function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows
           return;
         }
       }
-      showToast({ title: "Erreur", description: msg || "Impossible de créer le rapport.", variant: "destructive" });
+      showToast({ title: t("common.error"), description: msg || t("dashboard.createReportError"), variant: "destructive" });
     }
   };
 
@@ -509,11 +517,11 @@ function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows
           const isReady = ready.completion >= 80;
           const isValidated = ready.isValidated;
           const readinessBadge = isValidated
-            ? { label: "Rapport validé ✓", cls: "bg-emerald-100 text-emerald-800" }
+            ? { label: t("dashboard.reportValidatedBadge"), cls: "bg-emerald-100 text-emerald-800" }
             : isReady
-              ? { label: "Prêt", cls: "bg-emerald-100 text-emerald-800" }
-              : { label: "À préparer", cls: days <= 2 ? "bg-destructive/15 text-destructive" : "bg-amber-100 text-amber-800" };
-          const daysLabel = days === 0 ? "Aujourd'hui" : days === 1 ? "Demain" : `Dans ${days} jours`;
+              ? { label: t("dashboard.ready"), cls: "bg-emerald-100 text-emerald-800" }
+              : { label: t("dashboard.toPrepare"), cls: days <= 2 ? "bg-destructive/15 text-destructive" : "bg-amber-100 text-amber-800" };
+          const daysLabel = days === 0 ? t("dashboard.today") : days === 1 ? t("dashboard.tomorrow") : t("dashboard.inXDays", { count: days });
 
           const handleClick = m.type === "weekly" ? handleWeeklyClick : handleMonthlyClick;
 
@@ -539,15 +547,15 @@ function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows
               {ready.reportId ? (
                 <span className="inline-flex items-center gap-1 text-sm text-primary font-medium">
                   {isValidated
-                    ? "Voir le rapport validé"
+                    ? t("dashboard.ctaViewValidatedReport")
                     : isReady
-                      ? "Ouvrir la réunion"
-                      : "Continuer la préparation"}
+                      ? t("dashboard.openMeeting")
+                      : t("dashboard.ctaContinuePreparation")}
                   <ArrowRight className="h-4 w-4" />
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 text-sm text-primary font-medium">
-                  <Plus className="h-4 w-4" /> Créer le rapport
+                  <Plus className="h-4 w-4" /> {t("dashboard.createReportShort")}
                 </span>
               )}
             </button>
@@ -562,24 +570,23 @@ function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows
               <AlertDialogHeader>
                 <AlertDialogTitle className="flex items-center gap-2 text-destructive">
                   <AlertTriangle className="h-5 w-5" />
-                  Semaine précédente sans rapport
+                  {t("dashboard.previousWeekNoReportTitle")}
                 </AlertDialogTitle>
                 <AlertDialogDescription>
-                  La réunion du {FR_FULL.format(pending.previousMeetingDate)} n'a pas de rapport validé.
-                  Elle apparaîtra comme réunion non effectuée dans votre historique.
+                  {t("dashboard.previousWeekNoReportBody", { date: FR_FULL.format(pending.previousMeetingDate) })}
                   <br /><br />
-                  Créer le rapport pour la semaine du {formatIsoFr(pending.period.periodStart)} au {formatIsoFr(pending.period.periodEnd)} ?
+                  {t("dashboard.createWeeklyForPeriodQuestion", { start: formatIsoFr(pending.period.periodStart), end: formatIsoFr(pending.period.periodEnd) })}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel disabled={createReport.isPending}>Annuler</AlertDialogCancel>
+                <AlertDialogCancel disabled={createReport.isPending}>{t("common.cancel")}</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleConfirmCreate}
                   disabled={createReport.isPending}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
                   {createReport.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Créer quand même
+                  {t("dashboard.createAnyway")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </>
@@ -587,18 +594,18 @@ function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows
           {pending?.kind === "weekly" && !pending.previousMissing && (
             <>
               <AlertDialogHeader>
-                <AlertDialogTitle>Créer le rapport Weekly</AlertDialogTitle>
+                <AlertDialogTitle>{t("dashboard.createWeeklyReportTitle")}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Ce rapport couvrira la période du {formatIsoFr(pending.period.periodStart)} au {formatIsoFr(pending.period.periodEnd)}.
+                  {t("dashboard.reportWillCoverPeriod", { start: formatIsoFr(pending.period.periodStart), end: formatIsoFr(pending.period.periodEnd) })}
                   <br />
-                  Réunion prévue le {FR_FULL.format(pending.period.meetingDate)}.
+                  {t("dashboard.meetingPlannedOn", { date: FR_FULL.format(pending.period.meetingDate) })}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel disabled={createReport.isPending}>Annuler</AlertDialogCancel>
+                <AlertDialogCancel disabled={createReport.isPending}>{t("common.cancel")}</AlertDialogCancel>
                 <AlertDialogAction onClick={handleConfirmCreate} disabled={createReport.isPending}>
                   {createReport.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Créer le rapport
+                  {t("dashboard.createReportShort")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </>
@@ -606,18 +613,18 @@ function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows
           {pending?.kind === "monthly" && (
             <>
               <AlertDialogHeader>
-                <AlertDialogTitle>Créer le rapport Monthly</AlertDialogTitle>
+                <AlertDialogTitle>{t("dashboard.createMonthlyReportTitle")}</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Ce rapport couvrira la période du {formatIsoFr(pending.period.periodStart)} au {formatIsoFr(pending.period.periodEnd)}.
+                  {t("dashboard.reportWillCoverPeriod", { start: formatIsoFr(pending.period.periodStart), end: formatIsoFr(pending.period.periodEnd) })}
                   <br />
-                  Réunion prévue le {FR_FULL.format(pending.period.meetingDate)}.
+                  {t("dashboard.meetingPlannedOn", { date: FR_FULL.format(pending.period.meetingDate) })}
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel disabled={createReport.isPending}>Annuler</AlertDialogCancel>
+                <AlertDialogCancel disabled={createReport.isPending}>{t("common.cancel")}</AlertDialogCancel>
                 <AlertDialogAction onClick={handleConfirmCreate} disabled={createReport.isPending}>
                   {createReport.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Créer le rapport
+                  {t("dashboard.createReportShort")}
                 </AlertDialogAction>
               </AlertDialogFooter>
             </>
@@ -633,6 +640,7 @@ function UpcomingMeetingsCard({ reports, rows }: { reports: ReportRecord[]; rows
 const FR_LONG_DATE = new Intl.DateTimeFormat("fr-FR", { day: "numeric", month: "long", year: "numeric" });
 
 export default function Dashboard() {
+  const { t } = useTranslation();
   const { spaId } = useAuth();
   const { data: rows = [] } = useReports();
   const reports = useMemo(() => rows.map(mapReportRowToRecord), [rows]);
@@ -705,16 +713,16 @@ export default function Dashboard() {
 
     const items: AiBriefItem[] = [];
     if (overdueCount > 0) {
-      items.push({ icon: "📋", text: `${overdueCount} to-do en retard` });
+      items.push({ icon: "📋", text: t("dashboard.briefOverdueTodos", { count: overdueCount }) });
     }
     if (redKpiCount > 0) {
-      items.push({ icon: "📉", text: `${redKpiCount} KPI en alerte sur le dernier rapport validé` });
+      items.push({ icon: "📉", text: t("dashboard.briefRedKpi", { count: redKpiCount }) });
     }
     if (atRiskObjectives > 0) {
-      items.push({ icon: "🎯", text: `${atRiskObjectives} objectif${atRiskObjectives > 1 ? "s" : ""} à risque` });
+      items.push({ icon: "🎯", text: t("dashboard.briefAtRiskObjectives", { count: atRiskObjectives }) });
     }
     return items;
-  }, [overdueTodos.length, kpiEntries, objectives]);
+  }, [overdueTodos.length, kpiEntries, objectives, t]);
 
   // 3. Recent activity
   const recentActivity = useMemo<RecentActivityItem[]>(
@@ -729,7 +737,7 @@ export default function Dashboard() {
 
   return (
     <>
-      <h1 className="text-2xl font-bold text-foreground mb-6">Dashboard</h1>
+      <h1 className="text-2xl font-bold text-foreground mb-6">{t("nav.dashboard")}</h1>
       <ScheduleNotConfiguredBanner />
       <UpcomingMeetingsCard reports={reports} rows={rows} />
       <OverdueAlert todos={overdueTodos} />
@@ -748,13 +756,14 @@ export default function Dashboard() {
 
 function ScheduleNotConfiguredBanner() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { isScheduleConfigured } = useMeetingSchedule();
   if (isScheduleConfigured) return null;
   return (
     <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 mb-4 flex items-start gap-3">
       <CalendarClock className="h-5 w-5 text-amber-700 mt-0.5 shrink-0" />
       <div className="flex-1 text-sm text-amber-900">
-        Calendrier de réunions non configuré — les dates affichées sont des valeurs par défaut.
+        {t("dashboard.scheduleNotConfigured")}
       </div>
       <Button
         variant="outline"
@@ -762,7 +771,7 @@ function ScheduleNotConfiguredBanner() {
         className="shrink-0 border-amber-300 text-amber-900 hover:bg-amber-100"
         onClick={() => navigate("/admin/responsabilites")}
       >
-        Configurer →
+        {t("dashboard.configure")}
       </Button>
     </div>
   );

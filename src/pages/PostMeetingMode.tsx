@@ -56,11 +56,11 @@ export default function PostMeetingMode() {
           <div className="flex items-center gap-2">
             <Check className="h-4 w-4 text-emerald-600" />
             <span className="text-sm font-medium text-foreground">
-              Compte-rendu — {row?.cycle_label ?? "Monthly"}
+              {t("postMeeting.minutesTitle")} — {row?.cycle_label ?? t("reportType.monthly")}
             </span>
             {row?.status === "validated" && (
               <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800">
-                Validé ✓
+                {t("status.validated")} ✓
               </span>
             )}
           </div>
@@ -83,7 +83,7 @@ export default function PostMeetingMode() {
                 {reopenMeeting.isPending
                   ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   : <RotateCcw className="h-3.5 w-3.5" />}
-                Relancer la réunion
+                {t("postMeeting.reopenMeeting")}
               </Button>
             )}
             <Button
@@ -93,7 +93,7 @@ export default function PostMeetingMode() {
               onClick={() => navigate(`/rapport/${id}`, { state: { readOnly: true } })}
             >
               <Eye className="h-3.5 w-3.5" />
-              Voir la présentation
+              {t("postMeeting.viewPresentation")}
             </Button>
           </div>
         </div>
@@ -104,9 +104,9 @@ export default function PostMeetingMode() {
         {/* ===== SYNTHÈSE IA ===== */}
         <section className="mb-8">
           <div className="flex items-center gap-2 mb-4">
-            <h2 className="text-lg font-semibold text-foreground">Synthèse IA</h2>
+            <h2 className="text-lg font-semibold text-foreground">{t("ai.executiveSummary")}</h2>
             <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
-              <Sparkles className="h-3 w-3" /> Générée en réunion
+              <Sparkles className="h-3 w-3" /> {t("postMeeting.generatedInMeeting")}
             </span>
           </div>
 
@@ -161,7 +161,7 @@ export default function PostMeetingMode() {
         {isMonthly && (dbIds ?? []).length > 0 && (
           <section className="mb-8">
             <h2 className="text-lg font-semibold text-foreground mb-4">
-              IDS — {(dbIds ?? []).length} point{(dbIds ?? []).length !== 1 ? "s" : ""} traité{(dbIds ?? []).length !== 1 ? "s" : ""}
+              {t("postMeeting.idsArchivedTitle", { count: (dbIds ?? []).length })}
             </h2>
             <div className="space-y-3">
               {(dbIds ?? []).map((item, i) => (
@@ -174,28 +174,28 @@ export default function PostMeetingMode() {
                     <div className="ml-5 space-y-1">
                       {item.root_cause && (
                         <p className="text-xs text-muted-foreground">
-                          <span className="font-medium">Cause :</span> {item.root_cause}
+                          <span className="font-medium">{t("postMeeting.causeLabel")}</span> {item.root_cause}
                         </p>
                       )}
                       <p className="text-xs text-foreground">
-                        <span className="font-medium">Solution :</span> {item.proposed_solution}
+                        <span className="font-medium">{t("postMeeting.solutionLabel")}</span> {item.proposed_solution}
                       </p>
                     </div>
                   )}
                   {!item.proposed_solution && (
                     <p className="ml-5 text-xs text-amber-600 flex items-center gap-1">
-                      <AlertCircle className="h-3 w-3" /> Sans solution
+                      <AlertCircle className="h-3 w-3" /> {t("postMeeting.noSolution")}
                     </p>
                   )}
                   <div className="ml-5 mt-2 flex gap-2 flex-wrap">
                     {item.converted_to_todo_id && (
                       <span className="inline-flex items-center gap-1 text-xs text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full font-medium">
-                        <Check className="h-3 w-3" /> Todo créé
+                        <Check className="h-3 w-3" /> {t("postMeeting.todoCreated")}
                       </span>
                     )}
                     {item.converted_to_objective_id && (
                       <span className="inline-flex items-center gap-1 text-xs text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full font-medium">
-                        <Check className="h-3 w-3" /> Objectif créé
+                        <Check className="h-3 w-3" /> {t("postMeeting.objectiveCreated")}
                       </span>
                     )}
                   </div>
@@ -208,31 +208,31 @@ export default function PostMeetingMode() {
         {/* ===== TRANSCRIPT ===== */}
         {isMonthly && row?.audio_storage_path && (
           <section className="mb-8">
-            <h2 className="text-lg font-semibold text-foreground mb-4">Enregistrement & Transcript</h2>
+            <h2 className="text-lg font-semibold text-foreground mb-4">{t("postMeeting.recordingTranscript")}</h2>
             {(!summaryRow?.transcript_status || summaryRow.transcript_status === "none") && (
               <div className="bg-card border border-border rounded-xl p-5 shadow-sm">
                 <p className="text-sm text-muted-foreground mb-3">
-                  Enregistrement disponible. Lancez la transcription Whisper pour archiver les échanges.
+                  {t("postMeeting.recordingAvailable")}
                 </p>
                 <Button size="sm" className="gap-1.5" disabled={transcribeMeeting.isPending}
                   onClick={() => id && transcribeMeeting.mutate({ reportId: id })}>
                   {transcribeMeeting.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Mic className="h-4 w-4" />}
-                  Transcrire l'enregistrement
+                  {t("postMeeting.transcribeRecording")}
                 </Button>
               </div>
             )}
             {summaryRow?.transcript_status === "pending" && (
               <div className="bg-card border border-border rounded-xl p-5 shadow-sm flex items-center gap-3">
                 <Loader2 className="h-5 w-5 animate-spin text-primary shrink-0" />
-                <p className="text-sm font-medium text-foreground">Transcription Whisper en cours…</p>
+                <p className="text-sm font-medium text-foreground">{t("postMeeting.transcriptionInProgress")}</p>
               </div>
             )}
             {summaryRow?.transcript_status === "done" && summaryRow.transcript_text && (
               <details className="bg-card border border-border rounded-xl shadow-sm">
                 <summary className="px-5 py-4 cursor-pointer font-medium text-sm text-foreground flex items-center gap-2 select-none list-none">
                   <Mic className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span className="flex-1">Transcript complet (Whisper)</span>
-                  <span className="text-xs text-muted-foreground">{summaryRow.transcript_text.length.toLocaleString("fr-FR")} car.</span>
+                  <span className="flex-1">{t("postMeeting.fullTranscript")}</span>
+                  <span className="text-xs text-muted-foreground">{t("postMeeting.charCount", { count: summaryRow.transcript_text.length })}</span>
                 </summary>
                 <div className="px-5 pb-5 border-t border-border pt-4">
                   <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">{summaryRow.transcript_text}</p>
@@ -241,11 +241,11 @@ export default function PostMeetingMode() {
             )}
             {summaryRow?.transcript_status === "error" && (
               <div className="bg-card border border-destructive/30 rounded-xl p-5 shadow-sm">
-                <p className="text-sm text-destructive mb-3">Transcription échouée.</p>
+                <p className="text-sm text-destructive mb-3">{t("postMeeting.transcriptionFailed")}</p>
                 <Button size="sm" variant="outline" className="gap-1.5" disabled={transcribeMeeting.isPending}
                   onClick={() => id && transcribeMeeting.mutate({ reportId: id })}>
                   {transcribeMeeting.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RefreshCw className="h-3.5 w-3.5" />}
-                  Réessayer
+                  {t("postMeeting.retry")}
                 </Button>
               </div>
             )}

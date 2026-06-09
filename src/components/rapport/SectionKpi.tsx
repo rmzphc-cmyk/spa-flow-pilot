@@ -426,7 +426,7 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
           </h2>
           <p className="text-sm text-muted-foreground mt-0.5">
             {isWeekly
-              ? "Comparaison vs objectif hebdomadaire (÷4 ou fixe selon config)"
+              ? t("report.kpi.weeklySubtitle")
               : t("report.kpi.subtitle")}
           </p>
         </div>
@@ -485,7 +485,7 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
                       : "bg-rose-200 text-rose-800"
                   }`}
                 >
-                  {items.length} KPI{items.length > 1 ? "s" : ""}
+                  {t("report.kpi.kpiCount", { count: items.length })}
                 </span>
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -534,7 +534,7 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
                       {needsComment && (
                         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-b-md bg-amber-50 border border-amber-200 border-t-0">
                           <span>⚠️</span>
-                          <span className="text-xs text-amber-600 font-medium">Commentaire requis</span>
+                          <span className="text-xs text-amber-600 font-medium">{t("report.kpi.commentRequired")}</span>
                         </div>
                       )}
                     </div>
@@ -553,7 +553,7 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
                 {t("report.kpi.othersTitle")}
               </h3>
               <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-gray-200 text-gray-700">
-                {groupedByRole.unassigned.length} KPI{groupedByRole.unassigned.length > 1 ? "s" : ""}
+                {t("report.kpi.kpiCount", { count: groupedByRole.unassigned.length })}
               </span>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -581,7 +581,7 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
                     {needsComment && (
                       <div className="mt-1 flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-amber-50 border border-amber-200">
                         <span>⚠️</span>
-                        <span className="text-xs text-amber-600 font-medium">Commentaire requis</span>
+                        <span className="text-xs text-amber-600 font-medium">{t("report.kpi.commentRequired")}</span>
                       </div>
                     )}
                   </div>

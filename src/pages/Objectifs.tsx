@@ -1,4 +1,5 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import { useObjectives, parseObjectiveDescription, type DbObjective } from "@/hooks/useObjectives";
 import { useReports } from "@/hooks/useReports";
@@ -9,20 +10,20 @@ type StatusUI = "on_track" | "at_risk" | "behind";
 
 const statusConfig: Record<
   StatusUI,
-  { label: string; badgeClass: string; barClass: string }
+  { labelKey: string; badgeClass: string; barClass: string }
 > = {
   on_track: {
-    label: "En bonne voie",
+    labelKey: "objectifs.statusOnTrack",
     badgeClass: "bg-success text-success-foreground hover:bg-success",
     barClass: "bg-success",
   },
   at_risk: {
-    label: "À risque",
+    labelKey: "objectifs.statusAtRisk",
     badgeClass: "bg-warning text-warning-foreground hover:bg-warning",
     barClass: "bg-warning",
   },
   behind: {
-    label: "En retard",
+    labelKey: "objectifs.statusBehind",
     badgeClass: "bg-destructive text-destructive-foreground hover:bg-destructive",
     barClass: "bg-destructive",
   },
@@ -48,6 +49,7 @@ function ObjectiveCard({
   objective: DbObjective;
   reportLabel: string | null;
 }) {
+  const { t } = useTranslation();
   const parsed = parseObjectiveDescription(objective.description);
   const progress =
     parsed.target > 0
@@ -62,7 +64,7 @@ function ObjectiveCard({
         <h3 className="font-semibold text-foreground text-lg leading-tight">
           {objective.title}
         </h3>
-        <Badge className={config.badgeClass}>{config.label}</Badge>
+        <Badge className={config.badgeClass}>{t(config.labelKey)}</Badge>
       </div>
 
       <div className="space-y-4">
@@ -88,7 +90,7 @@ function ObjectiveCard({
         {dueDate && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <Calendar className="w-4 h-4 shrink-0" />
-            <span>Échéance : {dueDate}</span>
+            <span>{t("objectifs.dueDate", { date: dueDate })}</span>
           </div>
         )}
 
@@ -96,7 +98,7 @@ function ObjectiveCard({
         {reportLabel && (
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <FileText className="w-4 h-4 shrink-0" />
-            <span>Créé lors de {reportLabel}</span>
+            <span>{t("objectifs.createdDuring", { label: reportLabel })}</span>
           </div>
         )}
       </div>
@@ -105,6 +107,7 @@ function ObjectiveCard({
 }
 
 export default function Objectifs() {
+  const { t } = useTranslation();
   const { spaId } = useAuth();
   const { data: objectives, isLoading } = useObjectives(spaId);
   const { data: reports } = useReports();
@@ -130,23 +133,21 @@ export default function Objectifs() {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-foreground">Objectifs</h1>
-          <Badge variant="outline">0/3 actifs</Badge>
+          <h1 className="text-2xl font-bold text-foreground">{t("sections.objectifs")}</h1>
+          <Badge variant="outline">{t("objectifs.activeCount", { count: 0 })}</Badge>
         </div>
 
         <div className="bg-accent/50 rounded-card p-4 flex items-start gap-3">
           <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
           <p className="text-sm text-accent-foreground">
-            Les objectifs sont créés uniquement lors des post-réunions
-            mensuelles.
+            {t("objectifs.createdInfo")}
           </p>
         </div>
 
         <div className="bg-card rounded-card shadow-sm border border-dashed border-border p-12 text-center">
           <Target className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
           <p className="text-muted-foreground">
-            Aucun objectif actif — ils seront créés lors de votre prochaine
-            réunion mensuelle
+            {t("objectifs.emptyState")}
           </p>
         </div>
       </div>
@@ -156,16 +157,16 @@ export default function Objectifs() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <h1 className="text-2xl font-bold text-foreground">Objectifs</h1>
-        <Badge variant="outline">{activeCount}/3 actifs</Badge>
+        <h1 className="text-2xl font-bold text-foreground">{t("sections.objectifs")}</h1>
+        <Badge variant="outline">{t("objectifs.activeCount", { count: activeCount })}</Badge>
       </div>
 
       <div className="bg-accent/50 rounded-card p-4 flex items-start gap-3">
         <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
         <p className="text-sm text-accent-foreground">
           {atLimit
-            ? "Limite atteinte — créer uniquement via post-réunion"
-            : "Les objectifs sont créés uniquement lors des post-réunions mensuelles."}
+            ? t("objectifs.limitReached")
+            : t("objectifs.createdInfo")}
         </p>
       </div>
 

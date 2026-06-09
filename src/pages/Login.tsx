@@ -1,5 +1,6 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 export default function Login() {
+  const { t } = useTranslation();
   const { session, userRole, isLoading } = useAuth();
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
@@ -31,7 +33,7 @@ export default function Login() {
     const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
     setSubmitting(false);
     if (signInError) {
-      setError("Identifiants incorrects");
+      setError(t("login.invalidCredentials"));
     }
   };
 
@@ -42,12 +44,12 @@ export default function Login() {
           <h1 className="text-3xl font-bold" style={{ color: "#006B6B" }}>
             SPA OMS
           </h1>
-          <p className="text-sm text-muted-foreground mt-2">Connectez-vous à votre espace</p>
+          <p className="text-sm text-muted-foreground mt-2">{t("login.subtitle")}</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4 bg-card border border-border rounded-xl p-6 shadow-sm">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t("login.email")}</Label>
             <Input
               id="email"
               type="email"
@@ -58,7 +60,7 @@ export default function Login() {
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password">Mot de passe</Label>
+            <Label htmlFor="password">{t("login.password")}</Label>
             <Input
               id="password"
               type="password"
@@ -79,11 +81,11 @@ export default function Login() {
             className="w-full text-white hover:opacity-90"
             style={{ backgroundColor: "#006B6B" }}
           >
-            {submitting ? "Connexion..." : "Se connecter"}
+            {submitting ? t("login.submitting") : t("login.submit")}
           </Button>
         </form>
         <p className="text-xs text-center text-muted-foreground">
-          Accès sur invitation uniquement
+          {t("login.inviteOnly")}
         </p>
       </div>
     </div>

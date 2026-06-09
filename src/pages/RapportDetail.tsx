@@ -1,4 +1,5 @@
 import { useMemo, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { useIsMutating } from "@tanstack/react-query";
 import { useParams, useOutletContext, useNavigate, useLocation } from "react-router-dom";
 import { ReportHeader } from "@/components/rapport/ReportHeader";
@@ -38,6 +39,7 @@ const weeklySections: SectionId[] = ["kpi", "checkin", "responsabilites", "todo"
 const monthlySections: SectionId[] = ["kpi", "checkin", "responsabilites", "todo", "objectifs", "ids", "notes"];
 
 export default function RapportDetail() {
+  const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
@@ -47,7 +49,7 @@ export default function RapportDetail() {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20 text-muted-foreground">
-        <Loader2 className="h-5 w-5 animate-spin mr-2" /> Chargement du rapport…
+        <Loader2 className="h-5 w-5 animate-spin mr-2" /> {t("rapportDetail.loading")}
       </div>
     );
   }
@@ -55,8 +57,8 @@ export default function RapportDetail() {
   if (error || !row) {
     return (
       <div className="py-20 text-center">
-        <p className="text-foreground font-medium mb-2">Rapport introuvable</p>
-        <p className="text-sm text-muted-foreground">Ce rapport n'existe pas ou vous n'y avez pas accès.</p>
+        <p className="text-foreground font-medium mb-2">{t("rapportDetail.notFound")}</p>
+        <p className="text-sm text-muted-foreground">{t("rapportDetail.notFoundDesc")}</p>
       </div>
     );
   }
@@ -79,6 +81,7 @@ export default function RapportDetail() {
 
 
 function PreparationMode({ report, periodStart, periodEnd }: { report: ReportRecord; periodStart: string; periodEnd: string }) {
+  const { t } = useTranslation();
   const { activeSection, sectionStatuses, setSectionStatuses } = useOutletContext<OutletContext>();
   const isWeekly = report.type === "weekly";
   const mutatingCount = useIsMutating();
@@ -148,13 +151,13 @@ function PreparationMode({ report, periodStart, periodEnd }: { report: ReportRec
               { reportId: report.id },
               {
                 onError: (e) =>
-                  toast({ title: "Erreur", description: (e as Error).message, variant: "destructive" }),
+                  toast({ title: t("common.error"), description: (e as Error).message, variant: "destructive" }),
               },
             )
           }
         >
           <Play className="h-4 w-4" />
-          Lancer la réunion
+          {t("rapportDetail.startMeeting")}
         </Button>
       );
     }
@@ -174,12 +177,12 @@ function PreparationMode({ report, periodStart, periodEnd }: { report: ReportRec
                   {
                     onError: (e) =>
                       toast({
-                        title: "Erreur",
+                        title: t("common.error"),
                         description: (e as Error).message,
                         variant: "destructive",
                       }),
                     onSuccess: () =>
-                      toast({ title: "Rapport finalisé" }),
+                      toast({ title: t("rapportDetail.reportFinalized") }),
                   },
                 )
               }
@@ -189,11 +192,11 @@ function PreparationMode({ report, periodStart, periodEnd }: { report: ReportRec
               ) : (
                 <CheckCircle2 className="h-4 w-4" />
               )}
-              Finaliser le rapport
+              {t("rapportDetail.finalizeReport")}
             </Button>
           </span>
         </TooltipTrigger>
-        {!canSubmit && <TooltipContent>Complétez KPI et Check-in minimum</TooltipContent>}
+        {!canSubmit && <TooltipContent>{t("rapportDetail.completeMinimum")}</TooltipContent>}
       </Tooltip>
     );
   };
@@ -217,7 +220,7 @@ function PreparationMode({ report, periodStart, periodEnd }: { report: ReportRec
       {isValidated && (
         <div className="mx-6 mt-4 mb-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 flex items-center gap-2 text-emerald-900">
           <Lock className="h-4 w-4" />
-          <span className="text-sm font-medium">Rapport validé — lecture seule</span>
+          <span className="text-sm font-medium">{t("rapportDetail.validatedReadOnly")}</span>
         </div>
       )}
 
@@ -277,12 +280,12 @@ function PreparationMode({ report, periodStart, periodEnd }: { report: ReportRec
           {mutatingCount > 0 ? (
             <span className="flex items-center gap-1.5 text-xs text-amber-600">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Enregistrement…
+              {t("rapportDetail.saving")}
             </span>
           ) : (
             <span className="flex items-center gap-1.5 text-xs text-emerald-600">
               <CheckCircle2 className="h-3.5 w-3.5" />
-              Sauvegardé
+              {t("rapportDetail.saved")}
             </span>
           )}
         </div>

@@ -51,11 +51,11 @@ const statusDotColors: Record<KpiStatus, string> = {
   red: "bg-red-500",
 };
 
-const statusLabel: Partial<Record<KpiStatus, string>> = {
-  excellent: "Excellent",
-  green: "Bien",
-  amber: "Correct",
-  red: "Insuffisant",
+const statusLabelKey: Partial<Record<KpiStatus, string>> = {
+  excellent: "kpiCard.status.excellent",
+  green: "kpiCard.status.green",
+  amber: "kpiCard.status.amber",
+  red: "kpiCard.status.red",
 };
 
 const statusTextColors: Partial<Record<KpiStatus, string>> = {
@@ -123,7 +123,7 @@ export function KpiCardSaisie({ kpi, cardValue, onChange }: SaisieProps) {
 
   const commentPlaceholder =
     status === "excellent"
-      ? "Partager les facteurs de succès"
+      ? t("kpiCard.successFactorsPlaceholder")
       : status === "green"
         ? t("kpi.comment.placeholder.green")
         : status === "amber"
@@ -149,7 +149,7 @@ export function KpiCardSaisie({ kpi, cardValue, onChange }: SaisieProps) {
         </div>
         <div className="flex items-center gap-1.5">
           <span className={`text-xs font-medium ${statusTextColors[status] ?? "text-muted-foreground"}`}>
-            {status !== "none" && statusLabel[status]}
+            {status !== "none" && statusLabelKey[status] && t(statusLabelKey[status]!)}
           </span>
           <div className={`w-3 h-3 rounded-full shrink-0 ${statusDotColors[status]}`} />
         </div>
@@ -336,11 +336,11 @@ export function KpiCardSaisieWeekly({ kpi, cardValue, onChange }: WeeklySaisiePr
               kpi.category === "spa" ? "bg-blue-50 text-blue-700" : "bg-violet-50 text-violet-700"
             }`}
           >
-            {kpi.category === "spa" ? "Spa" : "Manager"}
+            {kpi.category === "spa" ? t("kpiCard.categorySpa") : t("kpiCard.categoryManager")}
           </span>
           <div className="flex items-center gap-1">
             <span className={`text-xs font-medium ${statusTextColors[status] ?? "text-muted-foreground"}`}>
-              {status !== "none" && statusLabel[status]}
+              {status !== "none" && statusLabelKey[status] && t(statusLabelKey[status]!)}
             </span>
             <div className={`w-3 h-3 rounded-full shrink-0 ${statusDotColors[status]}`} />
             {trend && (
@@ -354,14 +354,14 @@ export function KpiCardSaisieWeekly({ kpi, cardValue, onChange }: WeeklySaisiePr
       {/* Reference: weekly target (primary) + N-1 (secondary) */}
       {kpi.target > 0 ? (
         <p className="text-xs text-muted-foreground italic mb-1">
-          Objectif semaine :{" "}
+          {t("kpiCard.weeklyTarget")} :{" "}
           <span className="font-medium">
             {kpi.target.toLocaleString("fr-FR")}{kpi.unit}
           </span>
         </p>
       ) : (
         <p className="text-xs text-muted-foreground italic mb-1">
-          Semaine précédente :{" "}
+          {t("kpiCard.previousWeek")} :{" "}
           <span className="font-medium">
             {kpi.n1.toLocaleString("fr-FR")}{kpi.unit}
           </span>
@@ -369,7 +369,7 @@ export function KpiCardSaisieWeekly({ kpi, cardValue, onChange }: WeeklySaisiePr
       )}
       {kpi.target > 0 && kpi.n1 !== 0 && (
         <p className="text-[11px] text-muted-foreground/70 italic mb-3">
-          Semaine précédente : {kpi.n1.toLocaleString("fr-FR")}{kpi.unit}
+          {t("kpiCard.previousWeek")} : {kpi.n1.toLocaleString("fr-FR")}{kpi.unit}
         </p>
       )}
       {(kpi.target === 0 || kpi.n1 === 0) && <div className="mb-2" />}
@@ -418,11 +418,11 @@ export function KpiCardSaisieWeekly({ kpi, cardValue, onChange }: WeeklySaisiePr
           {showComment && (
             <div className="mt-3">
               <label className="text-xs font-medium text-foreground mb-1 block">
-                Commentaire requis <span className="text-destructive">*</span>
+                {t("kpiCard.commentRequired")} <span className="text-destructive">*</span>
               </label>
               <Textarea
                 className={`text-sm min-h-[60px] ${!cardValue.comment?.trim() ? "border-destructive" : ""}`}
-                placeholder={status === "amber" ? "Objectif partiellement atteint — expliquer" : "Que s'est-il passé cette semaine ?"}
+                placeholder={status === "amber" ? t("kpiCard.weeklyCommentPlaceholder.amber") : t("kpiCard.weeklyCommentPlaceholder.red")}
 
                 maxLength={200}
                 value={cardValue.comment}
@@ -471,7 +471,7 @@ export function KpiCardLecture({ kpi }: LectureProps) {
             <span className="text-sm font-normal text-muted-foreground">{kpi.unit}</span>
           </p>
           <p className={`text-xs font-medium mt-0.5 ${statusTextColors[kpi.status] ?? ""}`}>
-            {statusLabel[kpi.status] ?? ""}
+            {statusLabelKey[kpi.status] ? t(statusLabelKey[kpi.status]!) : ""}
           </p>
           <p
             className={`text-xs font-medium mt-0.5 ${

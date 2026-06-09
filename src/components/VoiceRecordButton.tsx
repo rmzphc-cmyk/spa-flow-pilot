@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Mic, Pause, Play, Square, Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -26,6 +27,7 @@ export function VoiceRecordButton({
   lang = "fr-FR",
   context = "free_note",
 }: Props) {
+  const { t } = useTranslation();
   const [supported, setSupported] = useState(true);
   const [open, setOpen] = useState(false);
   const [state, setState] = useState<RecState>("idle");
@@ -88,14 +90,14 @@ export function VoiceRecordButton({
       };
       rec.onerror = (e: any) => {
         if (e?.error === "no-speech") return;
-        toast({ title: "Microphone non accessible", variant: "destructive" });
+        toast({ title: t("voiceRecord.micError"), variant: "destructive" });
         setState("idle");
       };
       recognitionRef.current = rec;
       rec.start();
       setState("recording");
     } catch {
-      toast({ title: "Microphone non accessible", variant: "destructive" });
+      toast({ title: t("voiceRecord.micError"), variant: "destructive" });
       setState("idle");
     }
   };
@@ -169,23 +171,23 @@ export function VoiceRecordButton({
           <span>
             <Button variant="outline" size="sm" className="gap-1.5 text-xs" disabled>
               <Mic className="h-3.5 w-3.5" />
-              Dicter
+              {t("voiceRecord.dictate")}
             </Button>
           </span>
         </TooltipTrigger>
-        <TooltipContent>Non supporté sur ce navigateur</TooltipContent>
+        <TooltipContent>{t("voiceRecord.notSupported")}</TooltipContent>
       </Tooltip>
     );
   }
 
   const statusText =
     state === "recording"
-      ? { text: "En écoute…", className: "text-primary" }
+      ? { text: t("voiceRecord.statusListening"), className: "text-primary" }
       : state === "paused"
-        ? { text: "En pause", className: "text-muted-foreground" }
+        ? { text: t("voiceRecord.statusPaused"), className: "text-muted-foreground" }
         : state === "processing"
-          ? { text: "Structuration en cours…", className: "text-violet-600" }
-          : { text: "Appuyez sur le micro pour commencer", className: "text-muted-foreground" };
+          ? { text: t("voiceRecord.statusProcessing"), className: "text-violet-600" }
+          : { text: t("voiceRecord.statusIdle"), className: "text-muted-foreground" };
 
   const hasTranscript = accumulated.trim() || interim.trim();
 
@@ -200,13 +202,13 @@ export function VoiceRecordButton({
         disabled={disabled}
       >
         <Mic className="h-3.5 w-3.5" />
-        Dicter
+        {t("voiceRecord.dictate")}
       </Button>
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Dictée vocale</DialogTitle>
+            <DialogTitle>{t("voiceRecord.dialogTitle")}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-2">
@@ -248,37 +250,37 @@ export function VoiceRecordButton({
             <div className="flex flex-wrap gap-2 justify-center pt-1">
               {state === "idle" && (
                 <Button onClick={startRecording} className="gap-1.5">
-                  <Mic className="h-4 w-4" /> Commencer
+                  <Mic className="h-4 w-4" /> {t("voiceRecord.start")}
                 </Button>
               )}
               {state === "recording" && (
                 <>
                   <Button variant="outline" onClick={pauseRecording} className="gap-1.5">
-                    <Pause className="h-4 w-4" /> Pause
+                    <Pause className="h-4 w-4" /> {t("voiceRecord.pause")}
                   </Button>
                   <Button onClick={finishRecording} className="gap-1.5">
-                    <Sparkles className="h-4 w-4" /> Fin et structurer
+                    <Sparkles className="h-4 w-4" /> {t("voiceRecord.finishAndStructure")}
                   </Button>
                 </>
               )}
               {state === "paused" && (
                 <>
                   <Button variant="outline" onClick={resumeRecording} className="gap-1.5">
-                    <Play className="h-4 w-4" /> Reprendre
+                    <Play className="h-4 w-4" /> {t("voiceRecord.resume")}
                   </Button>
                   <Button onClick={finishRecording} className="gap-1.5">
-                    <Sparkles className="h-4 w-4" /> Fin et structurer
+                    <Sparkles className="h-4 w-4" /> {t("voiceRecord.finishAndStructure")}
                   </Button>
                 </>
               )}
               {state === "processing" && (
                 <Button disabled className="gap-1.5">
-                  <Loader2 className="h-4 w-4 animate-spin" /> Structuration…
+                  <Loader2 className="h-4 w-4 animate-spin" /> {t("common.structuring")}
                 </Button>
               )}
               {state !== "processing" && (
                 <Button variant="ghost" onClick={closeDialog} className="gap-1.5">
-                  <Square className="h-4 w-4" /> Annuler
+                  <Square className="h-4 w-4" /> {t("common.cancel")}
                 </Button>
               )}
             </div>

@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { useState, useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
@@ -35,6 +36,7 @@ function TimelinePoint({
   isSelected: boolean;
   onClick: () => void;
 }) {
+  const { t } = useTranslation();
   return (
     <Tooltip>
       <TooltipTrigger asChild>
@@ -55,20 +57,21 @@ function TimelinePoint({
         </button>
       </TooltipTrigger>
       <TooltipContent>
-        <p>Météo : {report.meteoEquipe}/10 · Resp : {report.respCompletion}%</p>
+        <p>{t("spaHistory.tooltipMeteoResp", { meteo: report.meteoEquipe, resp: report.respCompletion })}</p>
       </TooltipContent>
     </Tooltip>
   );
 }
 
 function SidePanel({ report, onClose }: { report: HistoryReport; onClose: () => void }) {
+  const { t } = useTranslation();
   return (
     <div className="fixed inset-y-0 right-0 w-[380px] max-w-full bg-card border-l border-border shadow-xl z-50 overflow-y-auto animate-in slide-in-from-right duration-200">
       <div className="p-5">
         <div className="flex items-center justify-between mb-4">
           <div>
             <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${typeBadge(report.type)}`}>
-              {report.type === "monthly" ? "🔵 Monthly" : "🟢 Weekly"}
+              {report.type === "monthly" ? `🔵 ${t("reportType.monthly")}` : `🟢 ${t("reportType.weekly")}`}
             </span>
             <h3 className="text-base font-semibold text-foreground mt-1">{report.period}</h3>
           </div>
@@ -80,14 +83,14 @@ function SidePanel({ report, onClose }: { report: HistoryReport; onClose: () => 
         <div className="grid grid-cols-2 gap-2 mb-4">
           <div className="bg-muted rounded-lg p-3 text-center">
             <p className="text-lg font-bold text-foreground">{report.meteoEquipe}<span className="text-xs text-muted-foreground">/10</span></p>
-            <p className="text-[10px] text-muted-foreground">Météo équipe</p>
+            <p className="text-[10px] text-muted-foreground">{t("spaHistory.teamMood")}</p>
           </div>
           <div className="bg-muted rounded-lg p-3 text-center">
             <p className="text-lg font-bold text-foreground">{report.energieManager}<span className="text-xs text-muted-foreground">/10</span></p>
-            <p className="text-[10px] text-muted-foreground">Énergie manager</p>
+            <p className="text-[10px] text-muted-foreground">{t("spaHistory.managerEnergy")}</p>
           </div>
         </div>
-        <h4 className="text-xs font-semibold text-foreground uppercase tracking-wide mb-2">KPIs</h4>
+        <h4 className="text-xs font-semibold text-foreground uppercase tracking-wide mb-2">{t("spaHistory.kpisTitle")}</h4>
         <div className="space-y-2">
           {report.kpis.map((kpi, i) => {
             const ecart = ((kpi.value - kpi.target) / kpi.target * 100).toFixed(1);
@@ -115,6 +118,7 @@ function SidePanel({ report, onClose }: { report: HistoryReport; onClose: () => 
 // --- Main ---
 
 export default function SpaHistory() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { spaId } = useAuth();
   const { data, isLoading, isError } = useSpaHistory(spaId);
@@ -179,9 +183,9 @@ export default function SpaHistory() {
   if (isError || !data) {
     return (
       <div className="max-w-[860px] mx-auto px-6 py-12 text-center">
-        <p className="text-foreground font-medium">Historique indisponible</p>
+        <p className="text-foreground font-medium">{t("spaHistory.unavailable")}</p>
         <Button variant="outline" className="mt-4" onClick={() => navigate("/rapports")}>
-          Retour aux rapports
+          {t("nav.backToReports")}
         </Button>
       </div>
     );
@@ -191,17 +195,17 @@ export default function SpaHistory() {
     return (
       <div className="max-w-[860px] mx-auto px-6 py-20 text-center">
         <p className="text-lg text-muted-foreground">
-          Moins de 2 rapports validés — l'historique sera disponible dès le 2e rapport validé.
+          {t("spaHistory.needTwoReports")}
         </p>
         <Button variant="outline" className="mt-6" onClick={() => navigate("/rapports")}>
-          Retour aux rapports
+          {t("nav.backToReports")}
         </Button>
       </div>
     );
   }
 
   const exportCSV = () => {
-    const headers = ["Période", "Type", ...allKpiLabels, "Météo équipe", "Énergie manager", "Resp %"];
+    const headers = [t("spaHistory.csvPeriod"), t("spaHistory.csvType"), ...allKpiLabels, t("spaHistory.teamMood"), t("spaHistory.managerEnergy"), t("spaHistory.csvResp")];
     const rows = filteredReports.map((r) => {
       const kpiValues = allKpiLabels.map((label) => {
         const k = r.kpis.find((kk) => kk.label === label);
@@ -225,17 +229,17 @@ export default function SpaHistory() {
       <header className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <Button variant="ghost" size="sm" className="text-muted-foreground gap-1 mb-1 -ml-2" onClick={() => navigate("/rapports")}>
-            <ChevronLeft className="h-4 w-4" /> Rapports
+            <ChevronLeft className="h-4 w-4" /> {t("report.title")}
           </Button>
-          <h1 className="text-xl font-bold text-foreground">Historique — {data.name}</h1>
+          <h1 className="text-xl font-bold text-foreground">{t("spaHistory.title", { name: data.name })}</h1>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Select value={periodFilter} onValueChange={(v) => setPeriodFilter(v as "3" | "6" | "12")}>
             <SelectTrigger className="w-[120px] h-8 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
-              <SelectItem value="3">3 mois</SelectItem>
-              <SelectItem value="6">6 mois</SelectItem>
-              <SelectItem value="12">12 mois</SelectItem>
+              <SelectItem value="3">{t("spaHistory.months", { count: 3 })}</SelectItem>
+              <SelectItem value="6">{t("spaHistory.months", { count: 6 })}</SelectItem>
+              <SelectItem value="12">{t("spaHistory.months", { count: 12 })}</SelectItem>
             </SelectContent>
           </Select>
           <div className="flex rounded-lg border border-border overflow-hidden">
@@ -247,7 +251,7 @@ export default function SpaHistory() {
                   cycleFilter === f ? "bg-primary text-primary-foreground" : "bg-card text-muted-foreground hover:bg-muted"
                 }`}
               >
-                {f === "all" ? "Tous" : f === "weekly" ? "🟢 Weekly" : "🔵 Monthly"}
+                {f === "all" ? t("spaHistory.filterAll") : f === "weekly" ? `🟢 ${t("reportType.weekly")}` : `🔵 ${t("reportType.monthly")}`}
               </button>
             ))}
           </div>
@@ -256,7 +260,7 @@ export default function SpaHistory() {
 
       {/* BLOC 1 — Timeline */}
       <section className="mb-8">
-        <h2 className="text-sm font-semibold text-foreground mb-3">Timeline des rapports</h2>
+        <h2 className="text-sm font-semibold text-foreground mb-3">{t("spaHistory.timelineTitle")}</h2>
         <div className="overflow-x-auto">
           <div className="flex gap-1 min-w-max pb-2">
             {filteredReports.map((r) => (
@@ -274,7 +278,7 @@ export default function SpaHistory() {
       {/* BLOC 2 — Évolution KPI */}
       <section className="mb-8">
         <div className="flex items-center justify-between mb-3">
-          <h2 className="text-sm font-semibold text-foreground">Évolution métriques clés</h2>
+          <h2 className="text-sm font-semibold text-foreground">{t("spaHistory.kpiEvolutionTitle")}</h2>
           <Select value={activeKpi} onValueChange={setSelectedKpi}>
             <SelectTrigger className="w-[180px] h-8 text-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -294,9 +298,9 @@ export default function SpaHistory() {
                 contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
               />
               {kpiTarget > 0 && (
-                <ReferenceLine y={kpiTarget} stroke="hsl(var(--muted-foreground))" strokeDasharray="6 4" label={{ value: "Cible", fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+                <ReferenceLine y={kpiTarget} stroke="hsl(var(--muted-foreground))" strokeDasharray="6 4" label={{ value: t("spaHistory.target"), fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
               )}
-              <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name="Valeur" />
+              <Line type="monotone" dataKey="value" stroke="hsl(var(--primary))" strokeWidth={2} dot={{ r: 4 }} name={t("spaHistory.value")} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -304,7 +308,7 @@ export default function SpaHistory() {
 
       {/* BLOC 3 — Signaux humains */}
       <section className="mb-8">
-        <h2 className="text-sm font-semibold text-foreground mb-3">Évolution signaux humains</h2>
+        <h2 className="text-sm font-semibold text-foreground mb-3">{t("spaHistory.humanSignalsTitle")}</h2>
         <div className="bg-card border border-border rounded-xl p-4 shadow-sm">
           <ResponsiveContainer width="100%" height={200}>
             <LineChart data={humanChartData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
@@ -315,8 +319,8 @@ export default function SpaHistory() {
                 contentStyle={{ backgroundColor: "hsl(var(--card))", border: "1px solid hsl(var(--border))", borderRadius: 8, fontSize: 12 }}
               />
               <Legend wrapperStyle={{ fontSize: 11 }} />
-              <Line type="monotone" dataKey="meteo" stroke="#10B981" strokeWidth={2} dot={{ r: 4 }} name="Météo équipe" />
-              <Line type="monotone" dataKey="energie" stroke="#6366F1" strokeWidth={2} dot={{ r: 4 }} name="Énergie manager" />
+              <Line type="monotone" dataKey="meteo" stroke="#10B981" strokeWidth={2} dot={{ r: 4 }} name={t("spaHistory.teamMood")} />
+              <Line type="monotone" dataKey="energie" stroke="#6366F1" strokeWidth={2} dot={{ r: 4 }} name={t("spaHistory.managerEnergy")} />
             </LineChart>
           </ResponsiveContainer>
         </div>
@@ -326,7 +330,7 @@ export default function SpaHistory() {
       <section className="mb-8">
         <div className="flex items-center justify-between mb-3">
           <button onClick={() => setShowTable(!showTable)} className="text-sm font-semibold text-primary hover:underline cursor-pointer">
-            {showTable ? "Masquer le tableau synthèse" : "Afficher le tableau synthèse"}
+            {showTable ? t("spaHistory.hideTable") : t("spaHistory.showTable")}
           </button>
           {showTable && (
             <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1" onClick={exportCSV}>
@@ -339,7 +343,7 @@ export default function SpaHistory() {
             <table className="w-full text-xs">
               <thead>
                 <tr className="bg-muted">
-                  <th className="text-left py-2 px-3 font-semibold text-foreground sticky left-0 bg-muted z-10">Métrique</th>
+                  <th className="text-left py-2 px-3 font-semibold text-foreground sticky left-0 bg-muted z-10">{t("spaHistory.metric")}</th>
                   {filteredReports.map((r) => (
                     <th key={r.id} className="py-2 px-3 font-medium text-foreground text-center whitespace-nowrap">
                       {r.period.length > 10 ? r.period.slice(0, 10) + "…" : r.period}
@@ -364,19 +368,19 @@ export default function SpaHistory() {
                   </tr>
                 ))}
                 <tr className="border-t border-border">
-                  <td className="py-2 px-3 font-medium text-foreground sticky left-0 bg-card z-10">Météo équipe</td>
+                  <td className="py-2 px-3 font-medium text-foreground sticky left-0 bg-card z-10">{t("spaHistory.teamMood")}</td>
                   {filteredReports.map((r) => (
                     <td key={r.id} className="py-2 px-3 text-center font-medium text-foreground">{r.meteoEquipe}/10</td>
                   ))}
                 </tr>
                 <tr className="border-t border-border">
-                  <td className="py-2 px-3 font-medium text-foreground sticky left-0 bg-card z-10">Énergie manager</td>
+                  <td className="py-2 px-3 font-medium text-foreground sticky left-0 bg-card z-10">{t("spaHistory.managerEnergy")}</td>
                   {filteredReports.map((r) => (
                     <td key={r.id} className="py-2 px-3 text-center font-medium text-foreground">{r.energieManager}/10</td>
                   ))}
                 </tr>
                 <tr className="border-t border-border">
-                  <td className="py-2 px-3 font-medium text-foreground sticky left-0 bg-card z-10">Resp. %</td>
+                  <td className="py-2 px-3 font-medium text-foreground sticky left-0 bg-card z-10">{t("spaHistory.respPercent")}</td>
                   {filteredReports.map((r) => (
                     <td key={r.id} className="py-2 px-3 text-center font-medium text-foreground">{r.respCompletion}%</td>
                   ))}

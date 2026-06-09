@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AlertTriangle, CheckCircle2, ClipboardList, Loader2, Play, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,9 +21,9 @@ const TODOS_KEY = "all";
 
 type TabKey = "open" | "done" | "all";
 
-const sourceStyles: Record<string, { label: string; classes: string }> = {
-  ids: { label: "IDS", classes: "bg-violet-100 text-violet-800" },
-  ia: { label: "IA", classes: "bg-accent text-accent-foreground" },
+const sourceStyles: Record<string, { labelKey: string; classes: string }> = {
+  ids: { labelKey: "sections.ids", classes: "bg-violet-100 text-violet-800" },
+  ia: { labelKey: "todos.sourceIa", classes: "bg-accent text-accent-foreground" },
 };
 
 const priorityIcons: Record<string, string> = {
@@ -40,19 +41,20 @@ function daysDelta(due: string): number {
 }
 
 function DueBadge({ due }: { due: string | null }) {
+  const { t } = useTranslation();
   if (!due) return null;
   const delta = daysDelta(due);
   if (delta < 0) {
     return (
       <Badge className="bg-red-500/10 text-red-600 hover:bg-red-500/10 border-0">
-        +{Math.abs(delta)}j de retard
+        {t("todos.daysOverdue", { count: Math.abs(delta) })}
       </Badge>
     );
   }
   if (delta <= 3) {
     return (
       <Badge className="bg-amber-500/10 text-amber-600 hover:bg-amber-500/10 border-0">
-        {delta === 0 ? "Aujourd'hui" : `Dans ${delta}j`}
+        {delta === 0 ? t("todos.today") : t("todos.inDays", { count: delta })}
       </Badge>
     );
   }
@@ -66,6 +68,7 @@ interface TodoRowProps {
 }
 
 function TodoRow({ todo, cycleLabel, done }: TodoRowProps) {
+  const { t } = useTranslation();
   const { toast } = useToast();
   const meta = parseTodoDescription(todo.description);
   const updateStatus = useUpdateTodoStatus(TODOS_KEY);
@@ -83,9 +86,9 @@ function TodoRow({ todo, cycleLabel, done }: TodoRowProps) {
   const handleDone = async () => {
     try {
       await updateStatus.mutateAsync({ id: todo.id, status: "done" });
-      toast({ title: "Action terminée ✓" });
+      toast({ title: t("todos.toastDone") });
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: e.message, variant: "destructive" });
     }
   };
 
@@ -93,13 +96,13 @@ function TodoRow({ todo, cycleLabel, done }: TodoRowProps) {
     try {
       await updateStatus.mutateAsync({ id: todo.id, status: "in_progress" });
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: e.message, variant: "destructive" });
     }
   };
 
   const handleDefer = async () => {
     if (!deferDate) {
-      toast({ title: "Date requise", description: "Choisissez une nouvelle échéance.", variant: "destructive" });
+      toast({ title: t("todos.dateRequired"), description: t("todos.dateRequiredDesc"), variant: "destructive" });
       return;
     }
     try {
@@ -110,12 +113,12 @@ function TodoRow({ todo, cycleLabel, done }: TodoRowProps) {
         currentTodo: todo,
         currentDescription: todo.description,
       });
-      toast({ title: "Action reportée" });
+      toast({ title: t("todos.toastDeferred") });
       setShowDefer(false);
       setDeferDate("");
       setDeferReason("");
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: e.message, variant: "destructive" });
     }
   };
 
@@ -129,27 +132,27 @@ function TodoRow({ todo, cycleLabel, done }: TodoRowProps) {
             {!done && <DueBadge due={todo.due_date} />}
             {done && (
               <Badge className="bg-emerald-500/10 text-emerald-600 hover:bg-emerald-500/10 border-0">
-                Terminé
+                {t("todos.statusDone")}
               </Badge>
             )}
             {isInProgress && !done && (
               <Badge className="bg-blue-100 text-blue-700 border-0 hover:bg-blue-100">
-                En cours
+                {t("todos.statusInProgress")}
               </Badge>
             )}
             {isDeferred && !done && (
               <Badge className="bg-amber-100 text-amber-700 border-0 hover:bg-amber-100">
-                Reporté
+                {t("todos.statusDeferred")}
               </Badge>
             )}
             {source && sourceStyles[source] && (
               <span className={`text-xs px-1.5 py-0.5 rounded font-medium ${sourceStyles[source].classes}`}>
-                {sourceStyles[source].label}
+                {t(sourceStyles[source].labelKey)}
               </span>
             )}
             {todo.deferred_count > 0 && (
               <span className="text-xs px-1.5 py-0.5 rounded font-medium bg-amber-100 text-amber-800">
-                ↩ {todo.deferred_count}×
+                ↩ {t("todos.deferredCount", { count: todo.deferred_count })}
               </span>
             )}
           </div>
@@ -174,7 +177,7 @@ function TodoRow({ todo, cycleLabel, done }: TodoRowProps) {
               onClick={handleDone}
               disabled={pending}
             >
-              {pending ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />} Fait
+              {pending ? <Loader2 className="h-3 w-3 animate-spin" /> : <CheckCircle2 className="h-3 w-3" />} {t("todos.actionDone")}
             </Button>
             {!isInProgress && (
               <Button
@@ -184,7 +187,7 @@ function TodoRow({ todo, cycleLabel, done }: TodoRowProps) {
                 onClick={handleInProgress}
                 disabled={pending}
               >
-                <Play className="h-3 w-3" /> En cours
+                <Play className="h-3 w-3" /> {t("todos.actionInProgress")}
               </Button>
             )}
             <Button
@@ -194,7 +197,7 @@ function TodoRow({ todo, cycleLabel, done }: TodoRowProps) {
               onClick={() => setShowDefer((s) => !s)}
               disabled={pending}
             >
-              <RotateCcw className="h-3 w-3" /> Reporter
+              <RotateCcw className="h-3 w-3" /> {t("todos.actionDefer")}
             </Button>
           </div>
         )}
@@ -203,7 +206,7 @@ function TodoRow({ todo, cycleLabel, done }: TodoRowProps) {
       {showDefer && !done && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 space-y-2">
           <div className="space-y-1">
-            <label className="text-xs font-medium text-amber-900">Reporter au *</label>
+            <label className="text-xs font-medium text-amber-900">{t("todos.deferToLabel")}</label>
             <Input
               autoFocus
               type="date"
@@ -214,10 +217,10 @@ function TodoRow({ todo, cycleLabel, done }: TodoRowProps) {
           </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-amber-900">
-              Raison <span className="font-normal text-amber-700">(optionnel)</span>
+              {t("todos.reasonLabel")} <span className="font-normal text-amber-700">{t("todos.optional")}</span>
             </label>
             <Input
-              placeholder="Pourquoi ce report…"
+              placeholder={t("todos.reasonPlaceholder")}
               value={deferReason}
               onChange={(e) => setDeferReason(e.target.value)}
               className="h-8 text-sm bg-white"
@@ -230,7 +233,7 @@ function TodoRow({ todo, cycleLabel, done }: TodoRowProps) {
               disabled={!deferDate || pending}
               onClick={handleDefer}
             >
-              Confirmer le report
+              {t("todos.confirmDefer")}
             </Button>
             <Button
               size="sm"
@@ -238,7 +241,7 @@ function TodoRow({ todo, cycleLabel, done }: TodoRowProps) {
               className="h-8"
               onClick={() => { setShowDefer(false); setDeferDate(""); setDeferReason(""); }}
             >
-              Annuler
+              {t("common.cancel")}
             </Button>
           </div>
         </div>
@@ -248,6 +251,7 @@ function TodoRow({ todo, cycleLabel, done }: TodoRowProps) {
 }
 
 export default function Todos() {
+  const { t } = useTranslation();
   const { spaId } = useAuth();
   const [tab, setTab] = useState<TabKey>("open");
   const { data: todos = [], isLoading } = useTodos(TODOS_KEY, spaId);
@@ -269,41 +273,41 @@ export default function Todos() {
   const normalOpen = openTodos.filter((t) => !t.due_date || daysDelta(t.due_date) >= 0);
 
   const tabs: { key: TabKey; label: string }[] = [
-    { key: "open", label: "À traiter" },
-    { key: "done", label: "Terminées" },
-    { key: "all", label: "Toutes" },
+    { key: "open", label: t("todos.tabOpen") },
+    { key: "done", label: t("todos.tabDone") },
+    { key: "all", label: t("todos.tabAll") },
   ];
 
   return (
     <>
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-foreground">Actions</h1>
+          <h1 className="text-2xl font-bold text-foreground">{t("todos.pageTitle")}</h1>
           <Badge className="bg-primary/10 text-primary hover:bg-primary/10 border-0">
-            {openTodos.length} à traiter
+            {t("todos.countToProcess", { count: openTodos.length })}
           </Badge>
         </div>
       </div>
 
       <div className="flex items-center gap-1 mb-4 border-b border-border">
-        {tabs.map((t) => (
+        {tabs.map((tb) => (
           <button
-            key={t.key}
-            onClick={() => setTab(t.key)}
+            key={tb.key}
+            onClick={() => setTab(tb.key)}
             className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
-              tab === t.key
+              tab === tb.key
                 ? "border-primary text-primary"
                 : "border-transparent text-muted-foreground hover:text-foreground"
             }`}
           >
-            {t.label}
+            {tb.label}
           </button>
         ))}
       </div>
 
       {isLoading ? (
         <div className="flex items-center justify-center py-12 text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin mr-2" /> Chargement…
+          <Loader2 className="h-5 w-5 animate-spin mr-2" /> {t("common.loading")}
         </div>
       ) : tab === "open" ? (
         <div className="space-y-4">
@@ -312,7 +316,7 @@ export default function Todos() {
               <div className="flex items-center gap-2 mb-2">
                 <AlertTriangle className="h-4 w-4 text-destructive" />
                 <span className="text-sm font-semibold text-destructive">
-                  {overdueOpen.length} en retard
+                  {t("todos.countOverdue", { count: overdueOpen.length })}
                 </span>
               </div>
               <div className="space-y-3">
@@ -331,7 +335,7 @@ export default function Todos() {
           {normalOpen.length > 0 && (
             <div>
               {overdueOpen.length > 0 && (
-                <span className="text-sm font-semibold text-foreground block mb-2">À traiter</span>
+                <span className="text-sm font-semibold text-foreground block mb-2">{t("todos.tabOpen")}</span>
               )}
               <div className="space-y-3">
                 {normalOpen.map((todo) => (
@@ -351,7 +355,7 @@ export default function Todos() {
               <div className="flex items-center gap-2 mb-2">
                 <RotateCcw className="h-4 w-4 text-amber-600" />
                 <span className="text-sm font-semibold text-amber-700">
-                  {deferredTodos.length} reportée{deferredTodos.length > 1 ? "s" : ""}
+                  {t("todos.countDeferred", { count: deferredTodos.length })}
                 </span>
               </div>
               <div className="space-y-3">
@@ -370,7 +374,7 @@ export default function Todos() {
           {openTodos.length === 0 && deferredTodos.length === 0 && (
             <div className="bg-card border border-dashed border-border rounded-xl p-10 text-center">
               <ClipboardList className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
-              <p className="text-foreground font-medium">Aucune action à traiter</p>
+              <p className="text-foreground font-medium">{t("todos.emptyOpen")}</p>
             </div>
           )}
         </div>
@@ -378,7 +382,7 @@ export default function Todos() {
         <div className="bg-card border border-dashed border-border rounded-xl p-10 text-center">
           <CheckCircle2 className="h-10 w-10 text-muted-foreground/40 mx-auto mb-3" />
           <p className="text-foreground font-medium">
-            {tab === "done" ? "Aucune action terminée" : "Aucune action"}
+            {tab === "done" ? t("todos.emptyDone") : t("todos.emptyAll")}
           </p>
         </div>
       ) : (

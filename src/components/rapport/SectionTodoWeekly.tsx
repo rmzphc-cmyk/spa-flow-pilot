@@ -147,7 +147,7 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
         <CheckCircle2 className="h-4 w-4 text-emerald-700" />
         <h3 className="text-sm font-semibold text-emerald-900">{t("report.todo.weekly.doneThisWeek")}</h3>
         <Badge className="bg-emerald-100 text-emerald-700 hover:bg-emerald-100 ml-auto">
-          {doneInWeek.length} action{doneInWeek.length > 1 ? "s" : ""}
+          {t("report.todo.weekly.actionCount", { count: doneInWeek.length })}
         </Badge>
       </div>
       {doneInWeek.length === 0 ? (
@@ -359,7 +359,7 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
       <div className="flex items-center gap-2 mb-3">
         <h3 className="text-sm font-semibold text-foreground">{t("report.todo.weekly.thisWeek")}</h3>
         <Badge variant="secondary" className="ml-auto">
-          {activeInWeek.length} action{activeInWeek.length > 1 ? "s" : ""} {t("report.todo.weekly.toProcess")}
+          {t("report.todo.weekly.actionCount", { count: activeInWeek.length })} {t("report.todo.weekly.toProcess")}
         </Badge>
       </div>
       {activeInWeek.length === 0 ? (
@@ -486,7 +486,7 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
         <AlertTriangle className="h-4 w-4 text-amber-700" />
         <h3 className="text-sm font-semibold text-amber-900">{t("report.todo.weekly.deferredActions")}</h3>
         <Badge className="bg-amber-100 text-amber-700 hover:bg-amber-100 ml-auto">
-          {deferred.length} action{deferred.length > 1 ? "s" : ""}
+          {t("report.todo.weekly.actionCount", { count: deferred.length })}
         </Badge>
       </div>
       <div className="space-y-3">{deferred.map(renderDeferredCard)}</div>
