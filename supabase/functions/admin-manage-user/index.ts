@@ -134,6 +134,21 @@ Deno.serve(async (req) => {
 
     if (body.action === "delete") {
       if (!body.user_id) return json({ error: "Missing user_id" }, 400);
+
+      // Reassign NOT-NULL FK columns to the calling admin so cascades don't block.
+      await admin.from("direction_spa_access").update({ granted_by: caller.userId }).eq("granted_by", body.user_id);
+      await admin.from("todos").update({ created_by: caller.userId }).eq("created_by", body.user_id);
+      await admin.from("objectives").update({ created_by: caller.userId }).eq("created_by", body.user_id);
+      await admin.from("ids_items").update({ created_by: caller.userId }).eq("created_by", body.user_id);
+      await admin.from("kpi_definitions").update({ created_by: caller.userId }).eq("created_by", body.user_id);
+      await admin.from("spas").update({ created_by: caller.userId }).eq("created_by", body.user_id);
+      // Nullify optional FK columns
+      await admin.from("reports").update({ validated_by: null }).eq("validated_by", body.user_id);
+      await admin.from("meeting_summaries").update({ validated_by: null }).eq("validated_by", body.user_id);
+      await admin.from("todos").update({ assigned_to: null }).eq("assigned_to", body.user_id);
+      // Reports.manager_id is NOT NULL — delete the manager's reports first
+      await admin.from("reports").delete().eq("manager_id", body.user_id);
+
       const { error: delErr } = await (admin as any).auth.admin.deleteUser(body.user_id);
       if (delErr) return json({ error: delErr.message }, 400);
       return json({ ok: true }, 200);
