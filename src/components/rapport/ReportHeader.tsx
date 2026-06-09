@@ -51,7 +51,6 @@ export function ReportHeader({
     objectifs: t("report.header.sectionLabels.objectifs"),
     ids: t("report.header.sectionLabels.ids"),
     notes: t("report.header.sectionLabels.notes"),
-    cloture: t("report.header.sectionLabels.cloture"),
   };
 
   return (

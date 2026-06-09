@@ -12,7 +12,6 @@ import { SectionTodoWeekly } from "@/components/rapport/SectionTodoWeekly";
 import { SectionObjectifs } from "@/components/rapport/SectionObjectifs";
 import { SectionIds } from "@/components/rapport/SectionIds";
 import { SectionNotes } from "@/components/rapport/SectionNotes";
-import { SectionCloture } from "@/components/rapport/SectionCloture";
 
 import { MeetingView } from "@/components/rapport/MeetingView";
 import { type ReportRecord } from "@/lib/reportsStore";
@@ -24,7 +23,7 @@ import { CheckCircle2, Play } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 export type ReportType = "monthly" | "weekly";
-export type SectionId = "kpi" | "checkin" | "responsabilites" | "todo" | "objectifs" | "ids" | "cloture" | "notes";
+export type SectionId = "kpi" | "checkin" | "responsabilites" | "todo" | "objectifs" | "ids" | "notes";
 export type SectionStatus = "complete" | "incomplete" | "warning";
 
 interface OutletContext {
@@ -272,8 +271,6 @@ function PreparationMode({ report, periodStart, periodEnd }: { report: ReportRec
       {activeSection === "notes" && (
         <SectionNotes reportId={report.id} onStatusChange={onNotesStatusChange} isLocked={isLockedForSave} />
       )}
-      {activeSection === "cloture" && !isWeekly && <SectionCloture reportId={report.id} reportType={report.type} />}
-
       {/* STICKY BOTTOM BAR */}
       <div className="fixed bottom-0 left-0 right-0 bg-card border-t border-border shadow-[0_-2px_8px_rgba(0,0,0,0.06)] px-6 py-3 flex items-center justify-between z-50">
         <div className="flex items-center gap-4">

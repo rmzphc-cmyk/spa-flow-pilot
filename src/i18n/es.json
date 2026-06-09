@@ -136,7 +136,7 @@
     "viewDetail": "Ver detalle",
     "otherAlerts": "otros",
     "kpiCA": "Ingresos",
-    "kpiNPS": "NPS",
+    "kpiSatisfaction": "Satisfacción",
     "kpiResp": "Responsabilidades",
     "lastReport": "Último informe",
     "alertBanner": "{{count}} alertas en {{spas}} spas",

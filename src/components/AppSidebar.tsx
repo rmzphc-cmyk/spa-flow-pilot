@@ -5,7 +5,6 @@ import {
   CheckSquare,
   Target,
   Lightbulb,
-  Lock,
   FileText,
   History,
   Settings,
@@ -45,7 +44,6 @@ const allReportSections: ReportSection[] = [
   { id: "objectifs", labelKey: "sections.objectifs", icon: Target },
   { id: "ids", labelKey: "sections.ids", icon: Lightbulb },
   { id: "notes", labelKey: "sections.notes", icon: PenLine },
-  { id: "cloture", labelKey: "sections.cloture", icon: Lock },
 ];
 
 const weeklySectionIds: SectionId[] = ["kpi", "checkin", "responsabilites", "todo", "ids", "notes"];

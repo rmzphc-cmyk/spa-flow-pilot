@@ -22,7 +22,6 @@ export function AppLayout() {
     objectifs: "incomplete",
     ids: "incomplete",
     notes: "complete",
-    cloture: "incomplete",
   });
 
   // MEETING MODE — full focus, no sidebar/header

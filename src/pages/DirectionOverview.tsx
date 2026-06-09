@@ -99,7 +99,7 @@ function SpaCard({ spa }: { spa: SpaOverview }) {
         <div className="grid grid-cols-3 gap-3 mb-3">
           {[
             { label: t("direction.kpiCA"), value: spa.kpis.ca },
-            { label: t("direction.kpiNPS"), value: spa.kpis.nps },
+            { label: t("direction.kpiSatisfaction"), value: spa.kpis.satisfaction },
             { label: t("direction.kpiResp"), value: spa.kpis.responsabilites },
           ].map((kpi) => (
             <div key={kpi.label} className="bg-muted/50 rounded-lg p-2.5 text-center">

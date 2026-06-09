@@ -9,7 +9,6 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import Rapports from "./pages/Rapports";
 import RapportDetail from "./pages/RapportDetail";
-import MeetingMode from "./pages/MeetingMode";
 import PostMeetingMode from "./pages/PostMeetingMode";
 
 import DirectionOverview from "./pages/DirectionOverview";
@@ -76,7 +75,6 @@ const App = () => (
                   <Route path="/todos" element={<Todos />} />
                   <Route path="/objectifs" element={<Objectifs />} />
                 </Route>
-                <Route path="/reunion/:id" element={<MeetingMode />} />
                 <Route path="/post-reunion/:id" element={<PostMeetingMode />} />
                 <Route path="/historique" element={<SpaHistory />} />
               </Route>

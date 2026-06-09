@@ -137,7 +137,7 @@
     "viewDetail": "Voir le détail",
     "otherAlerts": "autres",
     "kpiCA": "CA",
-    "kpiNPS": "NPS",
+    "kpiSatisfaction": "Satisfaction",
     "kpiResp": "Responsabilités",
     "lastReport": "Dernier rapport",
     "alertBanner": "{{count}} points d'attention sur {{spas}} spas",

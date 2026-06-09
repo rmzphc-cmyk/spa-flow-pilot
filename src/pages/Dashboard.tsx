@@ -42,7 +42,7 @@ type AiBriefItem = { icon: string; text: string };
 type RecentActivityItem = { id: string; label: string; date: string };
 
 const WEEKLY_SECTION_KEYS = ["kpi", "checkin", "ids"] as const;
-const MONTHLY_SECTION_KEYS = ["kpi", "checkin", "responsabilites", "todo", "objectifs", "ids", "cloture"] as const;
+const MONTHLY_SECTION_KEYS = ["kpi", "checkin", "responsabilites", "todo", "objectifs", "ids"] as const;
 
 function getSectionKeysFor(type: "weekly" | "monthly"): readonly string[] {
   return type === "weekly" ? WEEKLY_SECTION_KEYS : MONTHLY_SECTION_KEYS;

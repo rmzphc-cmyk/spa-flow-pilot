@@ -99,14 +99,16 @@ export function useDirectionSpas() {
           });
 
         const caEntry = findKpi(
-          (n) => n.includes("ca") || n.includes("chiffre d'affaires"),
+          (n) => /\bca\b/.test(n) || n.includes("chiffre d'affaires"),
         );
-        const npsEntry = findKpi((n) => n.includes("nps"));
+        const satisfactionEntry = findKpi((n) => n.includes("satisfaction"));
 
         const ca = caEntry
           ? `${caEntry.value_current}${caEntry.kpi_definitions?.unit ?? ""}`
           : "—";
-        const nps = npsEntry ? `${npsEntry.value_current}` : "—";
+        const satisfaction = satisfactionEntry
+          ? `${satisfactionEntry.value_current}${satisfactionEntry.kpi_definitions?.unit ?? ""}`
+          : "—";
 
         const respRates = respLogs
           .map((r: any) => r.completion_rate)
@@ -128,7 +130,7 @@ export function useDirectionSpas() {
           status: mapReportStatus(latestReport?.status),
           progress: prog.text,
           alerts,
-          kpis: { ca, nps, responsabilites },
+          kpis: { ca, satisfaction, responsabilites },
           lastReport: latestReport?.updated_at
             ? new Intl.DateTimeFormat("fr-FR").format(new Date(latestReport.updated_at))
             : "—",

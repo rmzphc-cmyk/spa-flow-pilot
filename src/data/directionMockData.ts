@@ -11,7 +11,7 @@ export interface SpaOverview {
   status: "draft_preparation" | "in_meeting" | "validated";
   progress: string;
   alerts: SpaAlert[];
-  kpis: { ca: string; nps: string; responsabilites: string };
+  kpis: { ca: string; satisfaction: string; responsabilites: string };
   lastReport: string;
 }
 
