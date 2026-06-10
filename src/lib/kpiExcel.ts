@@ -28,6 +28,22 @@ import {
   ROLE_LABELS,
   NIVEAU_LABELS,
 } from "@/hooks/useKpiRoleAssignments";
+import {
+  type ImportIssue,
+  loadExcelJS,
+  readWorksheet,
+  str,
+  parseNumberCell,
+  parseBoolCell,
+  resolveEnum,
+  buildListsSheet,
+  addDropdown,
+  styleSheet,
+  lastRowFor,
+  downloadWorkbook,
+} from "@/lib/excelHelpers";
+
+export type { ImportIssue };
 
 // ----- noms d'onglets + colonnes (FR fixe) -----
 
@@ -44,17 +60,6 @@ const SHEET = {
 const COL_ID = "ID (ne pas modifier)";
 
 const UNIT_VALUES = ["€", "%", "nb", "/10", "j", "pts"] as const;
-
-// Numéro de colonne (1-based) -> lettre Excel (1->A, 27->AA).
-function colLetter(n: number): string {
-  let s = "";
-  while (n > 0) {
-    const m = (n - 1) % 26;
-    s = String.fromCharCode(65 + m) + s;
-    n = Math.floor((n - 1) / 26);
-  }
-  return s;
-}
 
 const KPI_COL = {
   id: COL_ID,
@@ -112,48 +117,6 @@ const MODE_LABELS: Record<WeeklyMode, string> = {
   fixed: "Fixe",
 };
 
-// Résout une saisie (valeur brute d'enum OU label FR, insensible à la casse)
-// vers une valeur d'enum. Renvoie null si rien ne correspond.
-function resolveEnum<T extends string>(
-  input: unknown,
-  labels: Record<T, string>,
-): T | null {
-  if (typeof input !== "string") return null;
-  const norm = input.trim().toLowerCase();
-  if (!norm) return null;
-  for (const key of Object.keys(labels) as T[]) {
-    if (key.toLowerCase() === norm) return key;
-    if (labels[key].toLowerCase() === norm) return key;
-  }
-  return null;
-}
-
-// ----- parsing de cellules tolérant (conventions FR) -----
-
-// Nombre : accepte "1 200,50" (FR). Renvoie {value:null} si vide,
-// {invalid:true} si non parsable.
-function parseNumberCell(v: unknown): { value: number | null; invalid: boolean } {
-  if (v === "" || v === null || v === undefined) return { value: null, invalid: false };
-  if (typeof v === "number") return { value: isNaN(v) ? null : v, invalid: isNaN(v) };
-  const s = String(v).replace(/\s/g, "").replace(",", ".");
-  if (s === "") return { value: null, invalid: false };
-  const n = Number(s);
-  return isNaN(n) ? { value: null, invalid: true } : { value: n, invalid: false };
-}
-
-function parseBoolCell(v: unknown, fallback: boolean): boolean {
-  if (v === "" || v === null || v === undefined) return fallback;
-  if (typeof v === "boolean") return v;
-  const s = String(v).trim().toLowerCase();
-  if (["oui", "true", "vrai", "1", "x", "actif"].includes(s)) return true;
-  if (["non", "false", "faux", "0", "inactif"].includes(s)) return false;
-  return fallback;
-}
-
-function str(v: unknown): string {
-  return v === null || v === undefined ? "" : String(v).trim();
-}
-
 // ============================================================
 // EXPORT
 // ============================================================
@@ -172,8 +135,7 @@ const OBJ_WIDTHS = [38, 24, 14, 16, 14, 20, 14];
 const RESP_WIDTHS = [38, 24, 16, 14];
 
 export async function exportKpiWorkbook(params: ExportParams): Promise<void> {
-  const mod = await import("exceljs");
-  const ExcelJS: typeof import("exceljs") = (mod as any).default ?? mod;
+  const ExcelJS = await loadExcelJS();
   const { kpis, targets, assignments, yearMonth, spaName } = params;
 
   const targetByKpi = new Map(targets.map((t) => [t.kpi_definition_id, t]));
@@ -183,9 +145,8 @@ export async function exportKpiWorkbook(params: ExportParams): Promise<void> {
   wb.creator = "SPA OMS";
   wb.created = new Date();
 
-  // --- Onglet « Listes » : source des déroulantes (valeurs en colonnes) ---
-  const listsWs = wb.addWorksheet(SHEET.lists);
-  const listDefs: { header: string; values: readonly string[] }[] = [
+  // Onglet « Listes » : source des déroulantes (valeurs en colonnes).
+  const range = buildListsSheet(wb, SHEET.lists, [
     { header: "Unité", values: UNIT_VALUES },
     { header: "Catégorie", values: Object.values(CATEGORY_LABELS) },
     { header: "Groupe", values: Object.values(GROUP_LABELS) },
@@ -194,50 +155,7 @@ export async function exportKpiWorkbook(params: ExportParams): Promise<void> {
     { header: "Mode hebdo", values: Object.values(MODE_LABELS) },
     { header: "Rôle", values: Object.values(ROLE_LABELS) },
     { header: "Niveau", values: Object.values(NIVEAU_LABELS) },
-  ];
-  const range: Record<string, string> = {};
-  listDefs.forEach((d, idx) => {
-    const col = idx + 1;
-    const letter = colLetter(col);
-    listsWs.getCell(1, col).value = d.header;
-    d.values.forEach((v, i) => {
-      listsWs.getCell(2 + i, col).value = v;
-    });
-    listsWs.getColumn(col).width = 16;
-    range[d.header] = `${SHEET.lists}!$${letter}$2:$${letter}$${1 + d.values.length}`;
-  });
-  listsWs.getRow(1).font = { bold: true };
-
-  // Applique une déroulante (liste) sur une colonne, lignes 2..lastRow.
-  const dropdown = (
-    ws: import("exceljs").Worksheet,
-    col: number,
-    rangeRef: string,
-    lastRow: number,
-  ) => {
-    const letter = colLetter(col);
-    for (let r = 2; r <= lastRow; r++) {
-      ws.getCell(`${letter}${r}`).dataValidation = {
-        type: "list",
-        allowBlank: true,
-        formulae: [rangeRef],
-        showErrorMessage: true,
-        errorStyle: "warning",
-        errorTitle: "Valeur hors liste",
-        error: "Choisissez une valeur proposée dans la liste.",
-      };
-    }
-  };
-
-  // En-tête figée + gras, colonne ID en texte (évite toute coercition).
-  const styleSheet = (ws: import("exceljs").Worksheet, widths: number[]) => {
-    ws.getRow(1).font = { bold: true };
-    ws.views = [{ state: "frozen", ySplit: 1 }];
-    widths.forEach((w, i) => (ws.getColumn(i + 1).width = w));
-    ws.getColumn(1).numFmt = "@"; // colonne ID = texte
-  };
-  // Marge de lignes pour que les déroulantes couvrent aussi les futures saisies.
-  const lastRowFor = (count: number) => Math.max(count + 50, 200);
+  ]);
 
   // --- Onglet KPI ---
   const kpiWs = wb.addWorksheet(SHEET.kpi);
@@ -263,11 +181,11 @@ export async function exportKpiWorkbook(params: ExportParams): Promise<void> {
   styleSheet(kpiWs, KPI_WIDTHS);
   {
     const last = lastRowFor(kpis.length);
-    dropdown(kpiWs, 5, range["Unité"], last); // E Unité
-    dropdown(kpiWs, 6, range["Catégorie"], last); // F Catégorie
-    dropdown(kpiWs, 7, range["Groupe"], last); // G Groupe
-    dropdown(kpiWs, 9, range["Actif"], last); // I Actif
-    dropdown(kpiWs, 13, range["Sens"], last); // M Sens
+    addDropdown(kpiWs, 5, range["Unité"], last); // E Unité
+    addDropdown(kpiWs, 6, range["Catégorie"], last); // F Catégorie
+    addDropdown(kpiWs, 7, range["Groupe"], last); // G Groupe
+    addDropdown(kpiWs, 9, range["Actif"], last); // I Actif
+    addDropdown(kpiWs, 13, range["Sens"], last); // M Sens
   }
 
   // --- Onglet Objectifs (mois affiché) ---
@@ -285,9 +203,8 @@ export async function exportKpiWorkbook(params: ExportParams): Promise<void> {
       t?.actual_monthly_value ?? "",
     ]);
   });
-  styleSheet(objWs, OBJ_WIDTHS);
-  objWs.getColumn(3).numFmt = "@"; // colonne Mois = texte
-  dropdown(objWs, 5, range["Mode hebdo"], lastRowFor(kpis.length)); // E Mode hebdo
+  styleSheet(objWs, OBJ_WIDTHS, [1, 3]); // ID + Mois en texte
+  addDropdown(objWs, 5, range["Mode hebdo"], lastRowFor(kpis.length)); // E Mode hebdo
 
   // --- Onglet Responsabilités (une ligne par assignation) ---
   const respWs = wb.addWorksheet(SHEET.resp);
@@ -303,35 +220,17 @@ export async function exportKpiWorkbook(params: ExportParams): Promise<void> {
   styleSheet(respWs, RESP_WIDTHS);
   {
     const last = lastRowFor(assignments.length);
-    dropdown(respWs, 3, range["Rôle"], last); // C Rôle
-    dropdown(respWs, 4, range["Niveau"], last); // D Niveau
+    addDropdown(respWs, 3, range["Rôle"], last); // C Rôle
+    addDropdown(respWs, 4, range["Niveau"], last); // D Niveau
   }
 
-  // Déclenche le téléchargement (browser).
-  const buffer = await wb.xlsx.writeBuffer();
-  const blob = new Blob([buffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-  const url = URL.createObjectURL(blob);
   const safeName = (spaName || "spa").replace(/[^\w-]+/g, "_").slice(0, 40);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = `KPI_${safeName}_${yearMonth}.xlsx`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  await downloadWorkbook(wb, `KPI_${safeName}_${yearMonth}.xlsx`);
 }
 
 // ============================================================
 // IMPORT — parsing + validation (AUCUNE écriture ici)
 // ============================================================
-
-export interface ImportIssue {
-  sheet: string;
-  row: number; // numéro de ligne Excel (1 = en-têtes)
-  message: string;
-}
 
 // Payloads prêts pour l'écriture (cf. useKpiImport).
 export interface KpiInsertRow {
@@ -406,29 +305,11 @@ export interface ImportContext {
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-// Extrait la valeur exploitable d'une cellule ExcelJS (gère formule, lien,
-// texte riche, date) -> string | number | Date.
-function cellValue(cell: import("exceljs").Cell): unknown {
-  const v = cell.value as unknown;
-  if (v === null || v === undefined) return "";
-  if (typeof v === "object") {
-    if (v instanceof Date) return v;
-    const o = v as Record<string, unknown>;
-    if ("result" in o) return o.result; // formule
-    if ("text" in o) return o.text; // lien hypertexte
-    if ("richText" in o)
-      return (o.richText as { text: string }[]).map((t) => t.text).join("");
-    return String(v);
-  }
-  return v;
-}
-
 export async function parseKpiWorkbook(
   file: File,
   ctx: ImportContext,
 ): Promise<ImportPreview> {
-  const mod = await import("exceljs");
-  const ExcelJS: typeof import("exceljs") = (mod as any).default ?? mod;
+  const ExcelJS = await loadExcelJS();
   const buf = await file.arrayBuffer();
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(buf);
@@ -436,36 +317,9 @@ export async function parseKpiWorkbook(
   const errors: ImportIssue[] = [];
   const warnings: ImportIssue[] = [];
 
-  // Lit une feuille en objets keyés par en-tête (ligne 1) — même contrat que
-  // l'ancien sheet_to_json, pour que la validation ci-dessous reste inchangée.
-  const readSheet = (name: string): Record<string, unknown>[] => {
-    const ws = wb.getWorksheet(name);
-    if (!ws) return [];
-    const headers: Record<number, string> = {};
-    ws.getRow(1).eachCell({ includeEmpty: true }, (cell, col) => {
-      const h = String(cellValue(cell) ?? "").trim();
-      if (h) headers[col] = h;
-    });
-    const out: Record<string, unknown>[] = [];
-    ws.eachRow({ includeEmpty: false }, (row, rowNumber) => {
-      if (rowNumber === 1) return;
-      const obj: Record<string, unknown> = {};
-      let hasValue = false;
-      row.eachCell({ includeEmpty: true }, (cell, col) => {
-        const h = headers[col];
-        if (!h) return;
-        const val = cellValue(cell);
-        obj[h] = val;
-        if (val !== "" && val !== null && val !== undefined) hasValue = true;
-      });
-      if (hasValue) out.push(obj);
-    });
-    return out;
-  };
-
-  const kpiRaw = readSheet(SHEET.kpi);
-  const objRaw = readSheet(SHEET.obj);
-  const respRaw = readSheet(SHEET.resp);
+  const kpiRaw = readWorksheet(wb.getWorksheet(SHEET.kpi));
+  const objRaw = readWorksheet(wb.getWorksheet(SHEET.obj));
+  const respRaw = readWorksheet(wb.getWorksheet(SHEET.resp));
 
   if (!wb.getWorksheet(SHEET.kpi)) {
     errors.push({ sheet: SHEET.kpi, row: 0, message: `Onglet « ${SHEET.kpi} » introuvable.` });

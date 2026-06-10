@@ -40,6 +40,7 @@ import {
   calcMonthlyExpected,
   type RespTemplateFullRow,
 } from "@/hooks/useResponsabilites";
+import RespExcelMenu from "@/components/resp/RespExcelMenu";
 
 const CATEGORIES = [
   "RH",
@@ -152,6 +153,11 @@ export default function RespConfig() {
   const sortedTemplates = useMemo(
     () => [...templates].sort((a, b) => a.display_order - b.display_order),
     [templates],
+  );
+
+  const spaName = useMemo(
+    () => (spas ?? []).find((s: any) => s.id === spaId)?.name ?? "spa",
+    [spas, spaId],
   );
 
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -353,7 +359,13 @@ export default function RespConfig() {
             </div>
           ) : (
             <>
-              <div className="flex justify-end mb-3">
+              <div className="flex justify-end items-center gap-2 mb-3">
+                <RespExcelMenu
+                  spaId={spaId}
+                  spaName={spaName}
+                  templates={templates}
+                  canImport={userRole === "admin" || userRole === "manager"}
+                />
                 <Button
                   size="sm"
                   className="gap-1.5 bg-teal-600 hover:bg-teal-700 text-white"

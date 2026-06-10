@@ -964,6 +964,26 @@
       "Qualité": "Quality",
       "Formation": "Training",
       "Administratif": "Administrative"
+    },
+    "io": {
+      "menu": "Excel",
+      "export": "Export (.xlsx)",
+      "import": "Import (.xlsx)",
+      "importTitle": "Import responsibilities",
+      "importDesc": "The file updates this spa’s responsibilities. Nothing is deleted: rows removed from the file remain in the database.",
+      "chooseFile": "Choose an .xlsx file",
+      "chooseAnother": "Choose another file",
+      "parsing": "Parsing file…",
+      "toCreate": "{{count}} to create",
+      "toUpdate": "{{count}} to update",
+      "errorsTitle": "{{count}} error(s) — import blocked",
+      "nothingToDo": "No data to import in this file.",
+      "rowLabel": "row {{row}}",
+      "confirm": "Import",
+      "exportDone": "Export downloaded",
+      "importDone": "Import successful ✓",
+      "importFailed": "Import failed",
+      "unreadable": "Unreadable file or unrecognized format."
     }
   },
   "notFound": {

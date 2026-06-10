@@ -964,6 +964,26 @@
       "Qualité": "Calidad",
       "Formation": "Formación",
       "Administratif": "Administrativo"
+    },
+    "io": {
+      "menu": "Excel",
+      "export": "Exportar (.xlsx)",
+      "import": "Importar (.xlsx)",
+      "importTitle": "Importar responsabilidades",
+      "importDesc": "El archivo actualiza las responsabilidades de este spa. No se elimina nada: las filas quitadas del archivo permanecen en la base de datos.",
+      "chooseFile": "Elegir un archivo .xlsx",
+      "chooseAnother": "Elegir otro archivo",
+      "parsing": "Analizando el archivo…",
+      "toCreate": "{{count}} por crear",
+      "toUpdate": "{{count}} por actualizar",
+      "errorsTitle": "{{count}} error(es) — importación bloqueada",
+      "nothingToDo": "No hay datos para importar en este archivo.",
+      "rowLabel": "fila {{row}}",
+      "confirm": "Importar",
+      "exportDone": "Exportación descargada",
+      "importDone": "Importación correcta ✓",
+      "importFailed": "Error en la importación",
+      "unreadable": "Archivo ilegible o formato no reconocido."
     }
   },
   "notFound": {

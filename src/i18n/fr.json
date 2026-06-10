@@ -965,6 +965,26 @@
       "Qualité": "Qualité",
       "Formation": "Formation",
       "Administratif": "Administratif"
+    },
+    "io": {
+      "menu": "Excel",
+      "export": "Exporter (.xlsx)",
+      "import": "Importer (.xlsx)",
+      "importTitle": "Importer les responsabilités",
+      "importDesc": "Le fichier met à jour les responsabilités de ce spa. Rien n’est supprimé : les lignes retirées du fichier restent en base.",
+      "chooseFile": "Choisir un fichier .xlsx",
+      "chooseAnother": "Choisir un autre fichier",
+      "parsing": "Analyse du fichier…",
+      "toCreate": "{{count}} à créer",
+      "toUpdate": "{{count}} à mettre à jour",
+      "errorsTitle": "{{count}} erreur(s) — import bloqué",
+      "nothingToDo": "Aucune donnée à importer dans ce fichier.",
+      "rowLabel": "ligne {{row}}",
+      "confirm": "Importer",
+      "exportDone": "Export téléchargé",
+      "importDone": "Import réussi ✓",
+      "importFailed": "Échec de l’import",
+      "unreadable": "Fichier illisible ou format non reconnu."
     }
   },
   "notFound": {
