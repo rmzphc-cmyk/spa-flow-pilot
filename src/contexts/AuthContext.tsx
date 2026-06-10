@@ -12,6 +12,7 @@ interface AuthContextValue {
   userRole: AppRole | null;
   spaId: string | null;
   mustChangePassword: boolean;
+  isRecoveryMode: boolean;
   isLoading: boolean;
   signOut: () => Promise<void>;
 }
@@ -21,11 +22,14 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRecoveryMode, setIsRecoveryMode] = useState(false);
 
   useEffect(() => {
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((event, newSession) => {
       setSession(newSession);
       setIsLoading(false);
+      if (event === "PASSWORD_RECOVERY") setIsRecoveryMode(true);
+      if (event === "USER_UPDATED" || event === "SIGNED_IN") setIsRecoveryMode(false);
     });
 
     supabase.auth.getSession().then(({ data }) => {
@@ -50,7 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, userId: user?.id ?? null, session, userRole, spaId, mustChangePassword, isLoading, signOut }}>
+    <AuthContext.Provider value={{ user, userId: user?.id ?? null, session, userRole, spaId, mustChangePassword, isRecoveryMode, isLoading, signOut }}>
       {children}
     </AuthContext.Provider>
   );

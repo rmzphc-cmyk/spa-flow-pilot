@@ -1069,6 +1069,7 @@
     "subtitle": "Inicia sesión en tu espacio",
     "email": "Correo electrónico",
     "password": "Contraseña",
+    "forgotPassword": "¿Olvidaste tu contraseña?",
     "submit": "Iniciar sesión",
     "submitting": "Conectando...",
     "invalidCredentials": "Credenciales incorrectas",
@@ -1153,5 +1154,12 @@
     "tooShort": "La contraseña debe tener al menos {{count}} caracteres.",
     "success": "Contraseña actualizada.",
     "signOut": "Cerrar sesión"
+  },
+  "forgotPassword": {
+    "subtitle": "Restablecer tu contraseña",
+    "submit": "Enviar enlace",
+    "submitting": "Enviando…",
+    "sent": "Se ha enviado un enlace de restablecimiento a tu correo electrónico. Revisa tu bandeja de entrada.",
+    "backToLogin": "Volver al inicio de sesión"
   }
 }

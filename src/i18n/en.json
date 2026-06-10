@@ -1069,6 +1069,7 @@
     "subtitle": "Sign in to your workspace",
     "email": "Email",
     "password": "Password",
+    "forgotPassword": "Forgot password?",
     "submit": "Sign in",
     "submitting": "Signing in...",
     "invalidCredentials": "Invalid credentials",
@@ -1153,5 +1154,12 @@
     "tooShort": "Password must be at least {{count}} characters.",
     "success": "Password updated.",
     "signOut": "Sign out"
+  },
+  "forgotPassword": {
+    "subtitle": "Reset your password",
+    "submit": "Send reset link",
+    "submitting": "Sending…",
+    "sent": "A reset link has been sent to your email address. Please check your inbox.",
+    "backToLogin": "Back to sign in"
   }
 }

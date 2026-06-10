@@ -1070,6 +1070,7 @@
     "subtitle": "Connectez-vous à votre espace",
     "email": "Email",
     "password": "Mot de passe",
+    "forgotPassword": "Mot de passe oublié ?",
     "submit": "Se connecter",
     "submitting": "Connexion...",
     "invalidCredentials": "Identifiants incorrects",
@@ -1154,5 +1155,12 @@
     "tooShort": "Le mot de passe doit contenir au moins {{count}} caractères.",
     "success": "Mot de passe mis à jour.",
     "signOut": "Se déconnecter"
+  },
+  "forgotPassword": {
+    "subtitle": "Réinitialiser votre mot de passe",
+    "submit": "Envoyer le lien",
+    "submitting": "Envoi…",
+    "sent": "Un lien de réinitialisation a été envoyé à votre adresse email. Vérifiez votre boîte de réception.",
+    "backToLogin": "Retour à la connexion"
   }
 }
