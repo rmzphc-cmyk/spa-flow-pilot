@@ -60,6 +60,7 @@ import {
   type KpiNiveau,
   type KpiRoleAssignment,
 } from "@/hooks/useKpiRoleAssignments";
+import KpiExcelMenu from "@/components/kpi/KpiExcelMenu";
 
 const UNIT_OPTIONS = ["€", "%", "nb", "/10", "j", "pts"] as const;
 
@@ -69,7 +70,7 @@ type KpiGroup = "spa" | "manager";
 
 export default function KpiConfig() {
   const { t, i18n } = useTranslation();
-  const { user, userRole, spaId: authSpaId } = useAuth();
+  const { user, userId, userRole, spaId: authSpaId } = useAuth();
   const [adminSpaId, setAdminSpaId] = useState<string | null>(null);
   const [yearMonth, setYearMonth] = useState(() => {
     const now = new Date();
@@ -95,7 +96,7 @@ export default function KpiConfig() {
   const addMut = useAddKpiDefinition();
   const updateMut = useUpdateKpiDefinition();
   const deleteMut = useSoftDeleteKpiDefinition();
-  const { currentMap, previousMap, isLoading: targetsLoading } = useKpiMonthlyTargets(
+  const { targets, currentMap, previousMap, isLoading: targetsLoading } = useKpiMonthlyTargets(
     spaId,
     yearMonth,
   );
@@ -109,6 +110,11 @@ export default function KpiConfig() {
 
   const kpiIds = useMemo(() => items.map((i) => i.id), [items]);
   const { data: roleAssignments = [] } = useKpiRoleAssignments(kpiIds);
+
+  const spaName = useMemo(
+    () => (spas ?? []).find((s: any) => s.id === spaId)?.name ?? "spa",
+    [spas, spaId],
+  );
 
 
 
@@ -239,6 +245,18 @@ export default function KpiConfig() {
                 ))}
               </SelectContent>
             </Select>
+          )}
+          {spaId && (
+            <KpiExcelMenu
+              spaId={spaId}
+              userId={userId ?? ""}
+              spaName={spaName}
+              yearMonth={yearMonth}
+              kpis={items}
+              targets={targets}
+              assignments={roleAssignments}
+              canImport={userRole === "admin" || userRole === "manager"}
+            />
           )}
           <Button
             size="sm"

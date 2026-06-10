@@ -839,6 +839,29 @@
       "prioritaire": "Primary",
       "secondaire": "Secondary",
       "suivi": "Monitoring"
+    },
+    "io": {
+      "menu": "Excel",
+      "export": "Export (.xlsx)",
+      "import": "Import (.xlsx)",
+      "importTitle": "Import KPI configuration",
+      "importDesc": "The file updates this spa’s KPIs, targets and responsibilities. Nothing is deleted: rows removed from the file remain in the database.",
+      "chooseFile": "Choose an .xlsx file",
+      "chooseAnother": "Choose another file",
+      "parsing": "Parsing file…",
+      "toCreate": "{{count}} KPIs to create",
+      "toUpdate": "{{count}} KPIs to update",
+      "objectives": "{{count}} targets",
+      "responsibilities": "{{count}} responsibilities",
+      "errorsTitle": "{{count}} error(s) — import blocked",
+      "warningsTitle": "{{count}} warning(s)",
+      "nothingToDo": "No data to import in this file.",
+      "rowLabel": "row {{row}}",
+      "confirm": "Import",
+      "exportDone": "Export downloaded",
+      "importDone": "Import successful ✓",
+      "importFailed": "Import failed",
+      "unreadable": "Unreadable file or unrecognized format."
     }
   },
   "respConfig": {

@@ -839,6 +839,29 @@
       "prioritaire": "Prioritario",
       "secondaire": "Secundario",
       "suivi": "Seguimiento"
+    },
+    "io": {
+      "menu": "Excel",
+      "export": "Exportar (.xlsx)",
+      "import": "Importar (.xlsx)",
+      "importTitle": "Importar configuración de KPI",
+      "importDesc": "El archivo actualiza los KPI, objetivos y responsabilidades de este spa. No se elimina nada: las filas quitadas del archivo permanecen en la base de datos.",
+      "chooseFile": "Elegir un archivo .xlsx",
+      "chooseAnother": "Elegir otro archivo",
+      "parsing": "Analizando el archivo…",
+      "toCreate": "{{count}} KPI por crear",
+      "toUpdate": "{{count}} KPI por actualizar",
+      "objectives": "{{count}} objetivos",
+      "responsibilities": "{{count}} responsabilidades",
+      "errorsTitle": "{{count}} error(es) — importación bloqueada",
+      "warningsTitle": "{{count}} advertencia(s)",
+      "nothingToDo": "No hay datos para importar en este archivo.",
+      "rowLabel": "fila {{row}}",
+      "confirm": "Importar",
+      "exportDone": "Exportación descargada",
+      "importDone": "Importación correcta ✓",
+      "importFailed": "Error en la importación",
+      "unreadable": "Archivo ilegible o formato no reconocido."
     }
   },
   "respConfig": {
