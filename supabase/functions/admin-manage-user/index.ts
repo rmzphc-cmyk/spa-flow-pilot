@@ -2,12 +2,20 @@ import { authenticate, corsHeaders, internalError, json } from "../_shared/auth.
 
 type Action = "invite" | "update" | "delete" | "reset";
 
+// Seuls rôles que l'UI admin peut attribuer. "admin" est seedé en base, jamais
+// invité ; tout autre valeur (faute de frappe, payload forgé) doit être rejetée
+// AVANT createUser pour ne pas laisser le trigger retomber sur son défaut.
+type InvitableRole = "spa_manager" | "direction";
+const INVITABLE_ROLES: InvitableRole[] = ["spa_manager", "direction"];
+const isInvitableRole = (v: unknown): v is InvitableRole =>
+  typeof v === "string" && (INVITABLE_ROLES as string[]).includes(v);
+
 interface Payload {
   action: Action;
   user_id?: string;
   email?: string;
   full_name?: string;
-  role?: "spa_manager" | "direction";
+  role?: InvitableRole;
   spa_id?: string | null;
   destination_id?: string | null;
   organization_id?: string | null;
@@ -32,6 +40,8 @@ Deno.serve(async (req) => {
 
     if (body.action === "invite") {
       if (!body.email || !body.role) return json({ error: "Missing email or role" }, 400);
+      // Garde-fou : rôle strictement validé avant toute écriture.
+      if (!isInvitableRole(body.role)) return json({ error: `Invalid role: ${body.role}` }, 400);
       if (body.role === "spa_manager" && !body.spa_id) {
         return json({ error: "spa_id required for spa_manager" }, 400);
       }

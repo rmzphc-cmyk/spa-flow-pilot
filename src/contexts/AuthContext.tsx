@@ -1,8 +1,9 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
+import { toAppRole, type AppRole } from "@/lib/roles";
 
-export type AppRole = "manager" | "direction" | "admin";
+export type { AppRole };
 
 interface AuthContextValue {
   user: User | null;
@@ -16,14 +17,6 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
-
-function mapRole(raw: unknown): AppRole | null {
-  if (typeof raw !== "string") return null;
-  if (raw === "spa_manager" || raw === "manager") return "manager";
-  if (raw === "direction") return "direction";
-  if (raw === "admin") return "admin";
-  return null;
-}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
@@ -45,7 +38,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const user = session?.user ?? null;
   const appMeta = (user?.app_metadata ?? {}) as Record<string, unknown>;
-  const userRole = mapRole(appMeta.role);
+  const userRole = toAppRole(appMeta.role);
   const rawSpaId = appMeta.spa_id;
   const spaId = typeof rawSpaId === "string" && rawSpaId.length > 0 ? rawSpaId : null;
   const userMeta = (user?.user_metadata ?? {}) as Record<string, unknown>;

@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import type { DbRole, InvitableRole } from "@/lib/roles";
 
 export interface Organization {
   id: string;
@@ -32,7 +33,7 @@ export interface AdminUser {
   id: string;
   email: string;
   full_name: string;
-  role: "spa_manager" | "direction" | "admin" | "employee";
+  role: DbRole;
   spa_id: string | null;
   destination_id: string | null;
   organization_id: string | null;
@@ -236,7 +237,7 @@ export function useInviteUser() {
     mutationFn: async (input: {
       email: string;
       full_name: string;
-      role: "spa_manager" | "direction";
+      role: InvitableRole;
       spa_id?: string | null;
       destination_id?: string | null;
       organization_id?: string | null;
@@ -251,7 +252,7 @@ export function useUpdateUser() {
     mutationFn: async (input: {
       user_id: string;
       full_name?: string;
-      role?: "spa_manager" | "direction";
+      role?: InvitableRole;
       spa_id?: string | null;
       destination_id?: string | null;
     }) => callManageUser({ action: "update", ...input }),

@@ -44,6 +44,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useAuth } from "@/contexts/AuthContext";
+import { DB_ROLES } from "@/lib/roles";
 import {
   useOrganizations,
   useDestinations,
@@ -531,7 +532,7 @@ function DirectorsTab({ organizationId, readOnly }: { organizationId: string; re
   const deleteMut = useDeleteUser();
 
   const destById = useMemo(() => new Map(destinations.map((d) => [d.id, d])), [destinations]);
-  const directors = users.filter((u) => u.role === "direction");
+  const directors = users.filter((u) => u.role === DB_ROLES.DIRECTION);
 
   const [inviting, setInviting] = useState(false);
   const [editing, setEditing] = useState<AdminUser | null>(null);
@@ -544,9 +545,11 @@ function DirectorsTab({ organizationId, readOnly }: { organizationId: string; re
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-base">{t("admin.directors.count", { count: directors.length })}</CardTitle>
         {!readOnly && (
-          <Button size="sm" onClick={() => setInviting(true)} disabled={destinations.length === 0}>
-            <UserPlus className="h-4 w-4 mr-2" /> {t("admin.directors.invite")}
-          </Button>
+          <div title={destinations.length === 0 ? t("admin.directors.needDestFirst") : undefined}>
+            <Button size="sm" onClick={() => setInviting(true)} disabled={destinations.length === 0}>
+              <UserPlus className="h-4 w-4 mr-2" /> {t("admin.directors.invite")}
+            </Button>
+          </div>
         )}
       </CardHeader>
       <CardContent>
@@ -839,7 +842,7 @@ function ManagersTab({ organizationId, readOnly }: { organizationId: string; rea
   const resetMut = useResetUserPassword();
 
   const spaById = useMemo(() => new Map(spas.map((s) => [s.id, s])), [spas]);
-  const managers = users.filter((u) => u.role === "spa_manager");
+  const managers = users.filter((u) => u.role === DB_ROLES.SPA_MANAGER);
 
   const [inviting, setInviting] = useState(false);
   const [editing, setEditing] = useState<AdminUser | null>(null);

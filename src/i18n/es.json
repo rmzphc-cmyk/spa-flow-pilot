@@ -722,7 +722,8 @@
       "manageSpaAccess": "Gestionar accesos spa",
       "spaAccessTitle": "Accesos spa — {{name}}",
       "noSpas": "No hay spas en esta organización.",
-      "spaAccessSaved": "Acceso actualizado."
+      "spaAccessSaved": "Acceso actualizado.",
+      "needDestFirst": "Crea primero un destino antes de invitar a un director."
     },
     "managers": {
       "count": "{{count}} manager(s)",
