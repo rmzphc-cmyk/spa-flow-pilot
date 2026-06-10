@@ -10,9 +10,14 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { exportRespWorkbook } from "@/lib/respExcel";
+import {
+  exportRespWorkbook,
+  parseRespWorkbook,
+  type RespImportPayload,
+} from "@/lib/respExcel";
+import { useRespImport } from "@/hooks/useRespImport";
+import ExcelImportDialog, { type ExcelImportParsed } from "@/components/ExcelImportDialog";
 import type { RespTemplateFullRow } from "@/hooks/useResponsabilites";
-import ImportRespDialog from "./ImportRespDialog";
 
 interface Props {
   spaId: string;
@@ -25,6 +30,7 @@ export default function RespExcelMenu({ spaId, spaName, templates, canImport }: 
   const { t } = useTranslation();
   const [exporting, setExporting] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const importMut = useRespImport();
 
   const handleExport = async () => {
     setExporting(true);
@@ -36,6 +42,29 @@ export default function RespExcelMenu({ spaId, spaName, templates, canImport }: 
     } finally {
       setExporting(false);
     }
+  };
+
+  const parse = async (file: File): Promise<ExcelImportParsed> => {
+    const r = await parseRespWorkbook(file, { spaId, existingIds: new Set(templates.map((x) => x.id)) });
+    return {
+      errors: r.errors,
+      warnings: r.warnings,
+      payload: r.payload,
+      summary: [
+        { label: t("respConfig.io.toCreate", { count: r.counts.create }), count: r.counts.create },
+        { label: t("respConfig.io.toUpdate", { count: r.counts.update }), count: r.counts.update },
+      ],
+    };
+  };
+
+  const onConfirm = (payload: unknown) => {
+    importMut.mutate(payload as RespImportPayload, {
+      onSuccess: () => {
+        toast.success(t("respConfig.io.importDone"));
+        setImportOpen(false);
+      },
+      onError: (e: any) => toast.error(e?.message ?? t("respConfig.io.importFailed")),
+    });
   };
 
   return (
@@ -66,11 +95,13 @@ export default function RespExcelMenu({ spaId, spaName, templates, canImport }: 
       </DropdownMenu>
 
       {canImport && (
-        <ImportRespDialog
+        <ExcelImportDialog
           open={importOpen}
           onOpenChange={setImportOpen}
-          spaId={spaId}
-          existingIds={templates.map((tmpl) => tmpl.id)}
+          i18nPrefix="respConfig.io"
+          parse={parse}
+          onConfirm={onConfirm}
+          isPending={importMut.isPending}
         />
       )}
     </>

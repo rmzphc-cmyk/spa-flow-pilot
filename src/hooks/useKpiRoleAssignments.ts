@@ -77,8 +77,10 @@ export function useDeleteKpiRoleAssignment() {
         .eq("id", id);
       if (error) throw error;
       if (!count) {
+        // RLS (migration 20260605164648) autorise admin OU spa_manager du spa
+        // concerné. 0 ligne = l'appelant n'a pas ce droit sur cette assignation.
         throw new Error(
-          "Suppression refusée : seul un administrateur peut modifier les assignations de rôles."
+          "Suppression refusée : droits insuffisants sur cette assignation."
         );
       }
     },

@@ -983,7 +983,8 @@
       "exportDone": "Exportación descargada",
       "importDone": "Importación correcta ✓",
       "importFailed": "Error en la importación",
-      "unreadable": "Archivo ilegible o formato no reconocido."
+      "unreadable": "Archivo ilegible o formato no reconocido.",
+      "warningsTitle": "{{count}} advertencia(s)"
     }
   },
   "notFound": {

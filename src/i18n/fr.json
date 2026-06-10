@@ -984,7 +984,8 @@
       "exportDone": "Export téléchargé",
       "importDone": "Import réussi ✓",
       "importFailed": "Échec de l’import",
-      "unreadable": "Fichier illisible ou format non reconnu."
+      "unreadable": "Fichier illisible ou format non reconnu.",
+      "warningsTitle": "{{count}} avertissement(s)"
     }
   },
   "notFound": {

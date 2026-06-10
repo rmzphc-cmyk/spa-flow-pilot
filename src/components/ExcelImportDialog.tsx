@@ -13,35 +13,47 @@ import {
 import { Button } from "@/components/ui/button";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
-import { parseKpiWorkbook, type ImportPreview } from "@/lib/kpiExcel";
-import { useKpiImport } from "@/hooks/useKpiImport";
+import type { ImportIssue } from "@/lib/excelHelpers";
+
+// Résultat d'un parsing, prêt pour l'écran de revue. `summary` porte déjà les
+// libellés traduits (badges de comptes) — c'est l'appelant (le menu, qui a `t`)
+// qui les construit, le dialogue reste agnostique du domaine.
+export interface ExcelImportParsed {
+  errors: ImportIssue[];
+  warnings: ImportIssue[];
+  summary: { label: string; count: number }[];
+  payload: unknown;
+}
 
 interface Props {
   open: boolean;
   onOpenChange: (v: boolean) => void;
-  spaId: string;
-  userId: string;
-  existingKpiIds: string[];
+  // Préfixe i18n du domaine (kpiConfig.io | respConfig.io) : title/desc + chrome.
+  i18nPrefix: string;
+  parse: (file: File) => Promise<ExcelImportParsed>;
+  onConfirm: (payload: unknown) => void;
+  isPending: boolean;
 }
 
-export default function ImportKpiDialog({
+export default function ExcelImportDialog({
   open,
   onOpenChange,
-  spaId,
-  userId,
-  existingKpiIds,
+  i18nPrefix,
+  parse,
+  onConfirm,
+  isPending,
 }: Props) {
   const { t } = useTranslation();
+  const k = (suffix: string) => t(`${i18nPrefix}.${suffix}`);
   const fileRef = useRef<HTMLInputElement>(null);
   const [parsing, setParsing] = useState(false);
   const [fileName, setFileName] = useState<string | null>(null);
-  const [preview, setPreview] = useState<ImportPreview | null>(null);
-  const importMut = useKpiImport();
+  const [parsed, setParsed] = useState<ExcelImportParsed | null>(null);
 
   const reset = () => {
     setParsing(false);
     setFileName(null);
-    setPreview(null);
+    setParsed(null);
     if (fileRef.current) fileRef.current.value = "";
   };
 
@@ -53,16 +65,11 @@ export default function ImportKpiDialog({
   const handleFile = async (file: File) => {
     setFileName(file.name);
     setParsing(true);
-    setPreview(null);
+    setParsed(null);
     try {
-      const result = await parseKpiWorkbook(file, {
-        spaId,
-        userId,
-        existingKpiIds: new Set(existingKpiIds),
-      });
-      setPreview(result);
+      setParsed(await parse(file));
     } catch (e: any) {
-      toast.error(e?.message ?? t("kpiConfig.io.unreadable"));
+      toast.error(e?.message ?? k("unreadable"));
       reset();
     } finally {
       setParsing(false);
@@ -70,30 +77,19 @@ export default function ImportKpiDialog({
   };
 
   const handleConfirm = () => {
-    if (!preview || preview.errors.length > 0) return;
-    importMut.mutate(preview.payload, {
-      onSuccess: () => {
-        toast.success(t("kpiConfig.io.importDone"));
-        handleClose(false);
-      },
-      onError: (e: any) => toast.error(e?.message ?? t("kpiConfig.io.importFailed")),
-    });
+    if (!parsed || parsed.errors.length > 0) return;
+    onConfirm(parsed.payload);
   };
 
-  const hasErrors = (preview?.errors.length ?? 0) > 0;
-  const nothingToDo =
-    preview != null &&
-    preview.counts.create === 0 &&
-    preview.counts.update === 0 &&
-    preview.counts.objectives === 0 &&
-    preview.counts.assignments === 0;
+  const hasErrors = (parsed?.errors.length ?? 0) > 0;
+  const nothingToDo = parsed != null && parsed.summary.every((s) => s.count === 0);
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-lg">
         <DialogHeader>
-          <DialogTitle>{t("kpiConfig.io.importTitle")}</DialogTitle>
-          <DialogDescription>{t("kpiConfig.io.importDesc")}</DialogDescription>
+          <DialogTitle>{k("importTitle")}</DialogTitle>
+          <DialogDescription>{k("importDesc")}</DialogDescription>
         </DialogHeader>
 
         <input
@@ -107,8 +103,7 @@ export default function ImportKpiDialog({
           }}
         />
 
-        {/* Sélecteur de fichier */}
-        {!preview && (
+        {!parsed && (
           <button
             type="button"
             onClick={() => fileRef.current?.click()}
@@ -121,15 +116,12 @@ export default function ImportKpiDialog({
               <FileSpreadsheet className="h-7 w-7" />
             )}
             <span className="text-sm font-medium">
-              {parsing
-                ? t("kpiConfig.io.parsing")
-                : fileName ?? t("kpiConfig.io.chooseFile")}
+              {parsing ? k("parsing") : fileName ?? k("chooseFile")}
             </span>
           </button>
         )}
 
-        {/* Écran de revue */}
-        {preview && (
+        {parsed && (
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <FileSpreadsheet className="h-3.5 w-3.5" />
@@ -137,33 +129,26 @@ export default function ImportKpiDialog({
             </div>
 
             <div className="flex flex-wrap gap-2">
-              <Badge variant="secondary">
-                {t("kpiConfig.io.toCreate", { count: preview.counts.create })}
-              </Badge>
-              <Badge variant="secondary">
-                {t("kpiConfig.io.toUpdate", { count: preview.counts.update })}
-              </Badge>
-              <Badge variant="secondary">
-                {t("kpiConfig.io.objectives", { count: preview.counts.objectives })}
-              </Badge>
-              <Badge variant="secondary">
-                {t("kpiConfig.io.responsibilities", { count: preview.counts.assignments })}
-              </Badge>
+              {parsed.summary.map((s, i) => (
+                <Badge key={i} variant="secondary">
+                  {s.label}
+                </Badge>
+              ))}
             </div>
 
             {hasErrors && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>
-                  {t("kpiConfig.io.errorsTitle", { count: preview.errors.length })}
+                  {t(`${i18nPrefix}.errorsTitle`, { count: parsed.errors.length })}
                 </AlertTitle>
                 <AlertDescription>
                   <ul className="mt-1 max-h-40 overflow-y-auto text-xs space-y-0.5 list-disc pl-4">
-                    {preview.errors.slice(0, 50).map((e, i) => (
+                    {parsed.errors.slice(0, 50).map((e, i) => (
                       <li key={i}>
                         <span className="font-medium">
                           {e.sheet}
-                          {e.row > 0 ? ` · ${t("kpiConfig.io.rowLabel", { row: e.row })}` : ""}
+                          {e.row > 0 ? ` · ${t(`${i18nPrefix}.rowLabel`, { row: e.row })}` : ""}
                         </span>{" "}
                         — {e.message}
                       </li>
@@ -173,15 +158,15 @@ export default function ImportKpiDialog({
               </Alert>
             )}
 
-            {!hasErrors && preview.warnings.length > 0 && (
+            {!hasErrors && parsed.warnings.length > 0 && (
               <Alert>
                 <AlertTriangle className="h-4 w-4" />
                 <AlertTitle>
-                  {t("kpiConfig.io.warningsTitle", { count: preview.warnings.length })}
+                  {t(`${i18nPrefix}.warningsTitle`, { count: parsed.warnings.length })}
                 </AlertTitle>
                 <AlertDescription>
                   <ul className="mt-1 max-h-32 overflow-y-auto text-xs space-y-0.5 list-disc pl-4">
-                    {preview.warnings.slice(0, 30).map((w, i) => (
+                    {parsed.warnings.slice(0, 30).map((w, i) => (
                       <li key={i}>{w.message}</li>
                     ))}
                   </ul>
@@ -192,29 +177,25 @@ export default function ImportKpiDialog({
             {!hasErrors && nothingToDo && (
               <Alert>
                 <CheckCircle2 className="h-4 w-4" />
-                <AlertDescription>{t("kpiConfig.io.nothingToDo")}</AlertDescription>
+                <AlertDescription>{k("nothingToDo")}</AlertDescription>
               </Alert>
             )}
           </div>
         )}
 
         <DialogFooter className="gap-2 sm:gap-0">
-          {preview && (
-            <Button variant="ghost" onClick={reset} disabled={importMut.isPending}>
-              {t("kpiConfig.io.chooseAnother")}
+          {parsed && (
+            <Button variant="ghost" onClick={reset} disabled={isPending}>
+              {k("chooseAnother")}
             </Button>
           )}
           <Button
             onClick={handleConfirm}
-            disabled={!preview || hasErrors || nothingToDo || importMut.isPending}
+            disabled={!parsed || hasErrors || nothingToDo || isPending}
             className="gap-1.5 bg-teal-600 hover:bg-teal-700 text-white"
           >
-            {importMut.isPending ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Upload className="h-4 w-4" />
-            )}
-            {t("kpiConfig.io.confirm")}
+            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+            {k("confirm")}
           </Button>
         </DialogFooter>
       </DialogContent>

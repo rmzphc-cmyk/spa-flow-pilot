@@ -10,11 +10,16 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
 } from "@/components/ui/dropdown-menu";
-import { exportKpiWorkbook } from "@/lib/kpiExcel";
+import {
+  exportKpiWorkbook,
+  parseKpiWorkbook,
+  type KpiImportPayload,
+} from "@/lib/kpiExcel";
+import { useKpiImport } from "@/hooks/useKpiImport";
+import ExcelImportDialog, { type ExcelImportParsed } from "@/components/ExcelImportDialog";
 import type { KpiDefinitionFull } from "@/hooks/useKpiConfig";
 import type { KpiMonthlyTarget } from "@/hooks/useKpiMonthlyTargets";
 import type { KpiRoleAssignment } from "@/hooks/useKpiRoleAssignments";
-import ImportKpiDialog from "./ImportKpiDialog";
 
 interface Props {
   spaId: string;
@@ -40,6 +45,7 @@ export default function KpiExcelMenu({
   const { t } = useTranslation();
   const [exporting, setExporting] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
+  const importMut = useKpiImport();
 
   const handleExport = async () => {
     setExporting(true);
@@ -51,6 +57,38 @@ export default function KpiExcelMenu({
     } finally {
       setExporting(false);
     }
+  };
+
+  const parse = async (file: File): Promise<ExcelImportParsed> => {
+    const r = await parseKpiWorkbook(file, {
+      spaId,
+      userId,
+      existingKpiIds: new Set(kpis.map((k) => k.id)),
+    });
+    return {
+      errors: r.errors,
+      warnings: r.warnings,
+      payload: r.payload,
+      summary: [
+        { label: t("kpiConfig.io.toCreate", { count: r.counts.create }), count: r.counts.create },
+        { label: t("kpiConfig.io.toUpdate", { count: r.counts.update }), count: r.counts.update },
+        { label: t("kpiConfig.io.objectives", { count: r.counts.objectives }), count: r.counts.objectives },
+        {
+          label: t("kpiConfig.io.responsibilities", { count: r.counts.assignments }),
+          count: r.counts.assignments,
+        },
+      ],
+    };
+  };
+
+  const onConfirm = (payload: unknown) => {
+    importMut.mutate(payload as KpiImportPayload, {
+      onSuccess: () => {
+        toast.success(t("kpiConfig.io.importDone"));
+        setImportOpen(false);
+      },
+      onError: (e: any) => toast.error(e?.message ?? t("kpiConfig.io.importFailed")),
+    });
   };
 
   return (
@@ -81,12 +119,13 @@ export default function KpiExcelMenu({
       </DropdownMenu>
 
       {canImport && (
-        <ImportKpiDialog
+        <ExcelImportDialog
           open={importOpen}
           onOpenChange={setImportOpen}
-          spaId={spaId}
-          userId={userId}
-          existingKpiIds={kpis.map((k) => k.id)}
+          i18nPrefix="kpiConfig.io"
+          parse={parse}
+          onConfirm={onConfirm}
+          isPending={importMut.isPending}
         />
       )}
     </>

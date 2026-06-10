@@ -983,7 +983,8 @@
       "exportDone": "Export downloaded",
       "importDone": "Import successful ✓",
       "importFailed": "Import failed",
-      "unreadable": "Unreadable file or unrecognized format."
+      "unreadable": "Unreadable file or unrecognized format.",
+      "warningsTitle": "{{count}} warning(s)"
     }
   },
   "notFound": {
