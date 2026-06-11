@@ -13,6 +13,19 @@ import {
   calcWeeklyExpected,
 } from "@/hooks/useResponsabilites";
 import { useKpiRoleAssignments } from "@/hooks/useKpiRoleAssignments";
+import { useObjectives, parseObjectiveDescription } from "@/hooks/useObjectives";
+
+export interface WeeklyPdfObjective {
+  title: string;
+  metric: string;
+  target: number;
+  unit: string;
+  current: number;
+  progress: number;
+  status_ui: "on_track" | "at_risk" | "behind";
+  comment: string;
+  targetDate: string | null;
+}
 
 export interface WeeklyPdfKpi {
   name: string;
@@ -81,6 +94,7 @@ export interface WeeklyPdfData {
   teamNote: string;
   responsibilities: WeeklyPdfResponsibility[];
   ids: WeeklyPdfIds[];
+  objectives: WeeklyPdfObjective[];
   todosDone: WeeklyPdfTodoDone[];
   todosActive: WeeklyPdfTodoActive[];
   todosDeferred: WeeklyPdfTodoDeferred[];
@@ -144,6 +158,7 @@ export function useWeeklyPdfData(
   const logsQ = useResponsabilityLogs(reportId);
   const kpiDefIds = (defsQ.data ?? []).map((d) => d.id);
   const roleAssignmentsQ = useKpiRoleAssignments(kpiDefIds);
+  const objectivesQ = useObjectives(spaId);
 
   const isLoading =
     spaQ.isLoading ||
@@ -155,7 +170,8 @@ export function useWeeklyPdfData(
     summaryQ.isLoading ||
     templatesQ.isLoading ||
     logsQ.isLoading ||
-    roleAssignmentsQ.isLoading;
+    roleAssignmentsQ.isLoading ||
+    objectivesQ.isLoading;
 
   if (isLoading) return { data: null, isLoading: true };
 
@@ -256,6 +272,22 @@ export function useWeeklyPdfData(
       };
     });
 
+  const objectives: WeeklyPdfObjective[] = (objectivesQ.data ?? []).map((o) => {
+    const parsed = parseObjectiveDescription(o.description);
+    const progress = Math.min(100, Math.round((parsed.current / (parsed.target || 1)) * 100));
+    return {
+      title: o.title,
+      metric: parsed.metric,
+      target: parsed.target,
+      unit: parsed.unit,
+      current: parsed.current,
+      progress,
+      status_ui: parsed.status_ui,
+      comment: parsed.comment,
+      targetDate: o.target_date,
+    };
+  });
+
   const responsibilities: WeeklyPdfResponsibility[] = (templatesQ.data ?? [])
     .filter((t) => t.frequency === "daily" || t.frequency === "weekly")
     .map((t) => {
@@ -286,6 +318,7 @@ export function useWeeklyPdfData(
     kpis,
     moodScore: checkinQ.data?.mood_score ?? 0,
     teamNote: kc.note ?? "",
+    objectives,
     responsibilities,
     ids,
     todosDone,

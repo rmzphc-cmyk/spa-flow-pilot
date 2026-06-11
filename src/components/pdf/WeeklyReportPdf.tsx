@@ -1,5 +1,5 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
-import type { WeeklyPdfData, WeeklyPdfResponsibility, WeeklyPdfTodoDone, WeeklyPdfTodoActive, WeeklyPdfTodoDeferred } from "@/hooks/useWeeklyPdfData";
+import type { WeeklyPdfData, WeeklyPdfResponsibility, WeeklyPdfTodoDone, WeeklyPdfTodoActive, WeeklyPdfTodoDeferred, WeeklyPdfObjective } from "@/hooks/useWeeklyPdfData";
 
 const TEAL_DARK = "#006B6B";
 const TEAL_LIGHT = "#E0F4F4";
@@ -176,6 +176,23 @@ const styles = StyleSheet.create({
   notesBox: { marginTop: 8, backgroundColor: BLUE_BG, padding: 10, borderRadius: 6 },
   notesText: { marginTop: 6, fontSize: 8, color: TEXT_DARK, lineHeight: 1.4 },
 
+  objBox: { marginTop: 8 },
+  objRow: {
+    flexDirection: "row",
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    borderBottomWidth: 0.5,
+    borderBottomColor: "#E5E7EB",
+    alignItems: "flex-start",
+  },
+  objTitle: { flex: 3, fontSize: 8, fontFamily: "Helvetica-Bold", color: TEXT_DARK },
+  objMeta: { fontSize: 7, color: TEXT_MUTED, marginTop: 1 },
+  objProgress: { flex: 2, flexDirection: "row", alignItems: "center" },
+  objProgressBar: { flex: 1, height: 5, borderRadius: 3, backgroundColor: "#E5E7EB", overflow: "hidden", marginRight: 4 },
+  objPercent: { fontSize: 7.5, fontFamily: "Helvetica-Bold", color: TEXT_DARK, width: 28, textAlign: "right" },
+  objStatusWrap: { flex: 1.5, flexDirection: "row", justifyContent: "flex-end" },
+  objComment: { fontSize: 7, color: TEXT_MUTED, fontFamily: "Helvetica-Oblique", marginTop: 2 },
+
   respBox: { marginTop: 8 },
   respRow: {
     flexDirection: "row",
@@ -264,6 +281,15 @@ function statusBadgeColor(status: string): { bg: string; label: string } {
       return { bg: INSUFFISANT, label: "Insuffisant" };
     default:
       return { bg: "#9CA3AF", label: "N/A" };
+  }
+}
+
+function objStatusBadge(status_ui: string): { bg: string; text: string; label: string } {
+  switch (status_ui) {
+    case "on_track": return { bg: "#DCFCE7", text: "#16A34A", label: "En cours" };
+    case "at_risk":  return { bg: "#FEF9C3", text: "#B45309", label: "A risque" };
+    case "behind":   return { bg: "#FEE2E2", text: "#DC2626", label: "En retard" };
+    default:         return { bg: "#F3F4F6", text: TEXT_MUTED, label: "—" };
   }
 }
 
@@ -408,6 +434,49 @@ export function WeeklyReportPdf({ data }: Props) {
               {data.teamNote || "Aucun commentaire cette semaine."}
             </Text>
           </View>
+
+          {/* OBJECTIFS */}
+          {data.objectives.length > 0 && (
+            <View style={styles.objBox}>
+              <View style={[styles.sectionHeader, { backgroundColor: BLUE_TEXT }]}>
+                <Text style={styles.sectionHeaderText}>
+                  {"OBJECTIFS (" + data.objectives.length + " actif" + (data.objectives.length > 1 ? "s" : "") + ")"}
+                </Text>
+              </View>
+              {data.objectives.map((o: WeeklyPdfObjective, i: number) => {
+                const sb = objStatusBadge(o.status_ui);
+                const barColor = o.progress >= 100 ? MINT_TEXT : o.progress >= 70 ? CORRECT : INSUFFISANT;
+                return (
+                  <View key={i} style={[styles.objRow, { backgroundColor: i % 2 === 0 ? WHITE : BLUE_BG }]}>
+                    <View style={{ flex: 3 }}>
+                      <Text style={styles.objTitle}>{o.title}</Text>
+                      {o.metric ? (
+                        <Text style={styles.objMeta}>
+                          {o.metric}
+                          {o.unit ? " (" + o.unit + ")" : ""}
+                          {" — Cible : " + o.target + (o.unit ? " " + o.unit : "")}
+                          {" — Actuel : " + o.current}
+                          {o.targetDate ? " — Échéance : " + formatDateFr(o.targetDate) : ""}
+                        </Text>
+                      ) : null}
+                      {o.comment ? <Text style={styles.objComment}>{o.comment}</Text> : null}
+                    </View>
+                    <View style={styles.objProgress}>
+                      <View style={styles.objProgressBar}>
+                        <View style={{ width: o.progress + "%", height: "100%", backgroundColor: barColor, borderRadius: 3 }} />
+                      </View>
+                      <Text style={styles.objPercent}>{o.progress}%</Text>
+                    </View>
+                    <View style={styles.objStatusWrap}>
+                      <View style={[styles.badge, { backgroundColor: sb.bg }]}>
+                        <Text style={[styles.badgeText, { color: sb.text }]}>{sb.label}</Text>
+                      </View>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          )}
 
           {/* RESPONSABILITÉS */}
           {data.responsibilities.length > 0 && (
