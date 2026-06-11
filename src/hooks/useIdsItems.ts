@@ -150,22 +150,32 @@ export function useAddIdsItem(reportId: string, reportType: "monthly" | "weekly"
   });
 }
 
+export interface ConvertIdsToTodoInput {
+  item: DbIdsItem;
+  /** Date d'échéance ISO (yyyy-mm-dd) ou null si sans date. */
+  dueDate?: string | null;
+  responsible?: string;
+}
+
 export function useConvertIdsToTodo(reportId: string) {
   const qc = useQueryClient();
   const { spaId, user } = useAuth();
   return useMutation({
-    mutationFn: async (item: DbIdsItem) => {
+    mutationFn: async (input: ConvertIdsToTodoInput) => {
       if (!spaId || !user) throw new Error("Missing auth context");
+      const { item, dueDate = null, responsible = "" } = input;
       const { data: todo, error: e1 } = await supabase
         .from("todos")
         .insert({
           spa_id: spaId,
           report_id: reportId,
           title: item.capture_text,
+          description: JSON.stringify({ responsible: responsible.trim() || "—", followUp: "" }),
           status: "pending",
           priority: "medium",
           source: "ids_conversion",
           ids_item_id: item.id,
+          due_date: dueDate,
           created_by: user.id,
         })
         .select()
@@ -184,7 +194,8 @@ export function useConvertIdsToTodo(reportId: string) {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ids_items", reportId] });
-      qc.invalidateQueries({ queryKey: ["todos", reportId] });
+      // useTodos est indexé par spaId (["todos", spaId]) — invalider le préfixe.
+      qc.invalidateQueries({ queryKey: ["todos"] });
       qc.invalidateQueries({ queryKey: ["ids_items_monthly_preview"] });
     },
   });

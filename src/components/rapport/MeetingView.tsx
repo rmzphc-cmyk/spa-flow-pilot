@@ -31,7 +31,6 @@ import { useObjectives, parseObjectiveDescription } from "@/hooks/useObjectives"
 import {
   useIdsItems,
   useAddIdsItem,
-  useConvertIdsToTodo,
   useConvertIdsToObjective,
   useIdsItemsForMonthlyPeriod,
   useUpdateIdsStructure,
@@ -39,6 +38,7 @@ import {
   type DbIdsItem,
   type TriageMode,
 } from "@/hooks/useIdsItems";
+import { IdsToTodoDialog } from "./IdsToTodoDialog";
 import { useResponsabilityTemplates, useResponsabilityLogs } from "@/hooks/useResponsabilites";
 import { useCloseMeeting } from "@/hooks/useReports";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
@@ -124,6 +124,8 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
   const [audioStoragePath, setAudioStoragePath] = useState<string | null>(null);
   const [audioMimeType, setAudioMimeType] = useState<string | null>(null);
   const [audioDurationS, setAudioDurationS] = useState<number | null>(null);
+  // IDS en attente de conversion en to-do (ouvre IdsToTodoDialog pour fixer la date).
+  const [todoDialogItem, setTodoDialogItem] = useState<DbIdsItem | null>(null);
 
   const recorder = useAudioRecorder();
   const uploadAudio = useUploadMeetingAudio();
@@ -142,7 +144,6 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
   const respTemplatesQ = useResponsabilityTemplates(spaId);
   const respLogsQ      = useResponsabilityLogs(report.id);
   const addIds           = useAddIdsItem(report.id, report.type);
-  const convertToTodo    = useConvertIdsToTodo(report.id);
   const convertToObjective = useConvertIdsToObjective(report.id);
   const closeMeeting     = useCloseMeeting();
 
@@ -646,8 +647,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                               <div className="flex gap-2 mt-2.5 ml-7 flex-wrap">
                                 <Button
                                   size="sm" variant="outline" className="h-7 text-xs gap-1"
-                                  disabled={convertToTodo.isPending}
-                                  onClick={() => convertToTodo.mutate(item)}
+                                  onClick={() => setTodoDialogItem(item)}
                                 >
                                   <CheckSquare className="h-3 w-3" /> {t("report.meeting.ids.convertToTodo")}
                                 </Button>
@@ -1346,6 +1346,12 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <IdsToTodoDialog
+        reportId={report.id}
+        item={todoDialogItem}
+        onOpenChange={(open) => !open && setTodoDialogItem(null)}
+      />
 
     </div>
   );
