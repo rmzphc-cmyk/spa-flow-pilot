@@ -27,6 +27,41 @@ export interface WeeklyPdfObjective {
   targetDate: string | null;
 }
 
+/** Gravité d'un problème (IDS) — ordre = hiérarchie affichée à la Direction. */
+export type ProblemSeverity =
+  | "bloquant"
+  | "deleguer"
+  | "priorite"
+  | "veille"
+  | "untriaged";
+
+export interface WeeklyPdfProblem {
+  text: string;
+  severity: ProblemSeverity;
+  /** Ce qui a été décidé : "To-do (...)", "Objectif (...)" ou null si non qualifié. */
+  action: string | null;
+}
+
+export interface WeeklyPdfCommitment {
+  kind: "todo" | "objective";
+  title: string;
+  responsible: string;
+  dueLabel: string;
+  /** > 0 si l'échéance est dépassée (nb de jours de retard), 0 sinon. */
+  lateDays: number;
+  /** Détail chiffré (objectif : "11/15 · 73%"), "" pour un to-do. */
+  detail: string;
+  /** Nb de fois où le to-do a été reporté (0 si jamais / objectif). */
+  deferredCount: number;
+}
+
+export interface WeeklyPdfVerdict {
+  level: "red" | "amber" | "green";
+  blocking: number;
+  overdue: number;
+  atRisk: number;
+}
+
 export interface WeeklyPdfKpi {
   name: string;
   unit: string;
@@ -99,6 +134,11 @@ export interface WeeklyPdfData {
   todosActive: WeeklyPdfTodoActive[];
   todosDeferred: WeeklyPdfTodoDeferred[];
   freeNote: string;
+  // Synthèse Direction (page 1 du PDF)
+  verdict: WeeklyPdfVerdict;
+  problems: WeeklyPdfProblem[];
+  commitmentsOverdue: WeeklyPdfCommitment[];
+  commitmentsAtRisk: WeeklyPdfCommitment[];
 }
 
 function formatDateFr(iso: string | null | undefined): string {
@@ -112,6 +152,23 @@ function formatDateFr(iso: string | null | undefined): string {
   } catch {
     return iso;
   }
+}
+
+/**
+ * Remplace les symboles hors encodage WinAnsi (police Helvetica du PDF) qui
+ * s'afficheraient en charabia (« ≥ » → « e »). Les managers tapent ≥/≤ dans les
+ * cibles KPI/objectifs : sans ça le PDF Direction paraît cassé.
+ */
+export function safeText(s: string | null | undefined): string {
+  if (!s) return "";
+  return s
+    .replace(/≥/g, ">=")
+    .replace(/≤/g, "<=")
+    .replace(/≠/g, "!=")
+    .replace(/≈/g, "~")
+    .replace(/→/g, "->")
+    .replace(/←/g, "<-")
+    .replace(/∞/g, "inf");
 }
 
 function parseKeyActions(raw: string | null | undefined): string[] {
@@ -200,7 +257,7 @@ export function useWeeklyPdfData(
       const def = defsById.get(e.kpi_definition_id);
       const assignment = primaryAssignmentByKpiId.get(e.kpi_definition_id);
       return {
-        name: def?.name ?? "—",
+        name: safeText(def?.name) || "—",
         unit: def?.unit ?? "",
         value: e.value_current,
         target: e.target_value,
@@ -215,7 +272,7 @@ export function useWeeklyPdfData(
   const kc = parseKeyContext(checkinQ.data?.key_context);
 
   const ids: WeeklyPdfIds[] = (idsQ.data ?? []).map((i) => ({
-    text: i.capture_text,
+    text: safeText(i.capture_text),
     convertedToTodo: i.converted_to_todo_id !== null,
     convertedToObjectif: i.converted_to_objective_id !== null,
   }));
@@ -234,7 +291,7 @@ export function useWeeklyPdfData(
   const todosDone: WeeklyPdfTodoDone[] = allTodos
     .filter((t) => t.status === "done" && inWeek(t.due_date))
     .map((t) => ({
-      title: t.title,
+      title: safeText(t.title),
       deadline: formatDateFr(t.due_date),
       responsible: parseTodoDescription(t.description).responsible || "—",
       source: t.source,
@@ -247,7 +304,7 @@ export function useWeeklyPdfData(
     .map((t) => {
       const m = parseTodoDescription(t.description);
       return {
-        title: t.title,
+        title: safeText(t.title),
         deadline: formatDateFr(t.due_date),
         responsible: m.responsible || "—",
         source: t.source,
@@ -262,7 +319,7 @@ export function useWeeklyPdfData(
     .map((t) => {
       const m = parseTodoDescription(t.description);
       return {
-        title: t.title,
+        title: safeText(t.title),
         newDeadline: formatDateFr(t.due_date),
         originalDeadline: formatDateFr(t.deferred_from_date),
         responsible: m.responsible || "—",
@@ -276,17 +333,140 @@ export function useWeeklyPdfData(
     const parsed = parseObjectiveDescription(o.description);
     const progress = Math.min(100, Math.round((parsed.current / (parsed.target || 1)) * 100));
     return {
-      title: o.title,
-      metric: parsed.metric,
+      title: safeText(o.title),
+      metric: safeText(parsed.metric),
       target: parsed.target,
       unit: parsed.unit,
       current: parsed.current,
       progress,
       status_ui: parsed.status_ui,
-      comment: parsed.comment,
+      comment: safeText(parsed.comment),
       targetDate: o.target_date,
     };
   });
+
+  // ---- Synthèse Direction : problèmes par gravité + engagements non tenus ----
+  const todoById = new Map(allTodos.map((t) => [t.id, t]));
+  const objsRaw = objectivesQ.data ?? [];
+  const objectiveById = new Map(objsRaw.map((o) => [o.id, o]));
+
+  const SEVERITY_ORDER: ProblemSeverity[] = [
+    "bloquant",
+    "deleguer",
+    "priorite",
+    "veille",
+    "untriaged",
+  ];
+
+  const problems: WeeklyPdfProblem[] = (idsQ.data ?? [])
+    .map((it): WeeklyPdfProblem => {
+      let action: string | null = null;
+      if (it.converted_to_todo_id) {
+        const t = todoById.get(it.converted_to_todo_id);
+        if (t) {
+          const resp = parseTodoDescription(t.description).responsible;
+          const parts = [resp, t.due_date ? formatDateFr(t.due_date) : ""].filter(Boolean);
+          action = "To-do" + (parts.length ? " (" + parts.join(" · ") + ")" : "");
+        } else {
+          action = "To-do";
+        }
+      } else if (it.converted_to_objective_id) {
+        const o = objectiveById.get(it.converted_to_objective_id);
+        action =
+          "Objectif" +
+          (o?.target_date ? " (cible " + formatDateFr(o.target_date) + ")" : "");
+      }
+      return {
+        text: safeText(it.capture_text),
+        severity: (it.triage_mode ?? "untriaged") as ProblemSeverity,
+        action,
+      };
+    })
+    .sort(
+      (a, b) => SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity),
+    );
+
+  const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const lateDaysOf = (iso: string): number => {
+    const d = new Date(iso);
+    const dOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    return Math.round((todayOnly.getTime() - dOnly.getTime()) / 86400000);
+  };
+
+  const commitmentsOverdue: WeeklyPdfCommitment[] = [];
+  const commitmentsAtRisk: WeeklyPdfCommitment[] = [];
+
+  // To-dos (y compris reportés) dont l'échéance tombe au plus tard en fin de
+  // semaine et non terminés. Un to-do reporté reste un engagement non tenu.
+  for (const t of allTodos) {
+    if (t.status === "done") continue;
+    if (!t.due_date) continue;
+    const due = new Date(t.due_date);
+    if (weekEnd && due > weekEnd) continue;
+    const late = lateDaysOf(t.due_date);
+    const c: WeeklyPdfCommitment = {
+      kind: "todo",
+      title: safeText(t.title),
+      responsible: parseTodoDescription(t.description).responsible || "—",
+      dueLabel: formatDateFr(t.due_date),
+      lateDays: late > 0 ? late : 0,
+      detail: "",
+      deferredCount: t.deferred_count ?? 0,
+    };
+    if (late > 0) commitmentsOverdue.push(c);
+    else commitmentsAtRisk.push(c);
+  }
+
+  // Objectifs dont la cible est au plus tard cette semaine et non atteints
+  for (const o of objsRaw) {
+    if (!o.target_date) continue;
+    const td = new Date(o.target_date);
+    if (weekEnd && td > weekEnd) continue;
+    const parsed = parseObjectiveDescription(o.description);
+    const progress = Math.min(
+      100,
+      Math.round((parsed.current / (parsed.target || 1)) * 100),
+    );
+    if (progress >= 100) continue;
+    const late = lateDaysOf(o.target_date);
+    const c: WeeklyPdfCommitment = {
+      kind: "objective",
+      title: safeText(o.title),
+      responsible: "",
+      dueLabel: formatDateFr(o.target_date),
+      lateDays: late > 0 ? late : 0,
+      detail:
+        parsed.current +
+        "/" +
+        parsed.target +
+        (parsed.unit ? " " + parsed.unit : "") +
+        " · " +
+        progress +
+        "%",
+      deferredCount: 0,
+    };
+    if (late > 0) commitmentsOverdue.push(c);
+    else commitmentsAtRisk.push(c);
+  }
+
+  commitmentsOverdue.sort((a, b) => b.lateDays - a.lateDays);
+
+  const blockingCount = (idsQ.data ?? []).filter(
+    (it) => it.triage_mode === "bloquant",
+  ).length;
+  const otherProblemsCount = problems.filter((p) => p.severity !== "bloquant").length;
+  const verdictLevel: "red" | "amber" | "green" =
+    blockingCount > 0 || commitmentsOverdue.length > 0
+      ? "red"
+      : commitmentsAtRisk.length > 0 || otherProblemsCount > 0
+        ? "amber"
+        : "green";
+  const verdict: WeeklyPdfVerdict = {
+    level: verdictLevel,
+    blocking: blockingCount,
+    overdue: commitmentsOverdue.length,
+    atRisk: commitmentsAtRisk.length,
+  };
 
   const responsibilities: WeeklyPdfResponsibility[] = (templatesQ.data ?? [])
     .filter((t) => t.frequency === "daily" || t.frequency === "weekly")
@@ -294,12 +474,12 @@ export function useWeeklyPdfData(
       const weeklyExpected = calcWeeklyExpected(t.frequency, t.expected_count);
       const log = (logsQ.data ?? {})[t.id];
       return {
-        title: t.title,
+        title: safeText(t.title),
         frequency: t.frequency,
         weeklyExpected,
         actualCount: log?.actual_count ?? null,
         completionRate: log?.completion_rate ?? null,
-        comment: log?.comment ?? null,
+        comment: log?.comment ? safeText(log.comment) : null,
       };
     });
 
@@ -313,18 +493,24 @@ export function useWeeklyPdfData(
       month: "long",
       year: "numeric",
     }),
-    executiveSummary: summaryQ.data?.executive_summary ?? null,
-    keyActions: parseKeyActions(summaryQ.data?.key_actions),
+    executiveSummary: summaryQ.data?.executive_summary
+      ? safeText(summaryQ.data.executive_summary)
+      : null,
+    keyActions: parseKeyActions(summaryQ.data?.key_actions).map(safeText),
     kpis,
     moodScore: checkinQ.data?.mood_score ?? 0,
-    teamNote: kc.note ?? "",
+    teamNote: safeText(kc.note),
     objectives,
     responsibilities,
     ids,
     todosDone,
     todosActive,
     todosDeferred,
-    freeNote: kc.free_note ?? "",
+    freeNote: safeText(kc.free_note),
+    verdict,
+    problems,
+    commitmentsOverdue,
+    commitmentsAtRisk,
   };
 
   return { data, isLoading: false };

@@ -1,61 +1,144 @@
 import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
-import type { WeeklyPdfData, WeeklyPdfResponsibility, WeeklyPdfTodoDone, WeeklyPdfTodoActive, WeeklyPdfTodoDeferred, WeeklyPdfObjective } from "@/hooks/useWeeklyPdfData";
+import type {
+  WeeklyPdfData,
+  WeeklyPdfResponsibility,
+  WeeklyPdfTodoDone,
+  WeeklyPdfTodoActive,
+  WeeklyPdfTodoDeferred,
+  WeeklyPdfObjective,
+  WeeklyPdfProblem,
+  WeeklyPdfCommitment,
+} from "@/hooks/useWeeklyPdfData";
 
-const TEAL_DARK = "#006B6B";
-const TEAL_LIGHT = "#E0F4F4";
-const TEAL_FOOTER = "#004F4F";
-const PURPLE_BG = "#EDE9FE";
-const PURPLE_TEXT = "#7C3AED";
-const YELLOW_BG = "#FEF9C3";
-const YELLOW_TEXT = "#B45309";
-const MINT_BG = "#DCFCE7";
-const MINT_TEXT = "#16A34A";
-const BLUE_BG = "#DBEAFE";
-const BLUE_TEXT = "#1D4ED8";
-const EXCELLENT = "#047857";
-const BIEN = "#10B981";
-const CORRECT = "#F59E0B";
-const INSUFFISANT = "#EF4444";
-const TEXT_DARK = "#111827";
-const TEXT_MUTED = "#6B7280";
+/* =========================================================================
+ * CHARTE GRAPHIQUE — la couleur encode le SENS, pas la décoration.
+ *  - Teal (marque)      = STRUCTURE / navigation (bandeaux de section).
+ *  - Échelle de statut  = SENS (crit / warn / ok / neutral), partout pareille.
+ *  - Neutres            = TEXTE & CATÉGORIES (rôle, type, fréquence…).
+ *  - Encadré + barre teal = TEXTE NARRATIF (synthèse, notes), jamais de fond vif.
+ * ========================================================================= */
+
+// Marque / structure
+const BRAND = "#0F766E"; // teal 700 — bandeaux de section, repères
+const BRAND_DARK = "#115E59"; // teal 800 — header + footer
+const BRAND_TINT = "#F0FDFA"; // teal 50 — fond sous-section
+const BRAND_ACCENT = "#5EEAD4"; // teal 300 — bande déco
+
+// Échelle de statut (bg + texte)
+const CRIT_BG = "#FEE2E2";
+const CRIT_TXT = "#B91C1C";
+const WARN_BG = "#FEF3C7";
+const WARN_TXT = "#B45309";
+const OK_BG = "#DCFCE7";
+const OK_TXT = "#15803D";
+const NEU_BG = "#F3F4F6";
+const NEU_TXT = "#6B7280";
+
+// Neutres (texte & données)
+const INK = "#111827";
+const INK_SUB = "#6B7280";
+const LINE = "#E5E7EB";
+const ZEBRA = "#F9FAFB";
 const WHITE = "#FFFFFF";
-const AMBER_BG = "#FFF7ED";
-const AMBER_TEXT = "#C2410C";
 
-// Couleurs sections rôle
-const ROLE_TEAL_BG = "#F0FDFA";
-const ROLE_TEAL_TEXT = "#0F766E";
-const ROLE_VIOLET_BG = "#F5F3FF";
-const ROLE_VIOLET_TEXT = "#6D28D9";
-const ROLE_AMBER_BG = "#FFFBEB";
-const ROLE_AMBER_TEXT_ROLE = "#B45309";
-const ROLE_ROSE_BG = "#FFF1F2";
-const ROLE_ROSE_TEXT = "#BE123C";
-const ROLE_GRAY_BG = "#F9FAFB";
-const ROLE_GRAY_TEXT = "#4B5563";
-
-const ROLE_SECTION_ORDER_PDF: (string | null)[] = ["spa_manager", "therapist", "spa_concierge", "ambassador", null];
-
-const ROLE_META_PDF: Record<string, { label: string; bg: string; text: string }> = {
-  spa_manager:   { label: "Manager",     bg: ROLE_TEAL_BG,   text: ROLE_TEAL_TEXT },
-  therapist:     { label: "Thérapeute",  bg: ROLE_VIOLET_BG, text: ROLE_VIOLET_TEXT },
-  spa_concierge: { label: "Concierge",   bg: ROLE_AMBER_BG,  text: ROLE_AMBER_TEXT_ROLE },
-  ambassador:    { label: "Ambassadeur", bg: ROLE_ROSE_BG,   text: ROLE_ROSE_TEXT },
+type StatusLevel = "crit" | "warn" | "ok" | "neutral";
+const STATUS: Record<StatusLevel, { bg: string; text: string }> = {
+  crit: { bg: CRIT_BG, text: CRIT_TXT },
+  warn: { bg: WARN_BG, text: WARN_TXT },
+  ok: { bg: OK_BG, text: OK_TXT },
+  neutral: { bg: NEU_BG, text: NEU_TXT },
 };
 
+const VERDICT_META: Record<string, { label: string; level: StatusLevel }> = {
+  red: { label: "ATTENTION REQUISE", level: "crit" },
+  amber: { label: "VIGILANCE", level: "warn" },
+  green: { label: "RAS — TOUT EST À JOUR", level: "ok" },
+};
+
+const SEVERITY_ORDER = ["bloquant", "deleguer", "priorite", "veille", "untriaged"] as const;
+const SEVERITY_META: Record<string, { label: string; level: StatusLevel }> = {
+  bloquant: { label: "Bloquant", level: "crit" },
+  deleguer: { label: "À déléguer", level: "warn" },
+  priorite: { label: "Priorité", level: "warn" },
+  veille: { label: "Veille", level: "neutral" },
+  untriaged: { label: "À trier", level: "neutral" },
+};
+
+const NIVEAU_ORDER = ["prioritaire", "secondaire", "autres"] as const;
+const NIVEAU_LABEL: Record<string, string> = {
+  prioritaire: "Principaux",
+  secondaire: "Secondaires",
+  autres: "Autres",
+};
+const niveauBucket = (n: string | null): string =>
+  n === "prioritaire" ? "prioritaire" : n === "secondaire" ? "secondaire" : "autres";
+
+const ROLE_LABEL: Record<string, string> = {
+  spa_manager: "Manager",
+  therapist: "Thérapeute",
+  spa_concierge: "Concierge",
+  ambassador: "Ambassadeur",
+};
+
+function kpiStatus(status: string): { level: StatusLevel; label: string } {
+  switch (status) {
+    case "excellent": return { level: "ok", label: "Excellent" };
+    case "green": return { level: "ok", label: "Bien" };
+    case "amber": return { level: "warn", label: "Correct" };
+    case "red": return { level: "crit", label: "Insuffisant" };
+    default: return { level: "neutral", label: "N/A" };
+  }
+}
+
+function objStatus(s: string): { level: StatusLevel; label: string } {
+  switch (s) {
+    case "on_track": return { level: "ok", label: "En cours" };
+    case "at_risk": return { level: "warn", label: "À risque" };
+    case "behind": return { level: "crit", label: "En retard" };
+    default: return { level: "neutral", label: "—" };
+  }
+}
+
+function pctLevel(p: number | null): StatusLevel {
+  if (p === null) return "neutral";
+  return p >= 80 ? "ok" : p >= 50 ? "warn" : "crit";
+}
+
+function moodLabel(score: number): string {
+  if (score <= 1) return "Tres bas";
+  if (score === 2) return "Bas";
+  if (score === 3) return "Moyen";
+  if (score === 4) return "Bon";
+  return "Excellent";
+}
+
+function formatDateFr(iso: string | null | undefined): string {
+  if (!iso) return "";
+  try {
+    return new Date(iso).toLocaleDateString("fr-FR", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return iso;
+  }
+}
 
 const styles = StyleSheet.create({
   page: {
     paddingTop: 0,
-    paddingBottom: 40,
+    paddingBottom: 42,
     paddingHorizontal: 0,
     fontFamily: "Helvetica",
     fontSize: 9,
-    color: TEXT_DARK,
+    color: INK,
   },
   body: { paddingHorizontal: 30, paddingTop: 12 },
+
+  // Header
   header: {
-    backgroundColor: TEAL_DARK,
+    backgroundColor: BRAND_DARK,
     padding: 20,
     flexDirection: "row",
     justifyContent: "space-between",
@@ -64,248 +147,229 @@ const styles = StyleSheet.create({
   headerSub: { color: WHITE, fontSize: 10, opacity: 0.85, marginTop: 2 },
   headerRight: { textAlign: "right" },
   headerLabel: { color: WHITE, fontSize: 14, fontFamily: "Helvetica-Bold" },
-  decoBand: { height: 4, backgroundColor: "#00A3A3" },
+  decoBand: { height: 4, backgroundColor: BRAND_ACCENT },
 
-  sectionWrap: { marginTop: 10 },
+  // Verdict
+  verdictBand: {
+    paddingVertical: 8,
+    paddingHorizontal: 30,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  verdictLabel: { fontSize: 11, fontFamily: "Helvetica-Bold", letterSpacing: 0.5 },
+  verdictCounts: { fontSize: 8.5, fontFamily: "Helvetica-Bold" },
+
+  // Section (structure)
+  section: { marginTop: 14 },
   sectionHeader: {
-    backgroundColor: TEAL_DARK,
+    backgroundColor: BRAND,
     paddingVertical: 6,
     paddingHorizontal: 10,
-    borderRadius: 4,
-    marginBottom: 6,
+    borderRadius: 3,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
-  sectionHeaderText: {
+  sectionTitle: {
     color: WHITE,
-    fontSize: 9,
-    fontFamily: "Helvetica-Bold",
-    textTransform: "uppercase",
-  },
-
-  synth: {
-    marginTop: 10,
-    padding: 10,
-    backgroundColor: TEAL_LIGHT,
-    borderLeftWidth: 4,
-    borderLeftColor: TEAL_DARK,
-    borderRadius: 4,
-  },
-  synthTitle: {
-    fontSize: 8,
-    color: TEAL_DARK,
-    fontFamily: "Helvetica-Bold",
-    textTransform: "uppercase",
-  },
-  synthBody: { marginTop: 6, fontSize: 8.5, lineHeight: 1.4, color: TEXT_DARK },
-  synthActionsTitle: { marginTop: 6, fontSize: 7.5, color: TEAL_DARK, fontFamily: "Helvetica-Bold" },
-  synthAction: { fontSize: 7.5, color: TEXT_DARK, marginTop: 2 },
-
-  tableHeader: {
-    flexDirection: "row",
-    backgroundColor: "#F3F4F6",
-    paddingVertical: 5,
-    paddingHorizontal: 6,
-  },
-  tableHeaderCell: {
-    fontSize: 7,
-    fontFamily: "Helvetica-Bold",
-    color: TEXT_MUTED,
-    textTransform: "uppercase",
-  },
-  tableRow: {
-    flexDirection: "row",
-    paddingVertical: 5,
-    paddingHorizontal: 6,
-    alignItems: "center",
-  },
-  cellName: { flex: 3, fontSize: 8, color: TEXT_DARK },
-  cellValue: { flex: 1, fontSize: 8, fontFamily: "Helvetica-Bold", color: TEXT_DARK },
-  cellTarget: { flex: 1, fontSize: 8, color: TEXT_MUTED },
-  cellBadge: { flex: 1.5, flexDirection: "row" },
-
-  badge: {
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-    borderRadius: 10,
-    alignSelf: "flex-start",
-  },
-  badgeText: { color: WHITE, fontSize: 7, fontFamily: "Helvetica-Bold" },
-
-  roleSection: { marginBottom: 10 },
-  roleSectionHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 5,
-    paddingHorizontal: 8,
-    borderRadius: 4,
-    marginBottom: 4,
-  },
-  roleSectionLabel: {
-    fontSize: 8,
+    fontSize: 9.5,
     fontFamily: "Helvetica-Bold",
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
+  sectionHint: { color: WHITE, fontSize: 7.5, opacity: 0.85 },
 
-  teamBox: {
-    marginTop: 8,
-    backgroundColor: PURPLE_BG,
-    padding: 10,
-    borderRadius: 6,
-  },
-  teamRow: { flexDirection: "row", alignItems: "center", marginTop: 6 },
-  teamScore: { fontSize: 10, fontFamily: "Helvetica-Bold", color: PURPLE_TEXT, marginLeft: 6 },
-  teamNote: { marginTop: 6, fontSize: 8, color: TEXT_DARK, lineHeight: 1.4 },
-
-  idsBox: { marginTop: 8, backgroundColor: YELLOW_BG, padding: 10, borderRadius: 6 },
-  idsRow: { flexDirection: "row", alignItems: "center", marginTop: 4 },
-  idsText: { flex: 1, fontSize: 8, color: TEXT_DARK },
-
-  pill: {
-    paddingVertical: 2,
-    paddingHorizontal: 6,
-    borderRadius: 10,
-    marginLeft: 4,
-  },
-  pillText: { fontSize: 7, fontFamily: "Helvetica-Bold" },
-
-  todoBox: { marginTop: 8, backgroundColor: MINT_BG, padding: 10, borderRadius: 6 },
-  todoItem: { marginTop: 4 },
-  todoTitle: { fontSize: 8, color: TEXT_DARK },
-  todoMeta: { fontSize: 7, color: TEXT_MUTED, marginTop: 1 },
-
-  notesBox: { marginTop: 8, backgroundColor: BLUE_BG, padding: 10, borderRadius: 6 },
-  notesText: { marginTop: 6, fontSize: 8, color: TEXT_DARK, lineHeight: 1.4 },
-
-  objBox: { marginTop: 8 },
-  objRow: {
-    flexDirection: "row",
-    paddingVertical: 6,
-    paddingHorizontal: 8,
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#E5E7EB",
-    alignItems: "flex-start",
-  },
-  objTitle: { flex: 3, fontSize: 8, fontFamily: "Helvetica-Bold", color: TEXT_DARK },
-  objMeta: { fontSize: 7, color: TEXT_MUTED, marginTop: 1 },
-  objProgress: { flex: 2, flexDirection: "row", alignItems: "center" },
-  objProgressBar: { flex: 1, height: 5, borderRadius: 3, backgroundColor: "#E5E7EB", overflow: "hidden", marginRight: 4 },
-  objPercent: { fontSize: 7.5, fontFamily: "Helvetica-Bold", color: TEXT_DARK, width: 28, textAlign: "right" },
-  objStatusWrap: { flex: 1.5, flexDirection: "row", justifyContent: "flex-end" },
-  objComment: { fontSize: 7, color: TEXT_MUTED, fontFamily: "Helvetica-Oblique", marginTop: 2 },
-
-  respBox: { marginTop: 8 },
-  respRow: {
-    flexDirection: "row",
-    paddingVertical: 5,
-    paddingHorizontal: 6,
-    alignItems: "center",
-    borderBottomWidth: 0.5,
-    borderBottomColor: "#E5E7EB",
-  },
-  respTitle: { flex: 3, fontSize: 8, color: TEXT_DARK },
-  respBadgeWrap: { flex: 1, flexDirection: "row" },
-  respCount: { flex: 1.5, fontSize: 8, color: TEXT_MUTED },
-  respPercent: {
-    flex: 1,
-    fontSize: 9,
-    fontFamily: "Helvetica-Bold",
-    textAlign: "right",
-  },
-  respEmpty: {
-    fontSize: 8,
-    color: TEXT_MUTED,
-    fontFamily: "Helvetica-Oblique",
+  // Sous-section (groupe : niveau KPI…)
+  subHeader: {
     marginTop: 6,
+    marginBottom: 2,
+    paddingVertical: 3,
+    paddingHorizontal: 8,
+    backgroundColor: BRAND_TINT,
+    borderLeftWidth: 3,
+    borderLeftColor: BRAND,
+    borderRadius: 2,
+  },
+  subHeaderText: {
+    fontSize: 8,
+    fontFamily: "Helvetica-Bold",
+    color: BRAND,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
   },
 
+  // Encadré narratif
+  narr: {
+    marginTop: 8,
+    padding: 9,
+    backgroundColor: ZEBRA,
+    borderLeftWidth: 3,
+    borderLeftColor: BRAND,
+    borderRadius: 3,
+  },
+  narrLabel: {
+    fontSize: 8,
+    fontFamily: "Helvetica-Bold",
+    color: BRAND,
+    textTransform: "uppercase",
+    letterSpacing: 0.4,
+  },
+  narrBody: { marginTop: 5, fontSize: 8.5, lineHeight: 1.4, color: INK },
+  narrSubLabel: { marginTop: 6, fontSize: 7.5, fontFamily: "Helvetica-Bold", color: BRAND },
+  narrItem: { fontSize: 7.5, color: INK, marginTop: 2 },
+
+  // Chips
+  chip: { paddingVertical: 2, paddingHorizontal: 6, borderRadius: 3, alignSelf: "flex-start" },
+  chipText: { fontSize: 7, fontFamily: "Helvetica-Bold" },
+  tag: {
+    paddingVertical: 1,
+    paddingHorizontal: 5,
+    borderRadius: 8,
+    backgroundColor: NEU_BG,
+    marginLeft: 5,
+  },
+  tagText: { fontSize: 6.5, fontFamily: "Helvetica-Bold", color: NEU_TXT },
+
+  rowFlex: { flexDirection: "row", alignItems: "center" },
+
+  // Problèmes (page 1)
+  sevGroup: { marginBottom: 3 },
+  sevChipWrap: { marginTop: 4, marginBottom: 2 },
+  sevRow: { flexDirection: "row", alignItems: "flex-start", paddingVertical: 1.5, paddingLeft: 8 },
+  sevText: { flex: 1, fontSize: 8.5, color: INK, lineHeight: 1.3 },
+  sevAction: { fontSize: 7.5, fontFamily: "Helvetica-Bold", color: BRAND, marginLeft: 6 },
+  sevActionNone: { fontSize: 7.5, fontFamily: "Helvetica-Oblique", color: INK_SUB, marginLeft: 6 },
+
+  // Engagements (page 1)
+  commitGroup: { borderRadius: 4, overflow: "hidden", marginTop: 5, borderWidth: 0.5, borderColor: LINE },
+  commitGroupHeader: { paddingVertical: 4, paddingHorizontal: 8 },
+  commitGroupTitle: { fontSize: 8.5, fontFamily: "Helvetica-Bold" },
+  commitRow: { paddingVertical: 4, paddingHorizontal: 8, borderTopWidth: 0.5, borderTopColor: LINE },
+  commitTitle: { flex: 1, fontSize: 8.5, color: INK },
+  commitMeta: { fontSize: 7.5, color: INK_SUB, marginTop: 1 },
+  commitLate: { fontSize: 7.5, fontFamily: "Helvetica-Bold", color: CRIT_TXT, marginTop: 1 },
+
+  // Annexe
+  annexe: { marginTop: 16 },
+  annexeHeader: { borderTopWidth: 2, borderTopColor: BRAND, paddingTop: 8 },
+  annexeTitle: {
+    fontSize: 11,
+    fontFamily: "Helvetica-Bold",
+    color: BRAND,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+  },
+  annexeSub: { fontSize: 8, color: INK_SUB, marginTop: 2 },
+
+  // Tables
+  tableHeader: { flexDirection: "row", backgroundColor: ZEBRA, paddingVertical: 4, paddingHorizontal: 8, marginTop: 2 },
+  th: { fontSize: 7, fontFamily: "Helvetica-Bold", color: INK_SUB, textTransform: "uppercase" },
+  row: { flexDirection: "row", paddingVertical: 4, paddingHorizontal: 8, alignItems: "center", borderBottomWidth: 0.5, borderBottomColor: LINE },
+  cellName: { flex: 3, fontSize: 8, color: INK },
+  cellRole: { flex: 1.4, flexDirection: "row" },
+  cellVal: { flex: 1, fontSize: 8, fontFamily: "Helvetica-Bold", color: INK },
+  cellTarget: { flex: 1, fontSize: 8, color: INK_SUB },
+  cellChip: { flex: 1.6, flexDirection: "row", alignItems: "center" },
+
+  // Objectifs
+  objRow: { flexDirection: "row", paddingVertical: 5, paddingHorizontal: 8, borderBottomWidth: 0.5, borderBottomColor: LINE, alignItems: "flex-start" },
+  objLeft: { flex: 3 },
+  objTitle: { fontSize: 8, fontFamily: "Helvetica-Bold", color: INK },
+  objMeta: { fontSize: 7, color: INK_SUB, marginTop: 1 },
+  objComment: { fontSize: 7, color: INK_SUB, fontFamily: "Helvetica-Oblique", marginTop: 2 },
+  objProg: { flex: 2, flexDirection: "row", alignItems: "center", paddingTop: 1 },
+  objBar: { flex: 1, height: 5, borderRadius: 3, backgroundColor: LINE, overflow: "hidden", marginRight: 4 },
+  objPct: { fontSize: 7.5, fontFamily: "Helvetica-Bold", color: INK, width: 26, textAlign: "right" },
+  objStatusWrap: { flex: 1.4, flexDirection: "row", justifyContent: "flex-end", paddingTop: 1 },
+
+  // Responsabilités
+  respRow: { flexDirection: "row", paddingVertical: 4, paddingHorizontal: 8, alignItems: "center", borderBottomWidth: 0.5, borderBottomColor: LINE },
+  respTitle: { flex: 3, fontSize: 8, color: INK },
+  respFreq: { flex: 1.2, flexDirection: "row" },
+  respCount: { flex: 1.6, fontSize: 7.5, color: INK_SUB },
+  respPct: { flex: 1, fontSize: 9, fontFamily: "Helvetica-Bold", textAlign: "right" },
+  respEmpty: { fontSize: 8, color: INK_SUB, fontFamily: "Helvetica-Oblique", marginTop: 6, paddingHorizontal: 8 },
+
+  // IDS (annexe)
+  idsRow: { flexDirection: "row", alignItems: "center", paddingVertical: 3, paddingHorizontal: 8, borderBottomWidth: 0.5, borderBottomColor: LINE },
+  idsText: { flex: 1, fontSize: 8, color: INK },
+
+  // Équipe
+  teamRow: { flexDirection: "row", alignItems: "center", marginTop: 2 },
+  teamMeteo: { fontSize: 9, color: BRAND, fontFamily: "Helvetica-Bold" },
+  teamScore: { fontSize: 9, fontFamily: "Helvetica-Bold", color: INK, marginLeft: 6 },
+
+  // Suivi des actions
+  actGroup: { marginTop: 5, borderRadius: 4, overflow: "hidden", borderWidth: 0.5, borderColor: LINE },
+  actGroupHeader: { paddingVertical: 4, paddingHorizontal: 8 },
+  actGroupTitle: { fontSize: 8, fontFamily: "Helvetica-Bold" },
+  actItem: { paddingVertical: 4, paddingHorizontal: 8, borderTopWidth: 0.5, borderTopColor: LINE },
+  actTitle: { fontSize: 8, color: INK },
+  actMeta: { fontSize: 7, color: INK_SUB, marginTop: 1 },
+  actReason: { fontSize: 7, color: INK_SUB, fontFamily: "Helvetica-Oblique", marginTop: 1 },
+
+  emptyRow: { paddingVertical: 5, paddingHorizontal: 8 },
+  emptyText: { fontSize: 8, color: INK_SUB, fontFamily: "Helvetica-Oblique" },
+
+  // Footer
   footer: {
     position: "absolute",
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: TEAL_FOOTER,
+    backgroundColor: BRAND_DARK,
     paddingVertical: 8,
     paddingHorizontal: 30,
     flexDirection: "row",
     justifyContent: "space-between",
   },
   footerText: { color: WHITE, fontSize: 7 },
-  actionsWrap: {
-    marginTop: 8,
-    borderRadius: 6,
-    overflow: "hidden",
-  },
-  actionsGroupHeader: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  actionsGroupTitle: {
-    fontSize: 8,
-    fontFamily: "Helvetica-Bold",
-    marginLeft: 4,
-  },
-  actionItem: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: "#F3F4F6",
-  },
-  actionTitle: { fontSize: 8, color: TEXT_DARK },
-  actionMeta: { fontSize: 7, color: TEXT_MUTED, marginTop: 1 },
-  actionReason: {
-    fontSize: 7,
-    color: AMBER_TEXT,
-    fontFamily: "Helvetica-Oblique",
-    marginTop: 1,
-  },
-  actionBadge: {
-    paddingVertical: 1,
-    paddingHorizontal: 4,
-    borderRadius: 8,
-    marginLeft: 4,
-  },
-  actionBadgeText: { fontSize: 6.5, fontFamily: "Helvetica-Bold" },
 });
 
-function statusBadgeColor(status: string): { bg: string; label: string } {
-  switch (status) {
-    case "excellent":
-      return { bg: EXCELLENT, label: "Excellent" };
-    case "green":
-      return { bg: BIEN, label: "Bien" };
-    case "amber":
-      return { bg: CORRECT, label: "Correct" };
-    case "red":
-      return { bg: INSUFFISANT, label: "Insuffisant" };
-    default:
-      return { bg: "#9CA3AF", label: "N/A" };
-  }
-}
+// --- Petits composants réutilisables (cohérence visuelle) ---
+const Chip = ({ level, label }: { level: StatusLevel; label: string }) => (
+  <View style={[styles.chip, { backgroundColor: STATUS[level].bg }]}>
+    <Text style={[styles.chipText, { color: STATUS[level].text }]}>{label}</Text>
+  </View>
+);
 
-function objStatusBadge(status_ui: string): { bg: string; text: string; label: string } {
-  switch (status_ui) {
-    case "on_track": return { bg: "#DCFCE7", text: "#16A34A", label: "En cours" };
-    case "at_risk":  return { bg: "#FEF9C3", text: "#B45309", label: "A risque" };
-    case "behind":   return { bg: "#FEE2E2", text: "#DC2626", label: "En retard" };
-    default:         return { bg: "#F3F4F6", text: TEXT_MUTED, label: "—" };
-  }
-}
+const Tag = ({ label, first = false }: { label: string; first?: boolean }) => (
+  <View style={[styles.tag, first ? { marginLeft: 0 } : {}]}>
+    <Text style={styles.tagText}>{label}</Text>
+  </View>
+);
 
-function moodEmoji(score: number): string {
-  if (score <= 1) return "Tres bas";
-  if (score === 2) return "Bas";
-  if (score === 3) return "Moyen";
-  if (score === 4) return "Bon";
-  return "Excellent";
-}
+const SectionHeader = ({ title, hint }: { title: string; hint?: string }) => (
+  <View style={styles.sectionHeader}>
+    <Text style={styles.sectionTitle}>{title}</Text>
+    {hint ? <Text style={styles.sectionHint}>{hint}</Text> : null}
+  </View>
+);
 
 interface Props {
   data: WeeklyPdfData;
 }
 
 export function WeeklyReportPdf({ data }: Props) {
+  const verdict = VERDICT_META[data.verdict.level];
+  const verdictColors = STATUS[verdict.level];
+  const verdictParts: string[] = [];
+  if (data.verdict.blocking > 0)
+    verdictParts.push(data.verdict.blocking + " bloquant" + (data.verdict.blocking > 1 ? "s" : ""));
+  if (data.verdict.overdue > 0)
+    verdictParts.push(
+      data.verdict.overdue + " engagement" + (data.verdict.overdue > 1 ? "s" : "") + " en retard",
+    );
+  if (data.verdict.atRisk > 0) verdictParts.push(data.verdict.atRisk + " à risque");
+  const verdictCounts =
+    verdictParts.length > 0
+      ? verdictParts.join("    ·    ")
+      : "Aucun bloquant, aucun engagement en retard";
+
+  const hasActions =
+    data.todosDone.length > 0 || data.todosActive.length > 0 || data.todosDeferred.length > 0;
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
@@ -322,133 +386,255 @@ export function WeeklyReportPdf({ data }: Props) {
         </View>
         <View style={styles.decoBand} />
 
+        {/* VERDICT DE LA SEMAINE (scan rapide multi-spa) */}
+        <View style={[styles.verdictBand, { backgroundColor: verdictColors.bg }]}>
+          <Text style={[styles.verdictLabel, { color: verdictColors.text }]}>{verdict.label}</Text>
+          <Text style={[styles.verdictCounts, { color: verdictColors.text }]}>{verdictCounts}</Text>
+        </View>
+
         <View style={styles.body}>
-          {/* SYNTHESE IA */}
-          {data.executiveSummary && (
-            <View style={styles.synth}>
-              <Text style={styles.synthTitle}>SYNTHESE</Text>
-              <Text style={styles.synthBody}>{data.executiveSummary}</Text>
-              {data.keyActions.length > 0 && (
+          {/* ===================== PAGE 1 — SYNTHÈSE DIRECTION ===================== */}
+
+          {/* Synthèse IA (narratif) */}
+          {data.executiveSummary ? (
+            <View style={styles.narr}>
+              <Text style={styles.narrLabel}>Synthèse</Text>
+              <Text style={styles.narrBody}>{data.executiveSummary}</Text>
+              {data.keyActions.length > 0 ? (
                 <>
-                  <Text style={styles.synthActionsTitle}>Actions cles :</Text>
+                  <Text style={styles.narrSubLabel}>Actions clés :</Text>
                   {data.keyActions.map((a, i) => (
-                    <Text key={i} style={styles.synthAction}>
-                      {"-> " + a}
-                    </Text>
+                    <Text key={i} style={styles.narrItem}>{"-> " + a}</Text>
                   ))}
                 </>
-              )}
+              ) : null}
             </View>
-          )}
+          ) : null}
 
-          {/* KPI par rôle */}
-          <View style={styles.sectionWrap}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionHeaderText}>INDICATEURS</Text>
+          {/* Problèmes de la semaine (par gravité) */}
+          {data.problems.length > 0 ? (
+            <View style={styles.section}>
+              <SectionHeader
+                title="Problèmes de la semaine"
+                hint={data.problems.length + " signalé" + (data.problems.length > 1 ? "s" : "") + " · par gravité"}
+              />
+              {SEVERITY_ORDER.map((sev) => {
+                const group = data.problems.filter((p) => p.severity === sev);
+                if (group.length === 0) return null;
+                const meta = SEVERITY_META[sev];
+                return (
+                  <View key={sev} style={styles.sevGroup}>
+                    <View style={styles.sevChipWrap}>
+                      <Chip level={meta.level} label={meta.label + " (" + group.length + ")"} />
+                    </View>
+                    {group.map((p: WeeklyPdfProblem, i: number) => (
+                      <View key={i} style={styles.sevRow}>
+                        <Text style={styles.sevText}>{"- " + p.text}</Text>
+                        {p.action ? (
+                          <Text style={styles.sevAction}>{"-> " + p.action}</Text>
+                        ) : (
+                          <Text style={styles.sevActionNone}>non qualifié</Text>
+                        )}
+                      </View>
+                    ))}
+                  </View>
+                );
+              })}
             </View>
+          ) : null}
 
-            {ROLE_SECTION_ORDER_PDF.map((role) => {
-              const roleKpis = role === null
-                ? data.kpis.filter((k) => !k.role)
-                : data.kpis.filter((k) => k.role === role);
+          {/* Engagements non tenus */}
+          {data.commitmentsOverdue.length > 0 || data.commitmentsAtRisk.length > 0 ? (
+            <View style={styles.section}>
+              <SectionHeader title="Engagements non tenus" hint="à terminer d'ici cette semaine" />
 
-              if (roleKpis.length === 0) return null;
-
-              const meta = role
-                ? ROLE_META_PDF[role]
-                : { label: "Autres", bg: ROLE_GRAY_BG, text: ROLE_GRAY_TEXT };
-
-              return (
-                <View key={role ?? "other"} style={styles.roleSection}>
-                  <View style={[styles.roleSectionHeader, { backgroundColor: meta.bg }]}>
-                    <Text style={[styles.roleSectionLabel, { color: meta.text }]}>
-                      {meta.label}
+              {data.commitmentsOverdue.length > 0 ? (
+                <View style={styles.commitGroup}>
+                  <View style={[styles.commitGroupHeader, { backgroundColor: CRIT_BG }]}>
+                    <Text style={[styles.commitGroupTitle, { color: CRIT_TXT }]}>
+                      {"En retard (" + data.commitmentsOverdue.length + ")"}
                     </Text>
                   </View>
+                  {data.commitmentsOverdue.map((c: WeeklyPdfCommitment, i: number) => (
+                    <View key={i} style={styles.commitRow}>
+                      <View style={styles.rowFlex}>
+                        <Tag label={c.kind === "objective" ? "OBJECTIF" : "TO-DO"} first />
+                        <Text style={styles.commitTitle}>{c.title}</Text>
+                        {c.deferredCount > 0 ? <Chip level="warn" label={"Reporté " + c.deferredCount + "x"} /> : null}
+                      </View>
+                      <Text style={styles.commitMeta}>
+                        {(c.responsible ? c.responsible + " · " : "") + "prévu le " + c.dueLabel + (c.detail ? " · " + c.detail : "")}
+                      </Text>
+                      {c.lateDays > 0 ? (
+                        <Text style={styles.commitLate}>
+                          {"+ " + c.lateDays + " jour" + (c.lateDays > 1 ? "s" : "") + " de retard"}
+                        </Text>
+                      ) : null}
+                    </View>
+                  ))}
+                </View>
+              ) : null}
 
-                  <View style={styles.tableHeader}>
-                    <Text style={[styles.tableHeaderCell, { flex: 3 }]}>KPI</Text>
-                    <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Valeur</Text>
-                    <Text style={[styles.tableHeaderCell, { flex: 1 }]}>Objectif</Text>
-                    <Text style={[styles.tableHeaderCell, { flex: 1.5 }]}>Palier</Text>
+              {data.commitmentsAtRisk.length > 0 ? (
+                <View style={[styles.commitGroup, { marginTop: 6 }]}>
+                  <View style={[styles.commitGroupHeader, { backgroundColor: WARN_BG }]}>
+                    <Text style={[styles.commitGroupTitle, { color: WARN_TXT }]}>
+                      {"À risque — à terminer cette semaine (" + data.commitmentsAtRisk.length + ")"}
+                    </Text>
                   </View>
+                  {data.commitmentsAtRisk.map((c: WeeklyPdfCommitment, i: number) => (
+                    <View key={i} style={styles.commitRow}>
+                      <View style={styles.rowFlex}>
+                        <Tag label={c.kind === "objective" ? "OBJECTIF" : "TO-DO"} first />
+                        <Text style={styles.commitTitle}>{c.title}</Text>
+                        {c.deferredCount > 0 ? <Chip level="warn" label={"Reporté " + c.deferredCount + "x"} /> : null}
+                      </View>
+                      <Text style={styles.commitMeta}>
+                        {(c.responsible ? c.responsible + " · " : "") + "échéance le " + c.dueLabel + (c.detail ? " · " + c.detail : "")}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              ) : null}
+            </View>
+          ) : null}
 
-                  {roleKpis.map((k, i) => {
-                    const sb = statusBadgeColor(k.status);
-                    return (
-                      <View
-                        key={i}
-                        style={[
-                          styles.tableRow,
-                          { backgroundColor: i % 2 === 0 ? WHITE : meta.bg },
-                        ]}
-                      >
-                        <Text style={styles.cellName}>
-                          {k.name}{k.unit ? " (" + k.unit + ")" : ""}
-                        </Text>
-                        <Text style={styles.cellValue}>
-                          {k.value !== null ? String(k.value) : "—"}
-                        </Text>
-                        <Text style={styles.cellTarget}>
-                          {k.target !== null ? String(k.target) : "—"}
-                        </Text>
-                        <View style={styles.cellBadge}>
-                          <View style={[styles.badge, { backgroundColor: sb.bg }]}>
-                            <Text style={styles.badgeText}>{sb.label}</Text>
+          {/* ===================== ANNEXE — DÉTAIL OPÉRATIONNEL ===================== */}
+          <View style={styles.annexe} break>
+            <View style={styles.annexeHeader}>
+              <Text style={styles.annexeTitle}>Annexe — détail opérationnel</Text>
+              <Text style={styles.annexeSub}>
+                Indicateurs (par priorité), responsabilités, équipe, objectifs et actions complètes
+              </Text>
+            </View>
+          </View>
+
+          {/* INDICATEURS — hiérarchisés par niveau */}
+          <View style={styles.section}>
+            <SectionHeader title="Indicateurs" hint="par priorité" />
+            {data.kpis.length === 0 ? (
+              <View style={styles.emptyRow}>
+                <Text style={styles.emptyText}>Aucun KPI saisi.</Text>
+              </View>
+            ) : (
+              NIVEAU_ORDER.map((niv) => {
+                const group = data.kpis.filter((k) => niveauBucket(k.niveau) === niv);
+                if (group.length === 0) return null;
+                return (
+                  <View key={niv}>
+                    <View style={styles.subHeader}>
+                      <Text style={styles.subHeaderText}>{NIVEAU_LABEL[niv]}</Text>
+                    </View>
+                    <View style={styles.tableHeader}>
+                      <Text style={[styles.th, { flex: 3 }]}>KPI</Text>
+                      <Text style={[styles.th, { flex: 1.4 }]}>Rôle</Text>
+                      <Text style={[styles.th, { flex: 1 }]}>Valeur</Text>
+                      <Text style={[styles.th, { flex: 1 }]}>Objectif</Text>
+                      <Text style={[styles.th, { flex: 1.6 }]}>Palier</Text>
+                    </View>
+                    {group.map((k, i) => {
+                      const st = kpiStatus(k.status);
+                      return (
+                        <View key={i} style={[styles.row, i % 2 === 1 ? { backgroundColor: ZEBRA } : {}]}>
+                          <Text style={styles.cellName}>
+                            {k.name}{k.unit ? " (" + k.unit + ")" : ""}
+                          </Text>
+                          <View style={styles.cellRole}>
+                            {k.role ? <Tag label={ROLE_LABEL[k.role] ?? k.role} first /> : null}
+                          </View>
+                          <Text style={styles.cellVal}>{k.value !== null ? String(k.value) : "—"}</Text>
+                          <Text style={styles.cellTarget}>{k.target !== null ? String(k.target) : "—"}</Text>
+                          <View style={styles.cellChip}>
+                            <Chip level={st.level} label={st.label} />
                           </View>
                         </View>
-                      </View>
-                    );
-                  })}
-                </View>
-              );
-            })}
-
-            {data.kpis.length === 0 && (
-              <View style={styles.tableRow}>
-                <Text style={[styles.cellName, { color: TEXT_MUTED }]}>
-                  Aucun KPI saisi.
-                </Text>
-              </View>
+                      );
+                    })}
+                  </View>
+                );
+              })
             )}
           </View>
 
+          {/* RESPONSABILITÉS */}
+          {data.responsibilities.length > 0 ? (
+            <View style={styles.section}>
+              <SectionHeader title="Responsabilités" />
+              <View style={styles.tableHeader}>
+                <Text style={[styles.th, { flex: 3 }]}>Tâche</Text>
+                <Text style={[styles.th, { flex: 1.2 }]}>Fréquence</Text>
+                <Text style={[styles.th, { flex: 1.6 }]}>Réalisé</Text>
+                <Text style={[styles.th, { flex: 1, textAlign: "right" }]}>Taux</Text>
+              </View>
+              {data.responsibilities.map((r: WeeklyPdfResponsibility, i: number) => (
+                <View key={i} style={[styles.respRow, i % 2 === 1 ? { backgroundColor: ZEBRA } : {}]}>
+                  <Text style={styles.respTitle}>{r.title}</Text>
+                  <View style={styles.respFreq}>
+                    <Tag label={r.frequency === "daily" ? "Journalier" : "Hebdo"} first />
+                  </View>
+                  <Text style={styles.respCount}>
+                    {r.actualCount !== null ? `${r.actualCount} / ${r.weeklyExpected}` : `— / ${r.weeklyExpected}`} cette semaine
+                  </Text>
+                  <Text style={[styles.respPct, { color: STATUS[pctLevel(r.completionRate)].text }]}>
+                    {r.completionRate !== null ? `${r.completionRate}%` : "—%"}
+                  </Text>
+                </View>
+              ))}
+              {data.responsibilities.every((r) => r.actualCount === null) ? (
+                <Text style={styles.respEmpty}>Aucune donnée saisie cette semaine</Text>
+              ) : null}
+            </View>
+          ) : null}
 
-          {/* EQUIPE */}
-          <View style={styles.teamBox}>
-            <View
-              style={[
-                styles.sectionHeader,
-                { backgroundColor: PURPLE_BG, marginBottom: 0, padding: 0 },
-              ]}
-            >
-              <Text style={[styles.sectionHeaderText, { color: PURPLE_TEXT }]}>EQUIPE</Text>
-            </View>
-            <View style={styles.teamRow}>
-              <Text style={{ fontSize: 9, color: PURPLE_TEXT }}>
-                Meteo : {moodEmoji(data.moodScore)}
+          {/* ÉQUIPE */}
+          <View style={styles.section}>
+            <SectionHeader title="Équipe" />
+            <View style={styles.narr}>
+              <View style={styles.teamRow}>
+                <Text style={styles.teamMeteo}>Météo : {moodLabel(data.moodScore)}</Text>
+                <Text style={styles.teamScore}>{data.moodScore} / 5</Text>
+              </View>
+              <Text style={styles.narrBody}>
+                {data.teamNote || "Aucun commentaire cette semaine."}
               </Text>
-              <Text style={styles.teamScore}>{data.moodScore} / 5</Text>
             </View>
-            <Text style={styles.teamNote}>
-              {data.teamNote || "Aucun commentaire cette semaine."}
-            </Text>
           </View>
 
-          {/* OBJECTIFS */}
-          {data.objectives.length > 0 && (
-            <View style={styles.objBox}>
-              <View style={[styles.sectionHeader, { backgroundColor: BLUE_TEXT }]}>
-                <Text style={styles.sectionHeaderText}>
-                  {"OBJECTIFS (" + data.objectives.length + " actif" + (data.objectives.length > 1 ? "s" : "") + ")"}
-                </Text>
-              </View>
+          {/* PROBLÈMES IDENTIFIÉS (IDS) */}
+          {data.ids.length > 0 ? (
+            <View style={styles.section}>
+              <SectionHeader
+                title="Problèmes identifiés (IDS)"
+                hint={data.ids.length + " capturé" + (data.ids.length > 1 ? "s" : "")}
+              />
+              {data.ids.map((it, i) => (
+                <View key={i} style={[styles.idsRow, i % 2 === 1 ? { backgroundColor: ZEBRA } : {}]}>
+                  <Text style={styles.idsText}>{"- " + it.text}</Text>
+                  {it.convertedToTodo ? (
+                    <Tag label="-> To-do" />
+                  ) : it.convertedToObjectif ? (
+                    <Tag label="-> Objectif" />
+                  ) : (
+                    <Chip level="neutral" label="À traiter" />
+                  )}
+                </View>
+              ))}
+            </View>
+          ) : null}
+
+          {/* OBJECTIFS (à la fin) */}
+          {data.objectives.length > 0 ? (
+            <View style={styles.section}>
+              <SectionHeader
+                title="Objectifs"
+                hint={data.objectives.length + " actif" + (data.objectives.length > 1 ? "s" : "")}
+              />
               {data.objectives.map((o: WeeklyPdfObjective, i: number) => {
-                const sb = objStatusBadge(o.status_ui);
-                const barColor = o.progress >= 100 ? MINT_TEXT : o.progress >= 70 ? CORRECT : INSUFFISANT;
+                const st = objStatus(o.status_ui);
+                const barLevel: StatusLevel = o.progress >= 100 ? "ok" : o.progress >= 70 ? "warn" : "crit";
                 return (
-                  <View key={i} style={[styles.objRow, { backgroundColor: i % 2 === 0 ? WHITE : BLUE_BG }]}>
-                    <View style={{ flex: 3 }}>
+                  <View key={i} style={[styles.objRow, i % 2 === 1 ? { backgroundColor: ZEBRA } : {}]}>
+                    <View style={styles.objLeft}>
                       <Text style={styles.objTitle}>{o.title}</Text>
                       {o.metric ? (
                         <Text style={styles.objMeta}>
@@ -461,232 +647,111 @@ export function WeeklyReportPdf({ data }: Props) {
                       ) : null}
                       {o.comment ? <Text style={styles.objComment}>{o.comment}</Text> : null}
                     </View>
-                    <View style={styles.objProgress}>
-                      <View style={styles.objProgressBar}>
-                        <View style={{ width: o.progress + "%", height: "100%", backgroundColor: barColor, borderRadius: 3 }} />
+                    <View style={styles.objProg}>
+                      <View style={styles.objBar}>
+                        <View style={{ width: o.progress + "%", height: "100%", backgroundColor: STATUS[barLevel].text, borderRadius: 3 }} />
                       </View>
-                      <Text style={styles.objPercent}>{o.progress}%</Text>
+                      <Text style={styles.objPct}>{o.progress}%</Text>
                     </View>
                     <View style={styles.objStatusWrap}>
-                      <View style={[styles.badge, { backgroundColor: sb.bg }]}>
-                        <Text style={[styles.badgeText, { color: sb.text }]}>{sb.label}</Text>
-                      </View>
+                      <Chip level={st.level} label={st.label} />
                     </View>
                   </View>
                 );
               })}
             </View>
-          )}
+          ) : null}
 
-          {/* RESPONSABILITÉS */}
-          {data.responsibilities.length > 0 && (
-            <View style={styles.respBox}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionHeaderText}>RESPONSABILITÉS</Text>
-              </View>
-              {data.responsibilities.map((r: WeeklyPdfResponsibility, i: number) => {
-                const pctColor =
-                  r.completionRate !== null
-                    ? r.completionRate >= 80
-                      ? BIEN
-                      : r.completionRate >= 50
-                        ? CORRECT
-                        : INSUFFISANT
-                    : TEXT_MUTED;
-                const freqLabel = r.frequency === "daily" ? "Journalier" : "Hebdo";
-                const freqBg = r.frequency === "daily" ? PURPLE_BG : BLUE_BG;
-                const freqText = r.frequency === "daily" ? PURPLE_TEXT : BLUE_TEXT;
-                return (
-                  <View key={i} style={styles.respRow}>
-                    <Text style={styles.respTitle}>{r.title}</Text>
-                    <View style={styles.respBadgeWrap}>
-                      <View style={[styles.badge, { backgroundColor: freqBg }]}>
-                        <Text style={[styles.badgeText, { color: freqText }]}>
-                          {freqLabel}
-                        </Text>
-                      </View>
-                    </View>
-                    <Text style={styles.respCount}>
-                      {r.actualCount !== null
-                        ? `${r.actualCount} / ${r.weeklyExpected}`
-                        : `— / ${r.weeklyExpected}`}{" "}
-                      cette semaine
-                    </Text>
-                    <Text style={[styles.respPercent, { color: pctColor }]}>
-                      {r.completionRate !== null ? `${r.completionRate}%` : "—%"}
-                    </Text>
-                  </View>
-                );
-              })}
-              {data.responsibilities.every((r) => r.actualCount === null) && (
-                <Text style={styles.respEmpty}>
-                  Aucune donnée saisie cette semaine
-                </Text>
-              )}
-            </View>
-          )}
+          {/* SUIVI DES ACTIONS (à la fin) */}
+          {hasActions ? (
+            <View style={styles.section}>
+              <SectionHeader title="Suivi des actions" />
 
-          {/* IDS */}
-          {data.ids.length > 0 && (
-            <View style={styles.idsBox}>
-              <View
-                style={[
-                  styles.sectionHeader,
-                  { backgroundColor: YELLOW_BG, marginBottom: 0, padding: 0 },
-                ]}
-              >
-                <Text style={[styles.sectionHeaderText, { color: YELLOW_TEXT }]}>
-                  PROBLEMES IDENTIFIES
-                </Text>
-              </View>
-              {data.ids.map((it, i) => (
-                <View key={i} style={styles.idsRow}>
-                  <Text style={styles.idsText}>{"- " + it.text}</Text>
-                  {it.convertedToTodo && (
-                    <View style={[styles.pill, { backgroundColor: MINT_BG }]}>
-                      <Text style={[styles.pillText, { color: MINT_TEXT }]}>{"-> To-do"}</Text>
-                    </View>
-                  )}
-                  {it.convertedToObjectif && (
-                    <View style={[styles.pill, { backgroundColor: BLUE_BG }]}>
-                      <Text style={[styles.pillText, { color: BLUE_TEXT }]}>{"-> Objectif"}</Text>
-                    </View>
-                  )}
-                  {!it.convertedToTodo && !it.convertedToObjectif && (
-                    <View style={[styles.pill, { backgroundColor: "#E5E7EB" }]}>
-                      <Text style={[styles.pillText, { color: TEXT_MUTED }]}>A traiter</Text>
-                    </View>
-                  )}
-                </View>
-              ))}
-            </View>
-          )}
-
-          {/* SUIVI DES ACTIONS */}
-          {(data.todosDone.length > 0 || data.todosActive.length > 0 || data.todosDeferred.length > 0) && (
-            <View style={styles.sectionWrap}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionHeaderText}>SUIVI DES ACTIONS</Text>
-              </View>
-
-              {data.todosDone.length > 0 && (
-                <View style={[styles.actionsWrap, { backgroundColor: MINT_BG }]}>
-                  <View style={[styles.actionsGroupHeader, { backgroundColor: "#BBF7D0" }]}>
-                    <Text style={[styles.actionsGroupTitle, { color: MINT_TEXT }]}>
-                      {"[OK] Fait cette semaine (" + data.todosDone.length + ")"}
+              {data.todosDone.length > 0 ? (
+                <View style={styles.actGroup}>
+                  <View style={[styles.actGroupHeader, { backgroundColor: OK_BG }]}>
+                    <Text style={[styles.actGroupTitle, { color: OK_TXT }]}>
+                      {"Fait cette semaine (" + data.todosDone.length + ")"}
                     </Text>
                   </View>
                   {data.todosDone.map((t: WeeklyPdfTodoDone, i: number) => (
-                    <View key={i} style={[styles.actionItem, { backgroundColor: i % 2 === 0 ? MINT_BG : WHITE }]}>
-                      <View style={{ flexDirection: "row", alignItems: "center" }}>
-                        <Text style={styles.actionTitle}>{t.title}</Text>
-                        {t.source === "ids_conversion" && (
-                          <View style={[styles.actionBadge, { backgroundColor: PURPLE_BG }]}>
-                            <Text style={[styles.actionBadgeText, { color: PURPLE_TEXT }]}>IDS</Text>
-                          </View>
-                        )}
-                        {t.source === "ai_suggestion" && (
-                          <View style={[styles.actionBadge, { backgroundColor: BLUE_BG }]}>
-                            <Text style={[styles.actionBadgeText, { color: BLUE_TEXT }]}>IA</Text>
-                          </View>
-                        )}
+                    <View key={i} style={styles.actItem}>
+                      <View style={styles.rowFlex}>
+                        <Text style={styles.actTitle}>{t.title}</Text>
+                        {t.source === "ids_conversion" ? <Tag label="IDS" /> : t.source === "ai_suggestion" ? <Tag label="IA" /> : null}
                       </View>
-                      <Text style={styles.actionMeta}>
-                        {t.responsible}
-                        {t.deadline ? " - " + t.deadline : ""}
+                      <Text style={styles.actMeta}>
+                        {t.responsible}{t.deadline ? " · " + t.deadline : ""}
                       </Text>
                     </View>
                   ))}
                 </View>
-              )}
+              ) : null}
 
-              {data.todosActive.length > 0 && (
-                <View style={[styles.actionsWrap, { backgroundColor: WHITE, marginTop: 4, borderWidth: 1, borderColor: "#E5E7EB" }]}>
-                  <View style={[styles.actionsGroupHeader, { backgroundColor: "#F3F4F6" }]}>
-                    <Text style={[styles.actionsGroupTitle, { color: TEXT_DARK }]}>
-                      {"[.] En cours / A traiter (" + data.todosActive.length + ")"}
+              {data.todosActive.length > 0 ? (
+                <View style={styles.actGroup}>
+                  <View style={[styles.actGroupHeader, { backgroundColor: NEU_BG }]}>
+                    <Text style={[styles.actGroupTitle, { color: INK }]}>
+                      {"En cours / à traiter (" + data.todosActive.length + ")"}
                     </Text>
                   </View>
                   {data.todosActive.map((t: WeeklyPdfTodoActive, i: number) => (
-                    <View key={i} style={[styles.actionItem, { backgroundColor: i % 2 === 0 ? WHITE : "#FAFAFA" }]}>
-                      <View style={{ flexDirection: "row", alignItems: "center" }}>
-                        <Text style={[styles.actionTitle, t.isOverdue ? { color: INSUFFISANT } : {}]}>
-                          {(t.status === "in_progress" ? "[>] " : "[ ] ") + t.title}
-                        </Text>
-                        {t.isOverdue && (
-                          <View style={[styles.actionBadge, { backgroundColor: "#FEE2E2" }]}>
-                            <Text style={[styles.actionBadgeText, { color: INSUFFISANT }]}>En retard</Text>
-                          </View>
-                        )}
-                        {t.source === "ids_conversion" && (
-                          <View style={[styles.actionBadge, { backgroundColor: PURPLE_BG }]}>
-                            <Text style={[styles.actionBadgeText, { color: PURPLE_TEXT }]}>IDS</Text>
-                          </View>
-                        )}
+                    <View key={i} style={styles.actItem}>
+                      <View style={styles.rowFlex}>
+                        <Text style={[styles.actTitle, t.isOverdue ? { color: CRIT_TXT } : {}]}>{t.title}</Text>
+                        {t.status === "in_progress" ? <Tag label="En cours" /> : null}
+                        {t.isOverdue ? <Chip level="crit" label="En retard" /> : null}
+                        {t.source === "ids_conversion" ? <Tag label="IDS" /> : null}
                       </View>
-                      <Text style={styles.actionMeta}>
-                        {t.responsible}
-                        {t.deadline ? " - Echeance : " + t.deadline : ""}
+                      <Text style={styles.actMeta}>
+                        {t.responsible}{t.deadline ? " · échéance " + t.deadline : ""}
                       </Text>
-                      {t.reason && t.reason.trim().length > 0 && (
-                        <Text style={styles.actionReason}>{"Motif : " + t.reason}</Text>
-                      )}
+                      {t.reason && t.reason.trim().length > 0 ? (
+                        <Text style={styles.actReason}>{"Motif : " + t.reason}</Text>
+                      ) : null}
                     </View>
                   ))}
                 </View>
-              )}
+              ) : null}
 
-              {data.todosDeferred.length > 0 && (
-                <View style={[styles.actionsWrap, { backgroundColor: AMBER_BG, marginTop: 4 }]}>
-                  <View style={[styles.actionsGroupHeader, { backgroundColor: "#FED7AA" }]}>
-                    <Text style={[styles.actionsGroupTitle, { color: AMBER_TEXT }]}>
-                      {"[->] Actions reportees (" + data.todosDeferred.length + ")"}
+              {data.todosDeferred.length > 0 ? (
+                <View style={styles.actGroup}>
+                  <View style={[styles.actGroupHeader, { backgroundColor: WARN_BG }]}>
+                    <Text style={[styles.actGroupTitle, { color: WARN_TXT }]}>
+                      {"Reportées (" + data.todosDeferred.length + ")"}
                     </Text>
                   </View>
                   {data.todosDeferred.map((t: WeeklyPdfTodoDeferred, i: number) => (
-                    <View key={i} style={[styles.actionItem, { backgroundColor: i % 2 === 0 ? AMBER_BG : WHITE }]}>
-                      <View style={{ flexDirection: "row", alignItems: "center" }}>
-                        <Text style={styles.actionTitle}>{t.title}</Text>
-                        <View style={[styles.actionBadge, { backgroundColor: "#FED7AA" }]}>
-                          <Text style={[styles.actionBadgeText, { color: AMBER_TEXT }]}>
-                            {"Reporte " + t.deferredCount + "x"}
-                          </Text>
-                        </View>
-                        {t.source === "ids_conversion" && (
-                          <View style={[styles.actionBadge, { backgroundColor: PURPLE_BG }]}>
-                            <Text style={[styles.actionBadgeText, { color: PURPLE_TEXT }]}>IDS</Text>
-                          </View>
-                        )}
+                    <View key={i} style={styles.actItem}>
+                      <View style={styles.rowFlex}>
+                        <Text style={styles.actTitle}>{t.title}</Text>
+                        <Chip level="warn" label={"Reporté " + t.deferredCount + "x"} />
+                        {t.source === "ids_conversion" ? <Tag label="IDS" /> : null}
                       </View>
-                      <Text style={styles.actionMeta}>
+                      <Text style={styles.actMeta}>
                         {t.responsible}
-                        {t.originalDeadline ? " - Prevu le " + t.originalDeadline : ""}
-                        {t.newDeadline ? " -> Reporte au " + t.newDeadline : ""}
+                        {t.originalDeadline ? " · prévu " + t.originalDeadline : ""}
+                        {t.newDeadline ? " -> reporté au " + t.newDeadline : ""}
                       </Text>
-                      {t.reason && t.reason.trim().length > 0 && (
-                        <Text style={styles.actionReason}>{"Raison : " + t.reason}</Text>
-                      )}
+                      {t.reason && t.reason.trim().length > 0 ? (
+                        <Text style={styles.actReason}>{"Raison : " + t.reason}</Text>
+                      ) : null}
                     </View>
                   ))}
                 </View>
-              )}
+              ) : null}
             </View>
-          )}
+          ) : null}
 
-          {/* NOTES LIBRES */}
-          {data.freeNote && data.freeNote.trim().length > 0 && (
-            <View style={styles.notesBox}>
-              <View
-                style={[
-                  styles.sectionHeader,
-                  { backgroundColor: BLUE_BG, marginBottom: 0, padding: 0 },
-                ]}
-              >
-                <Text style={[styles.sectionHeaderText, { color: BLUE_TEXT }]}>NOTES</Text>
+          {/* NOTES */}
+          {data.freeNote && data.freeNote.trim().length > 0 ? (
+            <View style={styles.section}>
+              <SectionHeader title="Notes" />
+              <View style={styles.narr}>
+                <Text style={styles.narrBody}>{data.freeNote}</Text>
               </View>
-              <Text style={styles.notesText}>{data.freeNote}</Text>
             </View>
-          )}
+          ) : null}
         </View>
 
         {/* FOOTER */}
