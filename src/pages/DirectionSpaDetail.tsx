@@ -63,6 +63,21 @@ const respDot: Record<string, string> = {
   red: "bg-destructive",
 };
 
+// Période lisible pour l'en-tête du PDF (le PDF est en Helvetica/WinAnsi : pas de
+// flèche « → » ni de date ISO brute, sinon l'en-tête s'affiche cassé).
+function fmtDateFr(iso: string | null | undefined): string {
+  if (!iso) return "";
+  try {
+    return new Date(iso).toLocaleDateString("fr-FR", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  } catch {
+    return iso;
+  }
+}
+
 export default function DirectionSpaDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -89,7 +104,7 @@ export default function DirectionSpaDetail() {
     pdfEnabled ? digest!.reportId! : "",
     digest?.reportLabel ?? "",
     digest?.periodStart && digest?.periodEnd
-      ? `${digest.periodStart} → ${digest.periodEnd}`
+      ? `${fmtDateFr(digest.periodStart)} – ${fmtDateFr(digest.periodEnd)}`
       : "",
     digest?.periodStart ?? "",
     digest?.periodEnd ?? "",

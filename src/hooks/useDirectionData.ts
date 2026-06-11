@@ -3,6 +3,12 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import type { SpaOverview, SpaDetail, SpaAlert } from "@/data/directionMockData";
 
+interface ObjectiveDesc {
+  current?: number | string | null;
+  target?: number | string | null;
+  status_ui?: string;
+}
+
 function tryParseJson<T>(str: string | null | undefined, fallback: T): T {
   try {
     return JSON.parse(str ?? "") as T;
@@ -11,7 +17,7 @@ function tryParseJson<T>(str: string | null | undefined, fallback: T): T {
   }
 }
 
-function progressFromStatus(status: string | undefined): {
+function progressFromStatus(status: string | null | undefined): {
   text: string;
   num: number;
   den: number;
@@ -23,9 +29,7 @@ function progressFromStatus(status: string | undefined): {
   return { text: "Préparation", num: 2, den: 7 };
 }
 
-function mapReportStatus(
-  s: string | undefined,
-): SpaOverview["status"] {
+function mapReportStatus(s: string | null | undefined): SpaOverview["status"] {
   if (s === "validated") return "validated";
   if (s === "in_meeting") return "in_meeting";
   return "draft_preparation";
@@ -38,6 +42,39 @@ async function fetchAccessibleSpaIds(userId: string): Promise<string[]> {
     .eq("user_id", userId);
   if (error) throw error;
   return (data ?? []).map((r) => r.spa_id as string);
+}
+
+// ---- Types des lignes Supabase (les selects imbriqués ne sont pas inférés) ----
+interface KpiDefRel {
+  name: string | null;
+  unit: string | null;
+}
+interface ManagerRow {
+  spa_id: string | null;
+  full_name: string | null;
+}
+interface OverviewKpiEntry {
+  id: string;
+  status: string | null;
+  value_current: number | null;
+  kpi_definitions: KpiDefRel | null;
+}
+interface OverviewRespLog {
+  completion_rate: number | null;
+}
+interface OverviewReport {
+  id: string;
+  cycle_label: string | null;
+  status: string | null;
+  updated_at: string | null;
+  created_at: string | null;
+  kpi_entries: OverviewKpiEntry[] | null;
+  responsibility_logs: OverviewRespLog[] | null;
+}
+interface OverviewSpaRow {
+  id: string;
+  name: string;
+  reports: OverviewReport[] | null;
 }
 
 export function useDirectionSpas() {
@@ -68,32 +105,32 @@ export function useDirectionSpas() {
       if (spasRes.error) throw spasRes.error;
       if (managersRes.error) throw managersRes.error;
 
-      const managerBySpa = new Map<string, string>();
-      for (const m of (managersRes.data ?? []) as any[]) {
+      const managerBySpa = new Map<string, string | null>();
+      for (const m of (managersRes.data ?? []) as unknown as ManagerRow[]) {
         if (m.spa_id && !managerBySpa.has(m.spa_id)) {
           managerBySpa.set(m.spa_id, m.full_name);
         }
       }
 
-      return ((spasRes.data ?? []) as any[]).map((spa) => {
-        const reports = (spa.reports ?? []) as any[];
+      return ((spasRes.data ?? []) as unknown as OverviewSpaRow[]).map((spa) => {
+        const reports = spa.reports ?? [];
         const latestReport = reports
           .slice()
           .sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""))[0];
 
-        const kpiEntries = (latestReport?.kpi_entries ?? []) as any[];
-        const respLogs = (latestReport?.responsibility_logs ?? []) as any[];
+        const kpiEntries = latestReport?.kpi_entries ?? [];
+        const respLogs = latestReport?.responsibility_logs ?? [];
 
         const alertEntries = kpiEntries.filter(
           (e) => e.status === "red" || e.status === "amber",
         );
-        const alerts: SpaAlert[] = alertEntries.slice(0, 3).map((e: any) => ({
+        const alerts: SpaAlert[] = alertEntries.slice(0, 3).map((e) => ({
           level: e.status === "red" ? "red" : "orange",
           text: "KPI en alerte",
         }));
 
         const findKpi = (predicate: (name: string) => boolean) =>
-          kpiEntries.find((e: any) => {
+          kpiEntries.find((e) => {
             const n = (e.kpi_definitions?.name ?? "").toLowerCase();
             return predicate(n) && e.value_current != null;
           });
@@ -111,13 +148,11 @@ export function useDirectionSpas() {
           : "—";
 
         const respRates = respLogs
-          .map((r: any) => r.completion_rate)
-          .filter((v: any) => typeof v === "number");
+          .map((r) => r.completion_rate)
+          .filter((v): v is number => typeof v === "number");
         const responsabilites =
           respRates.length > 0
-            ? `${Math.round(
-                respRates.reduce((s: number, v: number) => s + v, 0) / respRates.length,
-              )}%`
+            ? `${Math.round(respRates.reduce((s, v) => s + v, 0) / respRates.length)}%`
             : "—";
 
         const prog = progressFromStatus(latestReport?.status);
@@ -142,6 +177,31 @@ export function useDirectionSpas() {
 
 export interface SpaDetailWithSummary extends SpaDetail {
   executiveSummary: string | null;
+}
+
+// ---- Types des lignes Supabase (fiche détail) ----
+interface DetailKpiEntry {
+  value_current: number | null;
+  value_n1: number | null;
+  status: string | null;
+  kpi_definitions: KpiDefRel | null;
+}
+interface DetailRespLog {
+  completion_rate: number | null;
+  responsibility_templates: { title: string | null } | null;
+}
+interface DetailObjective {
+  title: string;
+  description: string | null;
+}
+interface DetailIds {
+  capture_text: string;
+  proposed_solution: string | null;
+  status: string | null;
+}
+interface DetailAlertEntry {
+  status: string | null;
+  kpi_definitions: { name: string | null } | null;
 }
 
 export function useDirectionSpaDetail(
@@ -178,7 +238,6 @@ export function useDirectionSpaDetail(
       ]);
       const report = reportRes.data;
 
-
       if (!spa) return null;
 
       const reportId = report?.id;
@@ -190,13 +249,13 @@ export function useDirectionSpaDetail(
                 .from("kpi_entries")
                 .select("value_current, value_n1, status, kpi_definitions(name, unit)")
                 .eq("report_id", reportId)
-            : Promise.resolve({ data: [] as any[] }),
+            : Promise.resolve({ data: [], error: null }),
           reportId
             ? supabase
                 .from("responsibility_logs")
                 .select("completion_rate, responsibility_templates(title)")
                 .eq("report_id", reportId)
-            : Promise.resolve({ data: [] as any[] }),
+            : Promise.resolve({ data: [], error: null }),
           supabase
             .from("objectives")
             .select("title, description")
@@ -207,38 +266,40 @@ export function useDirectionSpaDetail(
                 .from("ids_items")
                 .select("capture_text, proposed_solution, status")
                 .eq("report_id", reportId)
-            : Promise.resolve({ data: [] as any[] }),
+            : Promise.resolve({ data: [], error: null }),
           reportId
             ? supabase
                 .from("meeting_summaries")
                 .select("executive_summary")
                 .eq("report_id", reportId)
                 .maybeSingle()
-            : Promise.resolve({ data: null as any }),
+            : Promise.resolve({ data: null, error: null }),
           reportId
             ? supabase
                 .from("kpi_entries")
                 .select("status, kpi_definitions(name)")
                 .eq("report_id", reportId)
                 .in("status", ["red", "amber"])
-            : Promise.resolve({ data: [] as any[] }),
+            : Promise.resolve({ data: [], error: null }),
         ]);
 
-      const kpiEntries = (kpiEntriesRes.data ?? []) as any[];
-      const respLogs = (respLogsRes.data ?? []) as any[];
-      const objectives = (objectivesRes.data ?? []) as any[];
-      const idsItems = (idsRes.data ?? []) as any[];
-      const summary = (summaryRes as any).data as { executive_summary: string | null } | null;
-      const alertEntries = (alertEntriesRes.data ?? []) as any[];
+      const kpiEntries = (kpiEntriesRes.data ?? []) as unknown as DetailKpiEntry[];
+      const respLogs = (respLogsRes.data ?? []) as unknown as DetailRespLog[];
+      const objectives = (objectivesRes.data ?? []) as unknown as DetailObjective[];
+      const idsItems = (idsRes.data ?? []) as unknown as DetailIds[];
+      const summary = (summaryRes.data ?? null) as unknown as {
+        executive_summary: string | null;
+      } | null;
+      const alertEntries = (alertEntriesRes.data ?? []) as unknown as DetailAlertEntry[];
 
-      const alerts: SpaAlert[] = alertEntries.slice(0, 3).map((e: any) => ({
+      const alerts: SpaAlert[] = alertEntries.slice(0, 3).map((e) => ({
         level: e.status === "red" ? "red" : "orange",
         text: `${e.kpi_definitions?.name ?? "KPI"} en alerte`,
       }));
 
       const prog = progressFromStatus(report?.status);
 
-      const kpis = kpiEntries.map((ke: any) => {
+      const kpis = kpiEntries.map((ke) => {
         const unit = ke.kpi_definitions?.unit ?? "";
         const value = ke.value_current != null ? `${ke.value_current}${unit}` : "—";
         const ecart =
@@ -256,24 +317,23 @@ export function useDirectionSpaDetail(
         };
       });
 
-      const respItems = respLogs.map((r: any) => ({
+      const respItems = respLogs.map((r) => ({
         label: r.responsibility_templates?.title ?? "—",
         status: (r.completion_rate === 100
           ? "green"
-          : r.completion_rate >= 50
+          : (r.completion_rate ?? 0) >= 50
             ? "amber"
             : "red") as "green" | "amber" | "red",
       }));
       const respGlobal =
         respLogs.length > 0
           ? Math.round(
-              respLogs.reduce((s: number, r: any) => s + (r.completion_rate ?? 0), 0) /
-                respLogs.length,
+              respLogs.reduce((s, r) => s + (r.completion_rate ?? 0), 0) / respLogs.length,
             )
           : 0;
 
-      const objectifs = objectives.map((o: any) => {
-        const desc = tryParseJson<any>(o.description, {});
+      const objectifs = objectives.map((o) => {
+        const desc = tryParseJson<ObjectiveDesc>(o.description, {});
         const current = desc.current;
         const target = desc.target;
         const progress =
@@ -291,7 +351,7 @@ export function useDirectionSpaDetail(
         };
       });
 
-      const ids = idsItems.map((i: any) => ({
+      const ids = idsItems.map((i) => ({
         problem: i.capture_text,
         solution: i.proposed_solution ?? "—",
         status: (i.status === "converted" || i.proposed_solution
