@@ -227,7 +227,14 @@
         "aiSummary": "Síntesis IA",
         "pdf": "PDF",
         "pdfHint": "Disponible desde la ficha del spa",
-        "detail": "Detalle"
+        "detail": "Detalle",
+        "downloadPdf": "Descargar PDF"
+      },
+      "notDiffusedNoPdf": "Informe no difundido — PDF no disponible",
+      "verdictLevel": {
+        "red": "Atención requerida",
+        "amber": "Puntos de vigilancia",
+        "green": "Todo en verde"
       }
     }
   },

@@ -292,7 +292,7 @@ export default function DirectionOverview() {
           {view === "spa" ? (
             <div className="space-y-4">
               {sorted.map((d) => (
-                <DirectionSpaDigestCard key={d.spaId} digest={d} />
+                <DirectionSpaDigestCard key={d.spaId} digest={d} weekOffset={weekOffset} />
               ))}
             </div>
           ) : (

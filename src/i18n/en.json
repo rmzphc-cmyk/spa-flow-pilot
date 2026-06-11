@@ -227,7 +227,14 @@
         "aiSummary": "AI summary",
         "pdf": "PDF",
         "pdfHint": "Available from the spa detail page",
-        "detail": "Details"
+        "detail": "Details",
+        "downloadPdf": "Download PDF"
+      },
+      "notDiffusedNoPdf": "Report not published — PDF unavailable",
+      "verdictLevel": {
+        "red": "Attention required",
+        "amber": "Watch points",
+        "green": "All green"
       }
     }
   },
