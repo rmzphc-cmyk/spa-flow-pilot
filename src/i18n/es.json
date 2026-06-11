@@ -255,6 +255,14 @@
         "placeholder": "Ej: Buena semana en general. Marie muy comprometida con los tratamientos duo. Thomas retraído — a vigilar. Julie gestionó el incidente de la piscina con calma. Moral general positivo a pesar de la carga."
       }
     },
+    "emojiScore": {
+      "selectPrompt": "Seleccione un estado",
+      "label1": "Difícil",
+      "label2": "Tenso",
+      "label3": "Estable",
+      "label4": "Bien",
+      "label5": "Excelente"
+    },
     "notes": {
       "title": "Notas libres",
       "subtitle": "Información adicional para la Dirección",

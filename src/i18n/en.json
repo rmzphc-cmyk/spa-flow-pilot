@@ -255,6 +255,14 @@
         "placeholder": "Ex: Good week overall. Marie very engaged on duo treatments. Thomas withdrawn — to monitor. Julie handled the pool incident calmly. General morale positive despite the workload."
       }
     },
+    "emojiScore": {
+      "selectPrompt": "Select a status",
+      "label1": "Struggling",
+      "label2": "Tense",
+      "label3": "Stable",
+      "label4": "Good",
+      "label5": "Excellent"
+    },
     "notes": {
       "title": "Free notes",
       "subtitle": "Additional information for Management",

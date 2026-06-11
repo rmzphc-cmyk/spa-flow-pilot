@@ -256,6 +256,14 @@
         "placeholder": "Ex : Bonne semaine globalement. Marie très engagée sur les soins duo. Thomas en retrait — à surveiller. Julie a géré l'incident piscine avec calme. Moral général positif malgré la charge."
       }
     },
+    "emojiScore": {
+      "selectPrompt": "Sélectionnez un état",
+      "label1": "Difficile",
+      "label2": "Tendu",
+      "label3": "Stable",
+      "label4": "Bien",
+      "label5": "Excellent"
+    },
     "notes": {
       "title": "Notes libres",
       "subtitle": "Informations complémentaires pour la Direction",
