@@ -169,8 +169,11 @@ export function useWeeklyPdfData(
   reportPeriod: string,
   periodStart: string,
   periodEnd: string,
+  spaIdOverride?: string | null,
 ): { data: WeeklyPdfData | null; isLoading: boolean } {
-  const { spaId, user } = useAuth();
+  const { spaId: authSpaId, user } = useAuth();
+  const spaId = spaIdOverride ?? authSpaId;
+  const useOverride = !!spaIdOverride;
 
   const spaQ = useQuery({
     queryKey: ["spa", spaId],
@@ -183,6 +186,25 @@ export function useWeeklyPdfData(
         .maybeSingle();
       if (error) throw error;
       return data as { name: string } | null;
+    },
+  });
+
+  // Nom du manager pour le pied du PDF :
+  // - sans override : fallback sur user_metadata du caller (manager connecté)
+  // - avec override (Direction) : on dérive depuis users(role=spa_manager, spa_id=<spaId>)
+  const managerQ = useQuery({
+    queryKey: ["spa_manager_name", spaId],
+    enabled: !!spaId && useOverride,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("users")
+        .select("full_name")
+        .eq("spa_id", spaId!)
+        .eq("role", "spa_manager")
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data as { full_name: string | null } | null;
     },
   });
 
@@ -200,6 +222,7 @@ export function useWeeklyPdfData(
 
   const isLoading =
     spaQ.isLoading ||
+    (useOverride && managerQ.isLoading) ||
     entriesQ.isLoading ||
     defsQ.isLoading ||
     checkinQ.isLoading ||
@@ -214,11 +237,13 @@ export function useWeeklyPdfData(
   if (isLoading) return { data: null, isLoading: true };
 
   const meta = (user?.user_metadata ?? {}) as Record<string, unknown>;
-  const managerName =
-    (typeof meta.full_name === "string" && meta.full_name) ||
-    (typeof meta.name === "string" && meta.name) ||
-    user?.email ||
-    "";
+  const managerName = useOverride
+    ? (managerQ.data?.full_name || "—")
+    : ((typeof meta.full_name === "string" && meta.full_name) ||
+       (typeof meta.name === "string" && meta.name) ||
+       user?.email ||
+       "—");
+
 
   const defsById = new Map((defsQ.data ?? []).map((d) => [d.id, d]));
 
