@@ -14,6 +14,15 @@ import {
 } from "@/hooks/useResponsabilites";
 import { useKpiRoleAssignments } from "@/hooks/useKpiRoleAssignments";
 import { useObjectives, parseObjectiveDescription } from "@/hooks/useObjectives";
+import {
+  computeWeeklyException,
+  type ExceptionCommitment,
+  type ExceptionProblem,
+  type ExceptionVerdict,
+  type ProblemSeverity as SharedProblemSeverity,
+} from "@/lib/weeklyException";
+
+export type ProblemSeverity = SharedProblemSeverity;
 
 export interface WeeklyPdfObjective {
   title: string;
