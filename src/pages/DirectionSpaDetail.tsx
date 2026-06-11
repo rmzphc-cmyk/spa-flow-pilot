@@ -1,6 +1,18 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useMemo } from "react";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { ChevronLeft, AlertTriangle, Check, RotateCw, ChevronDown } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Check,
+  RotateCw,
+  ChevronDown,
+  FileDown,
+  Loader2,
+  Sparkles,
+  Info,
+} from "lucide-react";
+import { PDFDownloadLink } from "@react-pdf/renderer";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -13,8 +25,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useDirectionSpas, useDirectionSpaDetail } from "@/hooks/useDirectionData";
+import { useDirectionDigest } from "@/hooks/useDirectionDigest";
+import { useWeeklyPdfData } from "@/hooks/useWeeklyPdfData";
+import { WeeklyReportPdf } from "@/components/pdf/WeeklyReportPdf";
 import { Skeleton } from "@/components/ui/skeleton";
 import { AiBadge } from "@/components/AiBadge";
+import {
+  CommitmentLine,
+  DiffusionPill,
+  ProblemLine,
+  verdictDot,
+  verdictRing,
+  verdictTone,
+} from "@/components/direction/digestParts";
 
 const statusStyles: Record<string, { labelKey: string; classes: string }> = {
   draft_preparation: { labelKey: "status.draft_preparation", classes: "bg-muted text-muted-foreground" },
@@ -44,9 +67,43 @@ export default function DirectionSpaDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const weekOffset = Number(searchParams.get("week") ?? 0) || 0;
 
-  const { data: detail, isLoading } = useDirectionSpaDetail(id);
+  // Digest de la semaine sélectionnée (cache partagé avec l'overview).
+  const { data: digests = [], isLoading: digestLoading } = useDirectionDigest(weekOffset);
+  const digest = useMemo(() => digests.find((d) => d.spaId === id) ?? null, [digests, id]);
+
+  // Détail opérationnel aligné sur le rapport de la semaine.
+  const { data: detail, isLoading: detailLoading } = useDirectionSpaDetail(
+    id,
+    digest?.reportId ?? null,
+  );
   const { data: spas = [] } = useDirectionSpas();
+
+  const isDiffused = digest?.diffusionStatus === "diffuse";
+  const pdfEnabled = !!(isDiffused && digest?.reportId);
+
+  // PDF data — réservé aux rapports diffusés.
+  const { data: pdfData, isLoading: pdfLoading } = useWeeklyPdfData(
+    pdfEnabled ? digest!.reportId! : "",
+    digest?.reportLabel ?? "",
+    digest?.periodStart && digest?.periodEnd
+      ? `${digest.periodStart} → ${digest.periodEnd}`
+      : "",
+    digest?.periodStart ?? "",
+    digest?.periodEnd ?? "",
+    pdfEnabled ? id ?? null : null,
+  );
+
+  const isLoading = digestLoading || detailLoading;
+
+  const setWeek = (next: number) => {
+    const sp = new URLSearchParams(searchParams);
+    if (next === 0) sp.delete("week");
+    else sp.set("week", String(next));
+    setSearchParams(sp, { replace: false });
+  };
 
   if (isLoading) {
     return (
@@ -71,99 +128,232 @@ export default function DirectionSpaDetail() {
 
   const ss = statusStyles[detail.currentReport.status];
   const lv = detail.lastValidated;
+  const hasReport = !!digest?.reportId;
 
   return (
     <div className="max-w-[900px] mx-auto px-6 py-6 pb-20">
       {/* Header */}
-      <div className="flex items-start justify-between mb-6">
+      <div className="flex items-start justify-between mb-6 gap-3 flex-wrap">
         <div>
           <Button
             variant="ghost"
             size="sm"
             className="gap-1 text-muted-foreground mb-2 -ml-2"
-            onClick={() => navigate("/direction")}
+            onClick={() => navigate(`/direction${weekOffset ? `?week=${weekOffset}` : ""}`)}
           >
             <ChevronLeft className="h-4 w-4" /> {t("direction.backToAll")}
           </Button>
           <h1 className="text-2xl font-bold text-foreground">{detail.name}</h1>
-          <p className="text-sm text-muted-foreground">{detail.manager} · {detail.managerRole}</p>
+          <p className="text-sm text-muted-foreground">
+            {detail.manager} · {detail.managerRole}
+            {digest && (
+              <>
+                {" · "}
+                <DiffusionPill status={digest.diffusionStatus} />
+              </>
+            )}
+          </p>
         </div>
 
-        {/* Spa switcher */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" className="gap-2">
-              {detail.name} <ChevronDown className="h-4 w-4" />
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Week selector */}
+          <div className="flex items-center gap-1 rounded-full border border-border bg-card px-2 py-1 shadow-sm">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setWeek(weekOffset - 1)}
+              aria-label={t("direction.digest.previousWeek")}
+            >
+              <ChevronLeft className="h-4 w-4" />
             </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-52">
-            {spas.map((s) => (
-              <DropdownMenuItem
-                key={s.id}
-                onClick={() => navigate(`/direction/spa/${s.id}`)}
-                className={s.id === detail.id ? "bg-accent font-medium" : ""}
-              >
-                <span className={`inline-block h-2 w-2 rounded-full mr-2 ${
-                  s.alerts.some((a) => a.level === "red") ? "bg-destructive" :
-                  s.alerts.some((a) => a.level === "orange") ? "bg-amber-500" : "bg-emerald-500"
-                }`} />
-                {s.name}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+            <span className="text-xs font-medium px-1">
+              {digest?.reportLabel ?? t("direction.digest.noWeeklyReport")}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7"
+              onClick={() => setWeek(weekOffset + 1)}
+              disabled={weekOffset >= 0}
+              aria-label={t("direction.digest.nextWeek")}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+
+          {/* Spa switcher */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" className="gap-2">
+                {detail.name} <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-52">
+              {spas.map((s) => (
+                <DropdownMenuItem
+                  key={s.id}
+                  onClick={() =>
+                    navigate(`/direction/spa/${s.id}${weekOffset ? `?week=${weekOffset}` : ""}`)
+                  }
+                  className={s.id === detail.id ? "bg-accent font-medium" : ""}
+                >
+                  <span className={`inline-block h-2 w-2 rounded-full mr-2 ${
+                    s.alerts.some((a) => a.level === "red") ? "bg-destructive" :
+                    s.alerts.some((a) => a.level === "orange") ? "bg-amber-500" : "bg-emerald-500"
+                  }`} />
+                  {s.name}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
       </div>
 
-      {/* Alert card */}
-      {detail.alerts.length > 0 && (
-        <Card className="border-destructive/30 bg-destructive/5 mb-6">
-          <div className="p-4 space-y-2">
-            {detail.alerts.map((alert, i) => (
-              <div key={i} className="flex items-center gap-2 text-sm text-destructive font-medium">
-                <AlertTriangle className="h-4 w-4 shrink-0" />
-                {alert.text}
-              </div>
-            ))}
-          </div>
+      {/* ====================== PAGE 1 — Synthèse Direction ====================== */}
+      {!hasReport ? (
+        <Card className="p-6 mb-6 text-center text-sm text-muted-foreground">
+          {t("direction.digest.noWeeklyReport")}
         </Card>
-      )}
+      ) : digest ? (
+        <>
+          {/* Bandeau verdict */}
+          <Card className={`border-l-4 ${verdictRing[digest.verdict.level]} mb-4`}>
+            <div className={`rounded-r-xl border ${verdictTone[digest.verdict.level]} p-4 flex items-center gap-3`}>
+              <span className={`h-2.5 w-2.5 rounded-full shrink-0 ${verdictDot[digest.verdict.level]}`} />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold">
+                  {t(`direction.digest.verdictLevel.${digest.verdict.level}`)}
+                </p>
+                <p className="text-xs mt-0.5 opacity-90">
+                  {[
+                    digest.counters.bloquants > 0 &&
+                      t("direction.digest.counters.blocking", { count: digest.counters.bloquants }),
+                    digest.counters.autresProblemes > 0 &&
+                      t("direction.digest.counters.other", { count: digest.counters.autresProblemes }),
+                    digest.counters.enRetard > 0 &&
+                      t("direction.digest.counters.overdue", { count: digest.counters.enRetard }),
+                    digest.counters.aRisque > 0 &&
+                      t("direction.digest.counters.atRisk", { count: digest.counters.aRisque }),
+                  ]
+                    .filter(Boolean)
+                    .join(" · ") || t("direction.digest.allGreen")}
+                </p>
+              </div>
 
+              {/* PDF — réservé aux rapports diffusés */}
+              {pdfEnabled ? (
+                pdfLoading || !pdfData ? (
+                  <Button size="sm" variant="outline" disabled>
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  </Button>
+                ) : (
+                  <PDFDownloadLink
+                    document={<WeeklyReportPdf data={pdfData} />}
+                    fileName={`rapport-${detail.name}-${(digest.reportLabel ?? "weekly").replace(/\s/g, "-").toLowerCase()}.pdf`}
+                  >
+                    {({ loading }) => (
+                      <Button size="sm" variant="outline" className="gap-1.5" disabled={loading}>
+                        {loading ? (
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        ) : (
+                          <FileDown className="h-3.5 w-3.5" />
+                        )}
+                        {t("direction.digest.actions.downloadPdf")}
+                      </Button>
+                    )}
+                  </PDFDownloadLink>
+                )
+              ) : (
+                <span className="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <Info className="h-3.5 w-3.5" />
+                  {t("direction.digest.notDiffusedNoPdf")}
+                </span>
+              )}
+            </div>
+          </Card>
+
+          {/* Synthèse IA */}
+          {digest.executiveSummary && (
+            <Card className="mb-4 relative">
+              <AiBadge />
+              <div className="p-4 pr-24">
+                <h3 className="text-sm font-semibold text-foreground mb-2 inline-flex items-center gap-1.5">
+                  <Sparkles className="h-4 w-4 text-primary" />
+                  {t("ai.executiveSummary")}
+                </h3>
+                <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                  {digest.executiveSummary}
+                </p>
+              </div>
+            </Card>
+          )}
+
+          {/* Problèmes par gravité */}
+          {digest.problems.length > 0 && (
+            <Card className="mb-4 p-4">
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-3">
+                {t("direction.digest.sections.problems")}
+              </h3>
+              <div className="space-y-1.5">
+                {digest.problems.map((p, i) => (
+                  <ProblemLine key={i} problem={p} />
+                ))}
+              </div>
+            </Card>
+          )}
+
+          {/* Engagements non tenus */}
+          {(digest.commitmentsOverdue.length > 0 || digest.commitmentsAtRisk.length > 0) && (
+            <Card className="mb-6 p-4 space-y-4">
+              {digest.commitmentsOverdue.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-destructive">
+                    {t("direction.digest.sections.overdue")}
+                  </h3>
+                  <div className="space-y-1.5">
+                    {digest.commitmentsOverdue.map((c, i) => (
+                      <CommitmentLine key={`o-${i}`} commitment={c} late />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {digest.commitmentsAtRisk.length > 0 && (
+                <div className="space-y-2">
+                  <h3 className="text-xs font-semibold uppercase tracking-wide text-amber-700">
+                    {t("direction.digest.sections.atRisk")}
+                  </h3>
+                  <div className="space-y-1.5">
+                    {digest.commitmentsAtRisk.map((c, i) => (
+                      <CommitmentLine key={`r-${i}`} commitment={c} late={false} />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </Card>
+          )}
+        </>
+      ) : null}
+
+      {/* ====================== DÉTAIL OPÉRATIONNEL ====================== */}
       {/* Current report summary */}
       <Card className="mb-6">
         <div className="p-4">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <span className="text-sm font-semibold text-foreground">{detail.currentReport.label}</span>
-              <span className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full ${ss.classes}`}>
-                {t(ss.labelKey)}
-              </span>
+              {ss && (
+                <span className={`inline-flex items-center text-xs font-medium px-2 py-0.5 rounded-full ${ss.classes}`}>
+                  {t(ss.labelKey)}
+                </span>
+              )}
             </div>
             <span className="text-sm text-muted-foreground">{detail.currentReport.progress}</span>
           </div>
           <Progress value={(detail.currentReport.progressNum / detail.currentReport.progressDen) * 100} className="h-2" />
-          <p className="text-xs text-muted-foreground mt-2 italic">
-            {t("direction.notSubmittedNote")}
-          </p>
         </div>
       </Card>
 
-      {/* AI Executive Summary */}
-      {detail.executiveSummary && (
-        <Card className="mb-6 relative">
-          <AiBadge />
-          <div className="p-4 pr-24">
-            <h3 className="text-sm font-semibold text-foreground mb-2">
-              {t("ai.executiveSummary")}
-            </h3>
-            <p className="text-sm text-muted-foreground whitespace-pre-wrap leading-relaxed">
-              {detail.executiveSummary}
-            </p>
-          </div>
-        </Card>
-      )}
-
-
-      {/* Last validated report */}
       <div className="mb-4">
         <h2 className="text-lg font-bold text-foreground">
           {t("direction.lastValidatedTitle", { period: lv.period })}
@@ -210,9 +400,11 @@ export default function DirectionSpaDetail() {
                 </tbody>
               </table>
             </div>
-            <div className="px-4 py-3 border-t border-border">
-              <p className="text-sm text-muted-foreground italic">"{lv.checkinNote}"</p>
-            </div>
+            {lv.checkinNote && (
+              <div className="px-4 py-3 border-t border-border">
+                <p className="text-sm text-muted-foreground italic">"{lv.checkinNote}"</p>
+              </div>
+            )}
           </Card>
         </TabsContent>
 
