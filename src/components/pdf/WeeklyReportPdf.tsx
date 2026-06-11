@@ -413,7 +413,7 @@ export function WeeklyReportPdf({ data }: Props) {
 
           {/* Problèmes de la semaine (par gravité) */}
           {data.problems.length > 0 ? (
-            <View style={styles.section}>
+            <View style={styles.section} wrap={false}>
               <SectionHeader
                 title="Problèmes de la semaine"
                 hint={data.problems.length + " signalé" + (data.problems.length > 1 ? "s" : "") + " · par gravité"}
@@ -423,7 +423,7 @@ export function WeeklyReportPdf({ data }: Props) {
                 if (group.length === 0) return null;
                 const meta = SEVERITY_META[sev];
                 return (
-                  <View key={sev} style={styles.sevGroup}>
+                  <View key={sev} style={styles.sevGroup} wrap={false}>
                     <View style={styles.sevChipWrap}>
                       <Chip level={meta.level} label={meta.label + " (" + group.length + ")"} />
                     </View>
@@ -445,11 +445,11 @@ export function WeeklyReportPdf({ data }: Props) {
 
           {/* Engagements non tenus */}
           {data.commitmentsOverdue.length > 0 || data.commitmentsAtRisk.length > 0 ? (
-            <View style={styles.section}>
+            <View style={styles.section} wrap={false}>
               <SectionHeader title="Engagements non tenus" hint="à terminer d'ici cette semaine" />
 
               {data.commitmentsOverdue.length > 0 ? (
-                <View style={styles.commitGroup}>
+                <View style={styles.commitGroup} wrap={false}>
                   <View style={[styles.commitGroupHeader, { backgroundColor: CRIT_BG }]}>
                     <Text style={[styles.commitGroupTitle, { color: CRIT_TXT }]}>
                       {"En retard (" + data.commitmentsOverdue.length + ")"}
@@ -476,7 +476,7 @@ export function WeeklyReportPdf({ data }: Props) {
               ) : null}
 
               {data.commitmentsAtRisk.length > 0 ? (
-                <View style={[styles.commitGroup, { marginTop: 6 }]}>
+                <View style={[styles.commitGroup, { marginTop: 6 }]} wrap={false}>
                   <View style={[styles.commitGroupHeader, { backgroundColor: WARN_BG }]}>
                     <Text style={[styles.commitGroupTitle, { color: WARN_TXT }]}>
                       {"À risque — à terminer cette semaine (" + data.commitmentsAtRisk.length + ")"}
@@ -510,7 +510,7 @@ export function WeeklyReportPdf({ data }: Props) {
           </View>
 
           {/* INDICATEURS — hiérarchisés par niveau */}
-          <View style={styles.section}>
+          <View style={styles.section} wrap={false}>
             <SectionHeader title="Indicateurs" hint="par priorité" />
             {data.kpis.length === 0 ? (
               <View style={styles.emptyRow}>
@@ -521,7 +521,7 @@ export function WeeklyReportPdf({ data }: Props) {
                 const group = data.kpis.filter((k) => niveauBucket(k.niveau) === niv);
                 if (group.length === 0) return null;
                 return (
-                  <View key={niv}>
+                  <View key={niv} wrap={false}>
                     <View style={styles.subHeader}>
                       <Text style={styles.subHeaderText}>{NIVEAU_LABEL[niv]}</Text>
                     </View>
@@ -558,7 +558,7 @@ export function WeeklyReportPdf({ data }: Props) {
 
           {/* RESPONSABILITÉS */}
           {data.responsibilities.length > 0 ? (
-            <View style={styles.section}>
+            <View style={styles.section} wrap={false}>
               <SectionHeader title="Responsabilités" />
               <View style={styles.tableHeader}>
                 <Text style={[styles.th, { flex: 3 }]}>Tâche</Text>
@@ -587,7 +587,7 @@ export function WeeklyReportPdf({ data }: Props) {
           ) : null}
 
           {/* ÉQUIPE */}
-          <View style={styles.section}>
+          <View style={styles.section} wrap={false}>
             <SectionHeader title="Équipe" />
             <View style={styles.narr}>
               <View style={styles.teamRow}>
@@ -602,7 +602,7 @@ export function WeeklyReportPdf({ data }: Props) {
 
           {/* PROBLÈMES IDENTIFIÉS (IDS) */}
           {data.ids.length > 0 ? (
-            <View style={styles.section}>
+            <View style={styles.section} wrap={false}>
               <SectionHeader
                 title="Problèmes identifiés (IDS)"
                 hint={data.ids.length + " capturé" + (data.ids.length > 1 ? "s" : "")}
@@ -624,7 +624,7 @@ export function WeeklyReportPdf({ data }: Props) {
 
           {/* OBJECTIFS (à la fin) */}
           {data.objectives.length > 0 ? (
-            <View style={styles.section}>
+            <View style={styles.section} wrap={false}>
               <SectionHeader
                 title="Objectifs"
                 hint={data.objectives.length + " actif" + (data.objectives.length > 1 ? "s" : "")}
@@ -664,11 +664,11 @@ export function WeeklyReportPdf({ data }: Props) {
 
           {/* SUIVI DES ACTIONS (à la fin) */}
           {hasActions ? (
-            <View style={styles.section}>
+            <View style={styles.section} wrap={false}>
               <SectionHeader title="Suivi des actions" />
 
               {data.todosDone.length > 0 ? (
-                <View style={styles.actGroup}>
+                <View style={styles.actGroup} wrap={false}>
                   <View style={[styles.actGroupHeader, { backgroundColor: OK_BG }]}>
                     <Text style={[styles.actGroupTitle, { color: OK_TXT }]}>
                       {"Fait cette semaine (" + data.todosDone.length + ")"}
@@ -689,7 +689,7 @@ export function WeeklyReportPdf({ data }: Props) {
               ) : null}
 
               {data.todosActive.length > 0 ? (
-                <View style={styles.actGroup}>
+                <View style={styles.actGroup} wrap={false}>
                   <View style={[styles.actGroupHeader, { backgroundColor: NEU_BG }]}>
                     <Text style={[styles.actGroupTitle, { color: INK }]}>
                       {"En cours / à traiter (" + data.todosActive.length + ")"}
@@ -715,7 +715,7 @@ export function WeeklyReportPdf({ data }: Props) {
               ) : null}
 
               {data.todosDeferred.length > 0 ? (
-                <View style={styles.actGroup}>
+                <View style={styles.actGroup} wrap={false}>
                   <View style={[styles.actGroupHeader, { backgroundColor: WARN_BG }]}>
                     <Text style={[styles.actGroupTitle, { color: WARN_TXT }]}>
                       {"Reportées (" + data.todosDeferred.length + ")"}
@@ -745,7 +745,7 @@ export function WeeklyReportPdf({ data }: Props) {
 
           {/* NOTES */}
           {data.freeNote && data.freeNote.trim().length > 0 ? (
-            <View style={styles.section}>
+            <View style={styles.section} wrap={false}>
               <SectionHeader title="Notes" />
               <View style={styles.narr}>
                 <Text style={styles.narrBody}>{data.freeNote}</Text>
