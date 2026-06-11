@@ -144,13 +144,16 @@ export interface SpaDetailWithSummary extends SpaDetail {
   executiveSummary: string | null;
 }
 
-export function useDirectionSpaDetail(spaId: string | undefined) {
+export function useDirectionSpaDetail(
+  spaId: string | undefined,
+  reportIdOverride?: string | null,
+) {
   return useQuery({
-    queryKey: ["direction_spa_detail", spaId],
+    queryKey: ["direction_spa_detail", spaId, reportIdOverride ?? null],
     enabled: !!spaId,
     queryFn: async (): Promise<SpaDetailWithSummary | null> => {
       const id = spaId!;
-      const [{ data: spa }, { data: manager }, { data: report }] = await Promise.all([
+      const [{ data: spa }, { data: manager }, reportRes] = await Promise.all([
         supabase.from("spas").select("id, name").eq("id", id).maybeSingle(),
         supabase
           .from("users")
@@ -159,14 +162,22 @@ export function useDirectionSpaDetail(spaId: string | undefined) {
           .eq("role", "spa_manager")
           .limit(1)
           .maybeSingle(),
-        supabase
-          .from("reports")
-          .select("id, cycle_label, status, period_start, period_end, updated_at, validated_at")
-          .eq("spa_id", id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle(),
+        reportIdOverride
+          ? supabase
+              .from("reports")
+              .select("id, cycle_label, status, period_start, period_end, updated_at, validated_at")
+              .eq("id", reportIdOverride)
+              .maybeSingle()
+          : supabase
+              .from("reports")
+              .select("id, cycle_label, status, period_start, period_end, updated_at, validated_at")
+              .eq("spa_id", id)
+              .order("created_at", { ascending: false })
+              .limit(1)
+              .maybeSingle(),
       ]);
+      const report = reportRes.data;
+
 
       if (!spa) return null;
 
