@@ -355,7 +355,7 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
           <nav className="px-3 space-y-0.5 pb-2">
             {(isAdmin
               ? secondaryLinks.filter((l) => l.url.startsWith("/admin/"))
-              : secondaryLinks
+              : secondaryLinks.filter((l) => l.url !== "/admin/organisation")
             ).map((link) => (
               <NavLink
                 key={link.url}
