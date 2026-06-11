@@ -36,13 +36,11 @@ export interface WeeklyPdfObjective {
   targetDate: string | null;
 }
 
-/** Gravité d'un problème (IDS) — ordre = hiérarchie affichée à la Direction. */
-export type ProblemSeverity =
-  | "bloquant"
-  | "deleguer"
-  | "priorite"
-  | "veille"
-  | "untriaged";
+export type WeeklyPdfProblem = ExceptionProblem;
+
+export type WeeklyPdfCommitment = ExceptionCommitment;
+
+export type WeeklyPdfVerdict = ExceptionVerdict;
 
 export interface WeeklyPdfProblem {
   text: string;
