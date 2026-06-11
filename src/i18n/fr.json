@@ -595,6 +595,8 @@
         "thisWeek": "Cette semaine",
         "toProcess": "à traiter",
         "noActive": "Aucune action en cours pour cette semaine.",
+        "upcoming": "À venir",
+        "upcomingHint": "Actions dont l'échéance dépasse cette semaine.",
         "deferredActions": "Actions reportées",
         "originallyScheduled": "Prévu initialement le {{date}}",
         "deferredTo": "Reporté au {{date}}",

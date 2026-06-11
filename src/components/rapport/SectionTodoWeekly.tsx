@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { AlertTriangle, Check, CheckCircle2, Play, RotateCcw } from "lucide-react";
+import { AlertTriangle, CalendarClock, Check, CheckCircle2, Play, RotateCcw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -68,7 +68,7 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
   // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => { onStatusChange("complete"); }, []);
 
-  const { doneInWeek, activeInWeek, deferred } = useMemo(() => {
+  const { doneInWeek, activeInWeek, upcoming, deferred } = useMemo(() => {
     const weekStart = new Date(periodStart);
     const weekEnd = new Date(periodEnd);
     weekEnd.setHours(23, 59, 59, 999);
@@ -79,12 +79,11 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
       const dt = new Date(d);
       return dt >= weekStart && dt <= weekEnd;
     };
+    const isActive = (item: DbTodo) => item.status !== "done" && item.status !== "deferred";
 
     const done = dbTodos.filter((item) => item.status === "done" && inRange(item.due_date));
     const active = dbTodos
-      .filter(
-        (item) => item.status !== "done" && item.status !== "deferred" && inRange(item.due_date),
-      )
+      .filter((item) => isActive(item) && inRange(item.due_date))
       .sort((a, b) => {
         const aOver = a.due_date ? new Date(a.due_date) < today : false;
         const bOver = b.due_date ? new Date(b.due_date) < today : false;
@@ -92,8 +91,16 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
         if (!aOver && bOver) return 1;
         return (a.due_date ?? "").localeCompare(b.due_date ?? "");
       });
+    // Actions actives dont l'échéance dépasse la semaine (ou sans date) : sinon
+    // invisibles (ex. to-do issu d'un IDS avec deadline future).
+    const up = dbTodos
+      .filter(
+        (item) =>
+          isActive(item) && !inRange(item.due_date) && (!item.due_date || new Date(item.due_date) > weekEnd),
+      )
+      .sort((a, b) => (a.due_date ?? "").localeCompare(b.due_date ?? ""));
     const def = dbTodos.filter((item) => item.status === "deferred");
-    return { doneInWeek: done, activeInWeek: active, deferred: def };
+    return { doneInWeek: done, activeInWeek: active, upcoming: up, deferred: def };
   }, [dbTodos, periodStart, periodEnd]);
 
   const today = new Date();
@@ -370,6 +377,21 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
     </div>
   );
 
+  /* ─────────── BLOC « À VENIR » (échéance hors semaine) ─────────── */
+  const renderBlocUpcoming = () => (
+    <div className="bg-card border rounded-xl p-4 mt-4">
+      <div className="flex items-center gap-2 mb-1">
+        <CalendarClock className="h-4 w-4 text-muted-foreground" />
+        <h3 className="text-sm font-semibold text-foreground">{t("report.todo.weekly.upcoming")}</h3>
+        <Badge variant="secondary" className="ml-auto">
+          {t("report.todo.weekly.actionCount", { count: upcoming.length })}
+        </Badge>
+      </div>
+      <p className="text-xs text-muted-foreground mb-3">{t("report.todo.weekly.upcomingHint")}</p>
+      <div className="space-y-3">{upcoming.map(renderActiveCard)}</div>
+    </div>
+  );
+
   /* ─────────── BLOC 3 ─────────── */
   const renderDeferredCard = (item: DbTodo) => {
     const meta = parseTodoDescription(item.description);
@@ -504,6 +526,7 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
 
       {renderBloc1()}
       {renderBloc2()}
+      {upcoming.length > 0 && renderBlocUpcoming()}
       {deferred.length > 0 && renderBloc3()}
 
       <p className="mt-4 text-xs text-muted-foreground italic">

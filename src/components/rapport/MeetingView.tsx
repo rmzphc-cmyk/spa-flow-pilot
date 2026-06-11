@@ -31,7 +31,6 @@ import { useObjectives, parseObjectiveDescription } from "@/hooks/useObjectives"
 import {
   useIdsItems,
   useAddIdsItem,
-  useConvertIdsToObjective,
   useIdsItemsForMonthlyPeriod,
   useUpdateIdsStructure,
   TRIAGE_CONFIG,
@@ -39,6 +38,7 @@ import {
   type TriageMode,
 } from "@/hooks/useIdsItems";
 import { IdsToTodoDialog } from "./IdsToTodoDialog";
+import { IdsToObjectiveDialog } from "./IdsToObjectiveDialog";
 import { useResponsabilityTemplates, useResponsabilityLogs } from "@/hooks/useResponsabilites";
 import { useCloseMeeting } from "@/hooks/useReports";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
@@ -124,8 +124,9 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
   const [audioStoragePath, setAudioStoragePath] = useState<string | null>(null);
   const [audioMimeType, setAudioMimeType] = useState<string | null>(null);
   const [audioDurationS, setAudioDurationS] = useState<number | null>(null);
-  // IDS en attente de conversion en to-do (ouvre IdsToTodoDialog pour fixer la date).
+  // IDS en attente de conversion (ouvre le dialog correspondant pour fixer la date).
   const [todoDialogItem, setTodoDialogItem] = useState<DbIdsItem | null>(null);
+  const [objectiveDialogItem, setObjectiveDialogItem] = useState<DbIdsItem | null>(null);
 
   const recorder = useAudioRecorder();
   const uploadAudio = useUploadMeetingAudio();
@@ -144,7 +145,6 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
   const respTemplatesQ = useResponsabilityTemplates(spaId);
   const respLogsQ      = useResponsabilityLogs(report.id);
   const addIds           = useAddIdsItem(report.id, report.type);
-  const convertToObjective = useConvertIdsToObjective(report.id);
   const closeMeeting     = useCloseMeeting();
 
   // Hooks Phase 2
@@ -653,8 +653,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                                 </Button>
                                 <Button
                                   size="sm" variant="outline" className="h-7 text-xs gap-1"
-                                  disabled={convertToObjective.isPending}
-                                  onClick={() => convertToObjective.mutate(item)}
+                                  onClick={() => setObjectiveDialogItem(item)}
                                 >
                                   <Target className="h-3 w-3" /> {t("report.meeting.ids.convertToObjective")}
                                 </Button>
@@ -1351,6 +1350,11 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
         reportId={report.id}
         item={todoDialogItem}
         onOpenChange={(open) => !open && setTodoDialogItem(null)}
+      />
+      <IdsToObjectiveDialog
+        reportId={report.id}
+        item={objectiveDialogItem}
+        onOpenChange={(open) => !open && setObjectiveDialogItem(null)}
       />
 
     </div>

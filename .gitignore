@@ -30,3 +30,6 @@ test-results/
 # Findings d'audit — backlog conservé en local, non versionné (décision produit)
 /AUDIT_FINDINGS*
 /AUDIT_SQL_FIXES*
+
+# Supabase CLI — état machine-local (project ref, etc.)
+supabase/.temp/

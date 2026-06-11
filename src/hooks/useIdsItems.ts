@@ -159,38 +159,22 @@ export interface ConvertIdsToTodoInput {
 
 export function useConvertIdsToTodo(reportId: string) {
   const qc = useQueryClient();
-  const { spaId, user } = useAuth();
   return useMutation({
+    // Passe par l'EF ids-convert (service_role) : la RLS interdit au manager
+    // tout UPDATE d'un ids_item dont le rapport est verrouillé, ce qui faisait
+    // échouer le lien de conversion en silence sur un weekly finalisé.
     mutationFn: async (input: ConvertIdsToTodoInput) => {
-      if (!spaId || !user) throw new Error("Missing auth context");
-      const { item, dueDate = null, responsible = "" } = input;
-      const { data: todo, error: e1 } = await supabase
-        .from("todos")
-        .insert({
-          spa_id: spaId,
-          report_id: reportId,
-          title: item.capture_text,
-          description: JSON.stringify({ responsible: responsible.trim() || "—", followUp: "" }),
-          status: "pending",
-          priority: "medium",
-          source: "ids_conversion",
-          ids_item_id: item.id,
-          due_date: dueDate,
-          created_by: user.id,
-        })
-        .select()
-        .single();
-      if (e1) throw e1;
-      const { error: e2 } = await supabase
-        .from("ids_items")
-        .update({
-          converted_to_todo_id: todo.id,
-          status: "converted",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", item.id);
-      if (e2) throw e2;
-      return todo;
+      const { data, error } = await supabase.functions.invoke("ids-convert", {
+        body: {
+          action: "convert_to_todo",
+          ids_item_id: input.item.id,
+          due_date: input.dueDate ?? null,
+          responsible: (input.responsible ?? "").trim(),
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ids_items", reportId] });
@@ -201,36 +185,27 @@ export function useConvertIdsToTodo(reportId: string) {
   });
 }
 
+export interface ConvertIdsToObjectiveInput {
+  item: DbIdsItem;
+  /** Date cible ISO (yyyy-mm-dd) ou null. */
+  targetDate?: string | null;
+}
+
 export function useConvertIdsToObjective(reportId: string) {
   const qc = useQueryClient();
-  const { spaId, user } = useAuth();
+  const { spaId } = useAuth();
   return useMutation({
-    mutationFn: async (item: DbIdsItem) => {
-      if (!spaId || !user) throw new Error("Missing auth context");
-      const { data: obj, error: e1 } = await supabase
-        .from("objectives")
-        .insert({
-          spa_id: spaId,
-          report_id_created: reportId,
-          title: item.capture_text,
-          status: "active",
-          source: "ids_conversion",
-          ids_item_id: item.id,
-          created_by: user.id,
-        })
-        .select()
-        .single();
-      if (e1) throw e1;
-      const { error: e2 } = await supabase
-        .from("ids_items")
-        .update({
-          converted_to_objective_id: obj.id,
-          status: "converted",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", item.id);
-      if (e2) throw e2;
-      return obj;
+    mutationFn: async (input: ConvertIdsToObjectiveInput) => {
+      const { data, error } = await supabase.functions.invoke("ids-convert", {
+        body: {
+          action: "convert_to_objective",
+          ids_item_id: input.item.id,
+          target_date: input.targetDate ?? null,
+        },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      return data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ids_items", reportId] });
@@ -290,6 +265,8 @@ export function useUpdateIdsStructure() {
 export function useUpdateIdsTriage(reportId: string) {
   const qc = useQueryClient();
   return useMutation({
+    // Via l'EF : le triage doit persister même quand le weekly source est
+    // verrouillé (cas du tri pendant la réunion mensuelle).
     mutationFn: async ({
       id,
       triage_mode,
@@ -297,11 +274,11 @@ export function useUpdateIdsTriage(reportId: string) {
       id: string;
       triage_mode: TriageMode | null;
     }) => {
-      const { error } = await supabase
-        .from("ids_items")
-        .update({ triage_mode, updated_at: new Date().toISOString() })
-        .eq("id", id);
+      const { data, error } = await supabase.functions.invoke("ids-convert", {
+        body: { action: "set_triage", ids_item_id: id, triage_mode },
+      });
       if (error) throw error;
+      if (data?.error) throw new Error(data.error);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ids_items", reportId] });

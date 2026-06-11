@@ -16,12 +16,12 @@ import {
   useAddIdsItem,
   useIdsItemsForMonthlyPeriod,
   useUpdateIdsTriage,
-  useConvertIdsToObjective,
   TRIAGE_CONFIG,
   type DbIdsItem,
   type TriageMode,
 } from "@/hooks/useIdsItems";
 import { IdsToTodoDialog } from "./IdsToTodoDialog";
+import { IdsToObjectiveDialog } from "./IdsToObjectiveDialog";
 
 interface Props {
   reportId: string;
@@ -49,14 +49,14 @@ export function SectionIds({ reportId, reportType, periodStart, periodEnd, onSta
   );
   const addItem = useAddIdsItem(reportId, reportType);
   const updateTriage = useUpdateIdsTriage(reportId);
-  const convertToObjective = useConvertIdsToObjective(reportId);
 
   const [newIssue, setNewIssue] = useState("");
   const [triagingItem, setTriagingItem] = useState<DbIdsItem | null>(null);
   const [triageStep, setTriageStep] = useState<"select" | "confirm">("select");
   const [selectedMode, setSelectedMode] = useState<TriageMode | null>(null);
-  // IDS en attente de conversion en to-do (ouvre IdsToTodoDialog pour fixer la date).
+  // IDS en attente de conversion (ouvre le dialog correspondant pour fixer la date).
   const [todoDialogItem, setTodoDialogItem] = useState<DbIdsItem | null>(null);
+  const [objectiveDialogItem, setObjectiveDialogItem] = useState<DbIdsItem | null>(null);
 
   useEffect(() => {
     if (reportType === "weekly" && !isLoadingWeekly) {
@@ -102,15 +102,14 @@ export function SectionIds({ reportId, reportType, periodStart, periodEnd, onSta
 
   const handleConversion = () => {
     if (!triagingItem || !selectedMode) return;
+    // Ouvre le formulaire (responsable/date) plutôt que de créer à la volée.
+    const item = triagingItem;
+    setTriagingItem(null);
+    setTriageStep("select");
     if (selectedMode === "bloquant" || selectedMode === "deleguer") {
-      // Ouvre le formulaire to-do (responsable + date) plutôt que de créer à la volée.
-      const item = triagingItem;
-      setTriagingItem(null);
-      setTriageStep("select");
       setTodoDialogItem(item);
     } else if (selectedMode === "priorite") {
-      convertToObjective.mutate(triagingItem);
-      setTriagingItem(null);
+      setObjectiveDialogItem(item);
     }
   };
 
@@ -187,7 +186,6 @@ export function SectionIds({ reportId, reportType, periodStart, periodEnd, onSta
                   size="sm"
                   className="flex-1 bg-teal-600 hover:bg-teal-700 text-white text-xs"
                   onClick={handleConversion}
-                  disabled={convertToObjective.isPending}
                 >
                   {t("report.ids.triage.confirmYes")}
                 </Button>
@@ -261,7 +259,7 @@ export function SectionIds({ reportId, reportType, periodStart, periodEnd, onSta
                 )}
                 {item.triage_mode === "priorite" && (
                   <button
-                    onClick={() => convertToObjective.mutate(item)}
+                    onClick={() => setObjectiveDialogItem(item)}
                     className="text-[10px] text-teal-700 underline hover:no-underline"
                   >
                     {t("report.ids.createObjective")}
@@ -325,6 +323,11 @@ export function SectionIds({ reportId, reportType, periodStart, periodEnd, onSta
           item={todoDialogItem}
           onOpenChange={(open) => !open && setTodoDialogItem(null)}
         />
+        <IdsToObjectiveDialog
+          reportId={reportId}
+          item={objectiveDialogItem}
+          onOpenChange={(open) => !open && setObjectiveDialogItem(null)}
+        />
       </section>
     );
   }
@@ -358,6 +361,11 @@ export function SectionIds({ reportId, reportType, periodStart, periodEnd, onSta
         reportId={reportId}
         item={todoDialogItem}
         onOpenChange={(open) => !open && setTodoDialogItem(null)}
+      />
+      <IdsToObjectiveDialog
+        reportId={reportId}
+        item={objectiveDialogItem}
+        onOpenChange={(open) => !open && setObjectiveDialogItem(null)}
       />
     </section>
   );
