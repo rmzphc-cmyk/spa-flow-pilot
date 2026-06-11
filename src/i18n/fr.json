@@ -228,7 +228,14 @@
         "aiSummary": "Synthèse IA",
         "pdf": "PDF",
         "pdfHint": "Disponible depuis la fiche détail du spa",
-        "detail": "Détail"
+        "detail": "Détail",
+        "downloadPdf": "Télécharger le PDF"
+      },
+      "notDiffusedNoPdf": "Rapport non diffusé — PDF non disponible",
+      "verdictLevel": {
+        "red": "Attention requise",
+        "amber": "Points de vigilance",
+        "green": "Tout est au vert"
       }
     }
   },
