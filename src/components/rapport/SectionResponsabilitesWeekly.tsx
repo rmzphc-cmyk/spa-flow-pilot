@@ -217,7 +217,7 @@ export function SectionResponsabilitesWeekly({ reportId, isLocked = false, onSta
                     className="w-16 text-center"
                   />
                   <span className="text-sm text-muted-foreground">
-                    {t("report.responsabilites.expectedWeek", { n: weeklyExpected })}
+                    {t("report.responsabilites.expectedWeek", { count: weeklyExpected })}
                   </span>
                   <span className={`text-sm font-semibold ml-auto ${scoreColor(score)}`}>
                     {score === null ? "—%" : `${score}%`}
