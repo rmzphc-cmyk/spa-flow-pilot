@@ -161,6 +161,74 @@
       "green": "On track",
       "alert": "In alert",
       "validatedReports": "Reports validated"
+    },
+    "digest": {
+      "title": "This week",
+      "subtitle": "{{count}} spas · {{diffused}} shared",
+      "subtitleEmpty": "No spa assigned",
+      "weekLabel": "Week {{week}} · {{range}}",
+      "previousWeek": "Previous week",
+      "nextWeek": "Next week",
+      "emptyNoSpas": "No spa is assigned to you.",
+      "noWeeklyReport": "No weekly report shared for this week.",
+      "allGreen": "No issues or overdue commitments this week.",
+      "diffusion": {
+        "diffuse": "shared",
+        "inProgress": "in progress",
+        "none": "not shared yet"
+      },
+      "severity": {
+        "bloquant": "Blocking",
+        "deleguer": "To delegate",
+        "priorite": "Priority",
+        "veille": "Watch",
+        "untriaged": "Untriaged"
+      },
+      "kind": {
+        "todo": "To-do",
+        "objective": "Objective"
+      },
+      "sections": {
+        "problems": "Issues",
+        "overdue": "Overdue",
+        "atRisk": "At risk"
+      },
+      "counters": {
+        "blocking_one": "{{count}} blocking",
+        "blocking_other": "{{count}} blocking",
+        "other_one": "{{count}} other issue",
+        "other_other": "{{count}} other issues",
+        "overdue_one": "{{count}} overdue commitment",
+        "overdue_other": "{{count}} overdue commitments",
+        "atRisk_one": "{{count}} commitment at risk",
+        "atRisk_other": "{{count}} commitments at risk"
+      },
+      "banner": {
+        "attention_one": "{{count}} spa needs attention",
+        "attention_other": "{{count}} spas need attention",
+        "blocking_one": "{{count}} blocking",
+        "blocking_other": "{{count}} blocking",
+        "overdue_one": "{{count}} overdue commitment",
+        "overdue_other": "{{count}} overdue commitments",
+        "notDiffused_one": "{{count}} not shared",
+        "notDiffused_other": "{{count}} not shared",
+        "allOk": "All spas on track"
+      },
+      "lateDays_one": "+{{count}} d",
+      "lateDays_other": "+{{count}} d",
+      "atRiskBadge": "at risk",
+      "deferredBadge_one": "Deferred {{count}}×",
+      "deferredBadge_other": "Deferred {{count}}×",
+      "view": {
+        "bySpa": "By spa",
+        "bySeverity": "By severity"
+      },
+      "actions": {
+        "aiSummary": "AI summary",
+        "pdf": "PDF",
+        "pdfHint": "Available from the spa detail page",
+        "detail": "Details"
+      }
     }
   },
   "reportType": {

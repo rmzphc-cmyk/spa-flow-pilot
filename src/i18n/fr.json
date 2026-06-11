@@ -162,6 +162,74 @@
       "green": "Au vert",
       "alert": "En alerte",
       "validatedReports": "Rapports validés"
+    },
+    "digest": {
+      "title": "Cette semaine",
+      "subtitle": "{{count}} spas · {{diffused}} diffusés",
+      "subtitleEmpty": "Aucun spa attribué",
+      "weekLabel": "Semaine {{week}} · {{range}}",
+      "previousWeek": "Semaine précédente",
+      "nextWeek": "Semaine suivante",
+      "emptyNoSpas": "Aucun spa ne vous est attribué.",
+      "noWeeklyReport": "Aucun rapport hebdomadaire diffusé pour cette semaine.",
+      "allGreen": "Aucun problème ni engagement en retard cette semaine.",
+      "diffusion": {
+        "diffuse": "diffusé",
+        "inProgress": "en cours",
+        "none": "pas encore diffusé"
+      },
+      "severity": {
+        "bloquant": "Bloquant",
+        "deleguer": "À déléguer",
+        "priorite": "Priorité",
+        "veille": "Veille",
+        "untriaged": "À trier"
+      },
+      "kind": {
+        "todo": "To-do",
+        "objective": "Objectif"
+      },
+      "sections": {
+        "problems": "Problèmes",
+        "overdue": "En retard",
+        "atRisk": "À risque"
+      },
+      "counters": {
+        "blocking_one": "{{count}} bloquant",
+        "blocking_other": "{{count}} bloquants",
+        "other_one": "{{count}} autre problème",
+        "other_other": "{{count}} autres problèmes",
+        "overdue_one": "{{count}} engagement en retard",
+        "overdue_other": "{{count}} engagements en retard",
+        "atRisk_one": "{{count}} engagement à risque",
+        "atRisk_other": "{{count}} engagements à risque"
+      },
+      "banner": {
+        "attention_one": "{{count}} spa en attention",
+        "attention_other": "{{count}} spas en attention",
+        "blocking_one": "{{count}} bloquant",
+        "blocking_other": "{{count}} bloquants",
+        "overdue_one": "{{count}} engagement en retard",
+        "overdue_other": "{{count}} engagements en retard",
+        "notDiffused_one": "{{count}} non diffusé",
+        "notDiffused_other": "{{count}} non diffusés",
+        "allOk": "Tous les spas sont au vert"
+      },
+      "lateDays_one": "+{{count}} j",
+      "lateDays_other": "+{{count}} j",
+      "atRiskBadge": "à risque",
+      "deferredBadge_one": "Reporté {{count}}×",
+      "deferredBadge_other": "Reporté {{count}}×",
+      "view": {
+        "bySpa": "Par spa",
+        "bySeverity": "Par gravité"
+      },
+      "actions": {
+        "aiSummary": "Synthèse IA",
+        "pdf": "PDF",
+        "pdfHint": "Disponible depuis la fiche détail du spa",
+        "detail": "Détail"
+      }
     }
   },
   "reportType": {
