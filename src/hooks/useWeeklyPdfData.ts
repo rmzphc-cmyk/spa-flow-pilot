@@ -327,127 +327,25 @@ export function useWeeklyPdfData(
   });
 
   // ---- Synthèse Direction : problèmes par gravité + engagements non tenus ----
-  const todoById = new Map(allTodos.map((t) => [t.id, t]));
+  // Logique factorisée dans src/lib/weeklyException.ts (réutilisée par
+  // useDirectionDigest pour que web et PDF disent strictement la même chose).
   const objsRaw = objectivesQ.data ?? [];
-  const objectiveById = new Map(objsRaw.map((o) => [o.id, o]));
+  const exception = computeWeeklyException(
+    (idsQ.data ?? []),
+    allTodos,
+    objsRaw,
+    {
+      weekEnd,
+      today,
+      sanitize: safeText,
+      formatDate: formatDateFr,
+    },
+  );
+  const problems = exception.problems;
+  const commitmentsOverdue = exception.commitmentsOverdue;
+  const commitmentsAtRisk = exception.commitmentsAtRisk;
+  const verdict = exception.verdict;
 
-  const SEVERITY_ORDER: ProblemSeverity[] = [
-    "bloquant",
-    "deleguer",
-    "priorite",
-    "veille",
-    "untriaged",
-  ];
-
-  const problems: WeeklyPdfProblem[] = (idsQ.data ?? [])
-    .map((it): WeeklyPdfProblem => {
-      let action: string | null = null;
-      if (it.converted_to_todo_id) {
-        const t = todoById.get(it.converted_to_todo_id);
-        if (t) {
-          const resp = parseTodoDescription(t.description).responsible;
-          const parts = [resp, t.due_date ? formatDateFr(t.due_date) : ""].filter(Boolean);
-          action = "To-do" + (parts.length ? " (" + parts.join(" · ") + ")" : "");
-        } else {
-          action = "To-do";
-        }
-      } else if (it.converted_to_objective_id) {
-        const o = objectiveById.get(it.converted_to_objective_id);
-        action =
-          "Objectif" +
-          (o?.target_date ? " (cible " + formatDateFr(o.target_date) + ")" : "");
-      }
-      return {
-        text: safeText(it.capture_text),
-        severity: (it.triage_mode ?? "untriaged") as ProblemSeverity,
-        action,
-      };
-    })
-    .sort(
-      (a, b) => SEVERITY_ORDER.indexOf(a.severity) - SEVERITY_ORDER.indexOf(b.severity),
-    );
-
-  const todayOnly = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const lateDaysOf = (iso: string): number => {
-    const d = new Date(iso);
-    const dOnly = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-    return Math.round((todayOnly.getTime() - dOnly.getTime()) / 86400000);
-  };
-
-  const commitmentsOverdue: WeeklyPdfCommitment[] = [];
-  const commitmentsAtRisk: WeeklyPdfCommitment[] = [];
-
-  // To-dos (y compris reportés) dont l'échéance tombe au plus tard en fin de
-  // semaine et non terminés. Un to-do reporté reste un engagement non tenu.
-  for (const t of allTodos) {
-    if (t.status === "done") continue;
-    if (!t.due_date) continue;
-    const due = new Date(t.due_date);
-    if (weekEnd && due > weekEnd) continue;
-    const late = lateDaysOf(t.due_date);
-    const c: WeeklyPdfCommitment = {
-      kind: "todo",
-      title: safeText(t.title),
-      responsible: parseTodoDescription(t.description).responsible || "—",
-      dueLabel: formatDateFr(t.due_date),
-      lateDays: late > 0 ? late : 0,
-      detail: "",
-      deferredCount: t.deferred_count ?? 0,
-    };
-    if (late > 0) commitmentsOverdue.push(c);
-    else commitmentsAtRisk.push(c);
-  }
-
-  // Objectifs dont la cible est au plus tard cette semaine et non atteints
-  for (const o of objsRaw) {
-    if (!o.target_date) continue;
-    const td = new Date(o.target_date);
-    if (weekEnd && td > weekEnd) continue;
-    const parsed = parseObjectiveDescription(o.description);
-    const progress = Math.min(
-      100,
-      Math.round((parsed.current / (parsed.target || 1)) * 100),
-    );
-    if (progress >= 100) continue;
-    const late = lateDaysOf(o.target_date);
-    const c: WeeklyPdfCommitment = {
-      kind: "objective",
-      title: safeText(o.title),
-      responsible: "",
-      dueLabel: formatDateFr(o.target_date),
-      lateDays: late > 0 ? late : 0,
-      detail:
-        parsed.current +
-        "/" +
-        parsed.target +
-        (parsed.unit ? " " + parsed.unit : "") +
-        " · " +
-        progress +
-        "%",
-      deferredCount: 0,
-    };
-    if (late > 0) commitmentsOverdue.push(c);
-    else commitmentsAtRisk.push(c);
-  }
-
-  commitmentsOverdue.sort((a, b) => b.lateDays - a.lateDays);
-
-  const blockingCount = (idsQ.data ?? []).filter(
-    (it) => it.triage_mode === "bloquant",
-  ).length;
-  const otherProblemsCount = problems.filter((p) => p.severity !== "bloquant").length;
-  const verdictLevel: "red" | "amber" | "green" =
-    blockingCount > 0 || commitmentsOverdue.length > 0
-      ? "red"
-      : commitmentsAtRisk.length > 0 || otherProblemsCount > 0
-        ? "amber"
-        : "green";
-  const verdict: WeeklyPdfVerdict = {
-    level: verdictLevel,
-    blocking: blockingCount,
-    overdue: commitmentsOverdue.length,
-    atRisk: commitmentsAtRisk.length,
-  };
 
   const responsibilities: WeeklyPdfResponsibility[] = (templatesQ.data ?? [])
     .filter((t) => t.frequency === "daily" || t.frequency === "weekly")
