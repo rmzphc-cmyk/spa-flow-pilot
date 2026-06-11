@@ -42,32 +42,6 @@ export type WeeklyPdfCommitment = ExceptionCommitment;
 
 export type WeeklyPdfVerdict = ExceptionVerdict;
 
-export interface WeeklyPdfProblem {
-  text: string;
-  severity: ProblemSeverity;
-  /** Ce qui a été décidé : "To-do (...)", "Objectif (...)" ou null si non qualifié. */
-  action: string | null;
-}
-
-export interface WeeklyPdfCommitment {
-  kind: "todo" | "objective";
-  title: string;
-  responsible: string;
-  dueLabel: string;
-  /** > 0 si l'échéance est dépassée (nb de jours de retard), 0 sinon. */
-  lateDays: number;
-  /** Détail chiffré (objectif : "11/15 · 73%"), "" pour un to-do. */
-  detail: string;
-  /** Nb de fois où le to-do a été reporté (0 si jamais / objectif). */
-  deferredCount: number;
-}
-
-export interface WeeklyPdfVerdict {
-  level: "red" | "amber" | "green";
-  blocking: number;
-  overdue: number;
-  atRisk: number;
-}
 
 export interface WeeklyPdfKpi {
   name: string;
