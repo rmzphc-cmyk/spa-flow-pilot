@@ -288,8 +288,17 @@ export function useDirectionDigest(weekOffset = 0) {
         const spaTodos = todosBySpa.get(spa.id) ?? [];
         const spaObjs = objsBySpa.get(spa.id) ?? [];
 
+        // Parité stricte avec le PDF : on filtre les engagements sur la fin de
+        // période du rapport (comme useWeeklyPdfData), pas sur le dimanche ISO.
+        // Fallback sur window.end quand aucun rapport n'existe pour la semaine.
+        let weekEnd = window.end;
+        if (report?.period_end) {
+          weekEnd = new Date(report.period_end);
+          weekEnd.setHours(23, 59, 59, 999);
+        }
+
         const exception = computeWeeklyException(spaIds, spaTodos, spaObjs, {
-          weekEnd: window.end,
+          weekEnd,
           today,
         });
 
