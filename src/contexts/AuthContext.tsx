@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState, ReactNode } from "react
 import type { Session, User } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
 import { toAppRole, type AppRole } from "@/lib/roles";
+import i18n from "@/i18n";
 
 export type { AppRole };
 
@@ -30,6 +31,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
       if (event === "PASSWORD_RECOVERY") setIsRecoveryMode(true);
       if (event === "USER_UPDATED" || event === "SIGNED_IN") setIsRecoveryMode(false);
+      // Sync langue depuis user_metadata à chaque (re)connexion
+      const lang = newSession?.user?.user_metadata?.language;
+      if (lang && ["fr", "en", "es"].includes(lang) && i18n.language !== lang) {
+        i18n.changeLanguage(lang);
+        localStorage.setItem("app-language", lang);
+      }
     });
 
     supabase.auth.getSession().then(({ data }) => {

@@ -1,7 +1,7 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useState } from "react";
-import { ChevronDown, User, Settings, LogOut, Bell } from "lucide-react";
+import { ChevronDown, Settings, LogOut, Bell } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -177,10 +177,7 @@ export function AppHeader() {
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem className="gap-2">
-              <User className="h-4 w-4" /> {t("header.profile")}
-            </DropdownMenuItem>
-            <DropdownMenuItem className="gap-2">
+            <DropdownMenuItem className="gap-2" onClick={() => navigate("/parametres")}>
               <Settings className="h-4 w-4" /> {t("header.settings")}
             </DropdownMenuItem>
             <DropdownMenuSeparator />

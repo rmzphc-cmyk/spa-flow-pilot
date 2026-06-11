@@ -1,41 +1,11 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import {
-  loadSchedule,
-  saveSchedule,
-  type MeetingSchedule,
-} from "@/lib/meetingSchedule";
-
-interface UserSettingsData {
-  language: "fr" | "en" | "es";
-  notifications: {
-    preBrief: boolean;
-    aiSynthesis: boolean;
-    reportValidated: boolean;
-    email: string;
-  };
-  cycle: {
-    type: "weekly" | "monthly";
-    frequency: number;
-    submissionDay: string;
-  };
-  account: {
-    displayName: string;
-    email: string;
-    role: "manager" | "direction" | "admin";
-    spa: string;
-  };
-  accessibility: {
-    textSize: "normal" | "large";
-    contrast: "standard" | "high";
-  };
-}
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 const languages = [
   { value: "fr" as const, label: "Français", flag: "🇫🇷" },
@@ -43,95 +13,47 @@ const languages = [
   { value: "es" as const, label: "Español", flag: "🇪🇸" },
 ];
 
-const days = ["lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi", "dimanche"];
-
-const USER_SETTINGS_KEY = "user_settings";
-
-const defaultSettings: UserSettingsData = {
-  language: "fr",
-  notifications: {
-    preBrief: true,
-    aiSynthesis: true,
-    reportValidated: true,
-    email: "marie.dupont@spadomaine.fr",
-  },
-  cycle: {
-    type: "weekly",
-    frequency: 7,
-    submissionDay: "vendredi",
-  },
-  account: {
-    displayName: "Marie Dupont",
-    email: "marie.dupont@spadomaine.fr",
-    role: "manager",
-    spa: "Par Gran Canaria",
-  },
-  accessibility: {
-    textSize: "normal",
-    contrast: "standard",
-  },
-};
-
-function loadUserSettings(fallbackLang: "fr" | "en" | "es"): UserSettingsData {
-  try {
-    const raw = localStorage.getItem(USER_SETTINGS_KEY);
-    if (!raw) return { ...defaultSettings, language: fallbackLang };
-    const parsed = JSON.parse(raw);
-    return { ...defaultSettings, ...parsed };
-  } catch {
-    return { ...defaultSettings, language: fallbackLang };
-  }
-}
-
 export default function UserSettings() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const [settings, setSettings] = useState<UserSettingsData>(() =>
-    loadUserSettings((i18n.language as "fr" | "en" | "es") || "fr"),
-  );
+  const currentLang = (i18n.language?.slice(0, 2) ?? "fr") as "fr" | "en" | "es";
+  const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(USER_SETTINGS_KEY, JSON.stringify(settings));
-    } catch {}
-  }, [settings]);
-
-
-  const isManager = settings.account.role === "manager";
-
-  const [schedule, setSchedule] = useState<MeetingSchedule>(() => loadSchedule());
-  useEffect(() => {
-    saveSchedule(schedule);
-  }, [schedule]);
-
-  const update = <K extends keyof UserSettingsData>(section: K, value: UserSettingsData[K]) => {
-    setSettings({ ...settings, [section]: value });
-  };
-
-  const handleLanguageChange = (lang: "fr" | "en" | "es") => {
-    update("language", lang);
+  const handleLanguageChange = async (lang: "fr" | "en" | "es") => {
+    if (lang === currentLang) return;
+    setSaving(true);
     i18n.changeLanguage(lang);
+    localStorage.setItem("app-language", lang);
+    try {
+      await supabase.auth.updateUser({ data: { language: lang } });
+    } catch {
+      // non-bloquant — la langue est déjà appliquée localement
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const handlePasswordChange = () => {
-    navigate("/change-password");
-  };
+  const meta = (user?.user_metadata ?? {}) as Record<string, unknown>;
+  const fullName = (typeof meta.full_name === "string" && meta.full_name) || user?.email || "—";
+  const email = user?.email ?? "—";
 
   return (
-    <div className="max-w-[640px] mx-auto px-6 py-6 pb-20">
+    <div className="max-w-[560px] mx-auto px-6 py-6 pb-20">
       <h1 className="text-xl font-bold text-foreground mb-6">{t("settings.title")}</h1>
 
-      {/* SECTION 1 — Langue */}
+      {/* Langue */}
       <section className="mb-8">
         <h2 className="text-base font-semibold text-foreground mb-3">{t("settings.language.title")}</h2>
         <div className="flex gap-2">
           {languages.map((lang) => (
             <button
               key={lang.value}
+              disabled={saving}
               onClick={() => handleLanguageChange(lang.value)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border text-sm font-medium transition-colors ${
-                settings.language === lang.value
+                currentLang === lang.value
                   ? "bg-primary/10 text-primary border-primary/30"
                   : "bg-card text-muted-foreground border-border hover:bg-muted"
               }`}
@@ -142,173 +64,24 @@ export default function UserSettings() {
           ))}
         </div>
         <p className="text-xs text-muted-foreground mt-2">{t("settings.language.aiNote")}</p>
-        <p className="text-xs text-muted-foreground mt-1">{t("settings.language.personalNote")}</p>
       </section>
 
-      {/* SECTION 2 — Notifications */}
-      <section className="mb-8">
-        <h2 className="text-base font-semibold text-foreground mb-3">{t("settings.notifications.title")}</h2>
-        <div className="bg-card border border-border rounded-xl p-4 shadow-sm space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-foreground">{t("settings.notifications.preBrief")}</p>
-              <p className="text-xs text-muted-foreground">{t("settings.notifications.preBriefDesc")}</p>
-            </div>
-            <Switch
-              checked={settings.notifications.preBrief}
-              onCheckedChange={(v) => update("notifications", { ...settings.notifications, preBrief: v })}
-            />
-          </div>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium text-foreground">{t("settings.notifications.aiSynthesis")}</p>
-              <p className="text-xs text-muted-foreground">{t("settings.notifications.aiSynthesisDesc")}</p>
-            </div>
-            <Switch
-              checked={settings.notifications.aiSynthesis}
-              onCheckedChange={(v) => update("notifications", { ...settings.notifications, aiSynthesis: v })}
-            />
-          </div>
-          {(settings.account.role === "direction" || settings.account.role === "admin") && (
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-foreground">{t("settings.notifications.reportValidated")}</p>
-                <p className="text-xs text-muted-foreground">{t("settings.notifications.reportValidatedDesc")}</p>
-              </div>
-              <Switch
-                checked={settings.notifications.reportValidated}
-                onCheckedChange={(v) => update("notifications", { ...settings.notifications, reportValidated: v })}
-              />
-            </div>
-          )}
-          <div>
-            <Label className="text-sm font-medium">{t("settings.notifications.emailLabel")}</Label>
-            <Input
-              value={settings.notifications.email}
-              onChange={(e) => update("notifications", { ...settings.notifications, email: e.target.value })}
-              className="mt-1"
-              type="email"
-            />
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 3 — Cycle (Manager only) */}
-      {isManager && (
-        <section className="mb-8">
-          <h2 className="text-base font-semibold text-foreground mb-3">{t("settings.cycle.title")}</h2>
-          <div className="bg-card border border-border rounded-xl p-4 shadow-sm space-y-4">
-            <div>
-              <p className="text-sm font-medium text-foreground">{t("settings.cycle.reportingCycle")}</p>
-              <div className="mt-1.5 flex items-center gap-2">
-                <span className={`inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full ${
-                  settings.cycle.type === "weekly" ? "bg-emerald-100 text-emerald-800" : "bg-blue-100 text-blue-800"
-                }`}>
-                  {settings.cycle.type === "weekly" ? "🟢 Weekly" : "🔵 Monthly"}
-                </span>
-                <span className="text-sm text-muted-foreground">
-                  {settings.cycle.type === "weekly"
-                    ? t("settings.cycle.frequencyLabel", { count: settings.cycle.frequency })
-                    : t("settings.cycle.monthlyCycle")}
-                </span>
-              </div>
-              <p className="text-[10px] text-muted-foreground mt-1">{t("settings.cycle.adminOnly")}</p>
-            </div>
-            {settings.cycle.type === "weekly" && (
-              <div>
-                <Label className="text-sm font-medium">{t("settings.cycle.submissionDay")}</Label>
-                <p className="text-[10px] text-muted-foreground mb-1.5">{t("settings.cycle.submissionDayDesc")}</p>
-                <Select
-                  value={settings.cycle.submissionDay}
-                  onValueChange={(v) => update("cycle", { ...settings.cycle, submissionDay: v })}
-                >
-                  <SelectTrigger className="w-[180px] h-9 text-sm"><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {days.map((d) => (
-                      <SelectItem key={d} value={d} className="capitalize">{t(`days.${d}`)}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-          </div>
-        </section>
-      )}
-
-      {/* SECTION 4 — Compte */}
-
+      {/* Compte */}
       <section className="mb-8">
         <h2 className="text-base font-semibold text-foreground mb-3">{t("settings.account.title")}</h2>
         <div className="bg-card border border-border rounded-xl p-4 shadow-sm space-y-4">
           <div>
             <Label className="text-sm font-medium">{t("settings.account.displayName")}</Label>
-            <Input
-              value={settings.account.displayName}
-              onChange={(e) => update("account", { ...settings.account, displayName: e.target.value })}
-              className="mt-1"
-            />
+            <p className="text-sm text-foreground mt-1">{fullName}</p>
           </div>
           <div>
             <Label className="text-sm font-medium">{t("settings.account.email")}</Label>
-            <Input value={settings.account.email} disabled className="mt-1 bg-muted" />
+            <p className="text-sm text-foreground mt-1">{email}</p>
             <p className="text-[10px] text-muted-foreground mt-1">{t("settings.account.emailNote")}</p>
           </div>
-          <div className="flex gap-8">
-            <div>
-              <Label className="text-sm font-medium">{t("settings.account.role")}</Label>
-              <p className="text-sm text-foreground mt-1">{t(`roles.${settings.account.role}`)}</p>
-            </div>
-            <div>
-              <Label className="text-sm font-medium">{t("settings.account.spa")}</Label>
-              <p className="text-sm text-foreground mt-1">{settings.account.spa}</p>
-            </div>
-          </div>
-          <Button variant="outline" size="sm" onClick={handlePasswordChange}>
+          <Button variant="outline" size="sm" onClick={() => navigate("/change-password")}>
             {t("settings.account.changePassword")}
           </Button>
-        </div>
-      </section>
-
-      {/* SECTION 5 — Accessibilité */}
-      <section className="mb-8">
-        <h2 className="text-base font-semibold text-foreground mb-3">{t("settings.accessibility.title")}</h2>
-        <div className="bg-card border border-border rounded-xl p-4 shadow-sm space-y-4">
-          <div>
-            <Label className="text-sm font-medium">{t("settings.accessibility.textSize")}</Label>
-            <div className="flex gap-2 mt-1.5">
-              {(["normal", "large"] as const).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => update("accessibility", { ...settings.accessibility, textSize: s })}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                    settings.accessibility.textSize === s
-                      ? "bg-primary/10 text-primary border-primary/30"
-                      : "bg-card text-muted-foreground border-border hover:bg-muted"
-                  }`}
-                >
-                  {s === "normal" ? t("settings.accessibility.textNormal") : t("settings.accessibility.textLarge")}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div>
-            <Label className="text-sm font-medium">{t("settings.accessibility.contrast")}</Label>
-            <div className="flex gap-2 mt-1.5">
-              {(["standard", "high"] as const).map((c) => (
-                <button
-                  key={c}
-                  onClick={() => update("accessibility", { ...settings.accessibility, contrast: c })}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                    settings.accessibility.contrast === c
-                      ? "bg-primary/10 text-primary border-primary/30"
-                      : "bg-card text-muted-foreground border-border hover:bg-muted"
-                  }`}
-                >
-                  {c === "standard" ? t("settings.accessibility.contrastStandard") : t("settings.accessibility.contrastHigh")}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       </section>
     </div>
