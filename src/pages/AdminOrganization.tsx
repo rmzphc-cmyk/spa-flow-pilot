@@ -534,9 +534,12 @@ function DirectorsTab({ organizationId, readOnly }: { organizationId: string; re
   const destById = useMemo(() => new Map(destinations.map((d) => [d.id, d])), [destinations]);
   const directors = users.filter((u) => u.role === DB_ROLES.DIRECTION);
 
+  const resetMut = useResetUserPassword();
+
   const [inviting, setInviting] = useState(false);
   const [editing, setEditing] = useState<AdminUser | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
+  const [resetTarget, setResetTarget] = useState<AdminUser | null>(null);
   const [spaAccessTarget, setSpaAccessTarget] = useState<AdminUser | null>(null);
   const [tempCredentials, setTempCredentials] = useState<{ email: string; password: string } | null>(null);
 
@@ -569,6 +572,9 @@ function DirectorsTab({ organizationId, readOnly }: { organizationId: string; re
                 </div>
                 {!readOnly && (
                   <div className="flex items-center gap-2">
+                    <Button variant="ghost" size="icon" title={t("admin.managers.reset")} onClick={() => setResetTarget(u)}>
+                      <KeyRound className="h-4 w-4" />
+                    </Button>
                     <Button variant="ghost" size="icon" title={t("admin.directors.manageSpaAccess")} onClick={() => setSpaAccessTarget(u)}>
                       <Building2 className="h-4 w-4" />
                     </Button>
@@ -641,6 +647,37 @@ function DirectorsTab({ organizationId, readOnly }: { organizationId: string; re
               }}
             >
               {t("common.delete")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!resetTarget} onOpenChange={(o) => !o && setResetTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("admin.managers.resetTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>
+              {t("admin.managers.resetDesc", { name: resetTarget?.full_name || resetTarget?.email || "" })}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("common.cancel")}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!resetTarget) return;
+                try {
+                  const res = await resetMut.mutateAsync(resetTarget.id);
+                  if (res?.temp_password) {
+                    setTempCredentials({ email: resetTarget.email, password: res.temp_password });
+                  }
+                  toast.success(t("admin.managers.resetToast"));
+                  setResetTarget(null);
+                } catch (e: any) {
+                  toast.error(e.message ?? t("common.error"));
+                }
+              }}
+            >
+              {t("admin.managers.resetConfirm")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
