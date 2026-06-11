@@ -414,7 +414,7 @@ export function SectionResponsabilites({
                       className="w-20 text-center"
                     />
                     <span className="text-sm text-muted-foreground">
-                      {t("report.responsabilites.expectedMonth", { n: monthlyExpected })}
+                      {t("report.responsabilites.expectedMonth", { count: monthlyExpected })}
                     </span>
                     <span className={`text-sm font-semibold ml-auto ${scoreColor(liveScore)}`}>
                       {liveScore === null ? "—%" : `${liveScore}%`}
