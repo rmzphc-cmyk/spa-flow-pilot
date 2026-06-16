@@ -67,6 +67,41 @@ export function useUpsertKpiRoleAssignment() {
   });
 }
 
+// Réassignation de RÔLE d'une assignation existante : on remplace, on n'empile pas.
+// La clé d'unicité étant (kpi_definition_id, role), changer le rôle via un simple
+// upsert créerait une 2e ligne (orphelin) → le KPI s'afficherait sous deux rôles.
+// Ici on upsert le nouveau couple PUIS on supprime l'ancienne ligne par id.
+export function useReassignKpiRole() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      oldId: string;
+      kpi_definition_id: string;
+      role: KpiRole;
+      niveau: KpiNiveau;
+    }) => {
+      const { error: upErr } = await supabase
+        .from("kpi_role_assignments")
+        .upsert(
+          { kpi_definition_id: input.kpi_definition_id, role: input.role, niveau: input.niveau },
+          { onConflict: "kpi_definition_id,role" },
+        );
+      if (upErr) throw upErr;
+      const { error: delErr } = await supabase
+        .from("kpi_role_assignments")
+        .delete()
+        .eq("id", input.oldId);
+      if (delErr) throw delErr;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kpi_role_assignments"] });
+    },
+    onError: (e: Error) => {
+      toast.error(e.message || "Impossible de réassigner le rôle");
+    },
+  });
+}
+
 export function useDeleteKpiRoleAssignment() {
   const qc = useQueryClient();
   return useMutation({

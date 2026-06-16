@@ -947,7 +947,8 @@
       "importDone": "Import successful ✓",
       "importFailed": "Import failed",
       "unreadable": "Unreadable file or unrecognized format."
-    }
+    },
+    "allRolesAssigned": "All roles are already assigned to this KPI."
   },
   "respConfig": {
     "title": "Manager Responsibilities",

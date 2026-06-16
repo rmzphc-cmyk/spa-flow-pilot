@@ -948,7 +948,8 @@
       "importDone": "Import réussi ✓",
       "importFailed": "Échec de l’import",
       "unreadable": "Fichier illisible ou format non reconnu."
-    }
+    },
+    "allRolesAssigned": "Tous les rôles sont déjà attribués à ce KPI."
   },
   "respConfig": {
     "title": "Responsabilités managériales",

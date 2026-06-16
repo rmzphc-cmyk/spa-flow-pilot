@@ -947,7 +947,8 @@
       "importDone": "Importación correcta ✓",
       "importFailed": "Error en la importación",
       "unreadable": "Archivo ilegible o formato no reconocido."
-    }
+    },
+    "allRolesAssigned": "Todos los roles ya están asignados a este KPI."
   },
   "respConfig": {
     "title": "Responsabilidades de gestión",

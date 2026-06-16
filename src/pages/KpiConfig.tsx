@@ -54,8 +54,8 @@ import {
 import {
   useKpiRoleAssignments,
   useUpsertKpiRoleAssignment,
+  useReassignKpiRole,
   useDeleteKpiRoleAssignment,
-  NIVEAU_COLORS,
   type KpiRole,
   type KpiNiveau,
   type KpiRoleAssignment,
@@ -613,14 +613,45 @@ function SettingsDialog({
   const [amber, setAmber] = useState("");
   const [red, setRed] = useState("");
   const [excellent, setExcellent] = useState("");
-  const [newRole, setNewRole] = useState<KpiRole>("therapist");
   const [newNiveau, setNewNiveau] = useState<KpiNiveau>("prioritaire");
   const upsertRole = useUpsertKpiRoleAssignment();
+  const reassignRole = useReassignKpiRole();
   const deleteRole = useDeleteKpiRoleAssignment();
 
+  const ALL_ROLES: KpiRole[] = ["therapist", "spa_concierge", "spa_manager", "ambassador"];
+  const ALL_NIVEAUX: KpiNiveau[] = ["prioritaire", "secondaire", "suivi"];
+
+  // Rôles déjà attribués à ce KPI : un même rôle ne peut pas être listé deux fois
+  // (clé d'unicité KPI+rôle), mais un KPI PEUT avoir plusieurs rôles différents.
+  const usedRoles = useMemo(() => new Set(assignments.map((a) => a.role)), [assignments]);
+  const availableRoles = ALL_ROLES.filter((r) => !usedRoles.has(r));
+  const [newRole, setNewRole] = useState<KpiRole>(availableRoles[0] ?? "therapist");
+
+  // Garde le rôle « à ajouter » valide quand la liste des rôles libres change.
+  useEffect(() => {
+    if (!availableRoles.includes(newRole) && availableRoles.length > 0) {
+      setNewRole(availableRoles[0]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assignments]);
+
+  const busy = upsertRole.isPending || reassignRole.isPending || deleteRole.isPending;
+
   const handleAddAssignment = () => {
-    if (!kpi) return;
+    if (!kpi || availableRoles.length === 0) return;
     upsertRole.mutate({ kpi_definition_id: kpi.id, role: newRole, niveau: newNiveau });
+  };
+
+  // Changer le RÔLE d'une assignation existante = remplacer (pas empiler).
+  const handleChangeRole = (a: KpiRoleAssignment, role: KpiRole) => {
+    if (!kpi || role === a.role) return;
+    reassignRole.mutate({ oldId: a.id, kpi_definition_id: kpi.id, role, niveau: a.niveau });
+  };
+
+  // Changer le NIVEAU d'une assignation existante = upsert en place (même rôle).
+  const handleChangeNiveau = (a: KpiRoleAssignment, niveau: KpiNiveau) => {
+    if (!kpi || niveau === a.niveau) return;
+    upsertRole.mutate({ kpi_definition_id: kpi.id, role: a.role, niveau });
   };
 
   useEffect(() => {
@@ -688,73 +719,118 @@ function SettingsDialog({
             {t("kpiConfig.belowCorrect")} <span className="text-red-500 font-medium">{t("kpiConfig.insufficient")}</span>
           </p>
 
-          {/* Section Rôles */}
+          {/* Section Rôles — chaque assignation est éditable EN PLACE (rôle + niveau).
+              Changer le rôle REMPLACE l'assignation (pas de doublon orphelin). Le
+              « + Ajouter » ne propose que les rôles encore libres. */}
           <div className="border-t pt-4">
             <label className="text-xs font-medium text-muted-foreground block mb-2">
               {t("kpiConfig.roleAssignment")}
             </label>
 
             {assignments.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {assignments.map((a) => (
-                  <span
-                    key={a.id}
-                    className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full border font-medium ${NIVEAU_COLORS[a.niveau]}`}
-                  >
-                    {t(`kpiConfig.role.${a.role}`)} — {t(`kpiConfig.niveau.${a.niveau}`)}
-                    <button
-                      type="button"
-                      className="ml-0.5 hover:opacity-70 cursor-pointer"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        deleteRole.mutate(a.id);
-                      }}
-                      aria-label={t("common.delete")}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
+              <div className="flex flex-col gap-2 mb-3">
+                {assignments.map((a) => {
+                  // Rôle libre pour CETTE ligne = non utilisé par les AUTRES assignations.
+                  const rolesForRow = ALL_ROLES.filter(
+                    (r) => r === a.role || !usedRoles.has(r),
+                  );
+                  return (
+                    <div key={a.id} className="flex gap-2 items-center">
+                      <Select
+                        value={a.role}
+                        onValueChange={(v) => handleChangeRole(a, v as KpiRole)}
+                        disabled={busy}
+                      >
+                        <SelectTrigger className="h-8 text-xs flex-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {rolesForRow.map((r) => (
+                            <SelectItem key={r} value={r} className="text-xs">
+                              {t(`kpiConfig.role.${r}`)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <Select
+                        value={a.niveau}
+                        onValueChange={(v) => handleChangeNiveau(a, v as KpiNiveau)}
+                        disabled={busy}
+                      >
+                        <SelectTrigger className="h-8 text-xs flex-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ALL_NIVEAUX.map((n) => (
+                            <SelectItem key={n} value={n} className="text-xs">
+                              {t(`kpiConfig.niveau.${n}`)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+
+                      <button
+                        type="button"
+                        className="h-8 w-8 shrink-0 rounded-md border text-muted-foreground hover:bg-muted disabled:opacity-50"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          deleteRole.mutate(a.id);
+                        }}
+                        disabled={busy}
+                        aria-label={t("common.delete")}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
 
-            <div className="flex gap-2 items-center">
-              <Select value={newRole} onValueChange={(v) => setNewRole(v as KpiRole)}>
-                <SelectTrigger className="h-8 text-xs flex-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {(["therapist", "spa_concierge", "spa_manager", "ambassador"] as KpiRole[]).map((r) => (
-                    <SelectItem key={r} value={r} className="text-xs">
-                      {t(`kpiConfig.role.${r}`)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {availableRoles.length > 0 ? (
+              <div className="flex gap-2 items-center">
+                <Select value={newRole} onValueChange={(v) => setNewRole(v as KpiRole)} disabled={busy}>
+                  <SelectTrigger className="h-8 text-xs flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableRoles.map((r) => (
+                      <SelectItem key={r} value={r} className="text-xs">
+                        {t(`kpiConfig.role.${r}`)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-              <Select value={newNiveau} onValueChange={(v) => setNewNiveau(v as KpiNiveau)}>
-                <SelectTrigger className="h-8 text-xs flex-1">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {(["prioritaire", "secondaire", "suivi"] as KpiNiveau[]).map((n) => (
-                    <SelectItem key={n} value={n} className="text-xs">
-                      {t(`kpiConfig.niveau.${n}`)}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Select value={newNiveau} onValueChange={(v) => setNewNiveau(v as KpiNiveau)} disabled={busy}>
+                  <SelectTrigger className="h-8 text-xs flex-1">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ALL_NIVEAUX.map((n) => (
+                      <SelectItem key={n} value={n} className="text-xs">
+                        {t(`kpiConfig.niveau.${n}`)}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-              <Button
-                size="sm"
-                className="h-8 text-xs bg-teal-600 hover:bg-teal-700 text-white px-3"
-                onClick={handleAddAssignment}
-                disabled={upsertRole.isPending}
-              >
-                + {t("kpiConfig.add")}
-              </Button>
-            </div>
+                <Button
+                  size="sm"
+                  className="h-8 text-xs bg-teal-600 hover:bg-teal-700 text-white px-3"
+                  onClick={handleAddAssignment}
+                  disabled={busy}
+                >
+                  + {t("kpiConfig.add")}
+                </Button>
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground italic">
+                {t("kpiConfig.allRolesAssigned")}
+              </p>
+            )}
           </div>
         </div>
 
