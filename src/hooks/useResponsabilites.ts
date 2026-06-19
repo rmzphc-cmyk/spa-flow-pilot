@@ -40,7 +40,7 @@ export function useResponsabilityTemplates(spaId: string | null) {
     queryFn: async (): Promise<ResponsabilityTemplateRow[]> => {
       const { data, error } = await supabase
         .from("responsibility_templates")
-        .select("id, title, description, category, display_order, frequency, expected_count")
+        .select("id, title, title_en, title_es, description, category, display_order, frequency, expected_count")
         .eq("spa_id", spaId!)
         .eq("is_active", true)
         .order("display_order", { ascending: true });
