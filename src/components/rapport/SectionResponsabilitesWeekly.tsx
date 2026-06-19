@@ -11,6 +11,7 @@ import {
   useResponsabilityLogs,
   useUpsertResponsabilityLog,
   calcWeeklyExpected,
+  getLocalizedRespTitle,
 } from "@/hooks/useResponsabilites";
 import type { SectionStatus } from "@/pages/RapportDetail";
 
@@ -198,7 +199,7 @@ export function SectionResponsabilitesWeekly({ reportId, isLocked = false, onSta
             return (
               <div key={tmpl.id} className="bg-card border border-border rounded-xl p-4 shadow-sm">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-medium text-foreground text-sm">{tmpl.title}</span>
+                  <span className="font-medium text-foreground text-sm">{getLocalizedRespTitle(tmpl, i18n.language)}</span>
                   <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${badge.cls}`}>
                     {badge.label}
                   </span>
