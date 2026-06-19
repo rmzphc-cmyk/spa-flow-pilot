@@ -13,6 +13,7 @@ export interface KpiEntryRow {
   comment_is_validated: boolean;
   status: KpiStatus;
   target_value: number | null;
+  is_na: boolean;
 }
 
 export function useKpiEntries(reportId: string | undefined) {
@@ -39,6 +40,7 @@ export interface UpsertKpiEntryInput {
   value_n1?: number | null;
   comment: string | null;
   status: KpiStatus;
+  is_na?: boolean;
 }
 
 export function useUpsertKpiEntry() {

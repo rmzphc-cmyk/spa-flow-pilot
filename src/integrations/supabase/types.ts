@@ -452,6 +452,7 @@ export type Database = {
           comment_is_validated: boolean
           created_at: string
           id: string
+          is_na: boolean
           kpi_definition_id: string
           report_id: string
           status: Database["public"]["Enums"]["kpi_status"]
@@ -465,6 +466,7 @@ export type Database = {
           comment_is_validated?: boolean
           created_at?: string
           id?: string
+          is_na?: boolean
           kpi_definition_id: string
           report_id: string
           status?: Database["public"]["Enums"]["kpi_status"]
@@ -478,6 +480,7 @@ export type Database = {
           comment_is_validated?: boolean
           created_at?: string
           id?: string
+          is_na?: boolean
           kpi_definition_id?: string
           report_id?: string
           status?: Database["public"]["Enums"]["kpi_status"]

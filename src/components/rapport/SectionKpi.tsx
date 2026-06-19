@@ -101,15 +101,12 @@ function defToKpiData(
 
 function entryToCardValue(entry: KpiEntryRow | undefined): KpiCardValue {
   if (!entry) return { value: "", comment: "", isNa: false, naReason: "" };
-  // N/A réel = statut not_applicable AVEC une raison saisie. Une entrée pré-créée
-  // par create-report-cycle (not_applicable, sans valeur ni commentaire) est un
-  // simple état "vierge" → on affiche la saisie chiffrée par défaut, pas le mode N/A.
-  const isNa =
-    entry.status === "not_applicable" &&
-    entry.value_current === null &&
-    !!(entry.comment && entry.comment.trim());
+  // N/A = marqueur explicite `is_na` (coché par le manager). On ne se fie plus à
+  // la présence d'un commentaire : la raison est optionnelle. Une entrée pré-créée
+  // par create-report-cycle reste is_na=false → saisie chiffrée par défaut.
+  const isNa = entry.is_na === true;
   return {
-    value: entry.value_current !== null ? String(entry.value_current) : "",
+    value: !isNa && entry.value_current !== null ? String(entry.value_current) : "",
     comment: isNa ? "" : entry.comment ?? "",
     isNa,
     naReason: isNa ? entry.comment ?? "" : "",
@@ -316,6 +313,7 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
         value_current,
         comment,
         status,
+        is_na: cv.isNa,
       });
       delete pendingRef.current[def.id];
     },
@@ -358,7 +356,7 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
       const cv = local[def.id];
       if (!cv) return false;
       if (cv.isNa) {
-        if (!cv.naReason.trim()) return false;
+        // Raison optionnelle : cocher « non disponible » suffit à valider.
         continue;
       }
       if (isWeekly) {
