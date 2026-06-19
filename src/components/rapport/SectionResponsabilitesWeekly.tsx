@@ -11,6 +11,7 @@ import {
   useResponsabilityLogs,
   useUpsertResponsabilityLog,
   calcWeeklyExpected,
+  getLocalizedRespTitle,
 } from "@/hooks/useResponsabilites";
 import type { SectionStatus } from "@/pages/RapportDetail";
 
