@@ -5,11 +5,23 @@ import { supabase } from "@/integrations/supabase/client";
 export interface ResponsabilityTemplateRow {
   id: string;
   title: string;
+  title_en: string | null;
+  title_es: string | null;
   description: string | null;
   category: string | null;
   display_order: number;
   frequency: string;
   expected_count: number;
+}
+
+export function getLocalizedRespTitle(
+  tmpl: { title: string; title_en?: string | null; title_es?: string | null },
+  lang: string,
+): string {
+  const l = (lang || "fr").toLowerCase().slice(0, 2);
+  if (l === "en" && tmpl.title_en) return tmpl.title_en;
+  if (l === "es" && tmpl.title_es) return tmpl.title_es;
+  return tmpl.title;
 }
 
 export interface ResponsabilityLogRow {
