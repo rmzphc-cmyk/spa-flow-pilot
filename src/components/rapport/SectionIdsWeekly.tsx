@@ -21,6 +21,7 @@ import { useAddObjectiveFromIds } from "@/hooks/useObjectives";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/hooks/use-toast";
 import { friendlyError } from "@/lib/errorMessages";
+import { CoachHint } from "@/components/coaching/CoachHint";
 
 interface Props {
   reportId: string;
@@ -147,7 +148,10 @@ export function SectionIdsWeekly({ reportId, onStatusChange }: Props) {
 
   return (
     <section className="mb-8">
-      <h2 className="text-lg font-semibold text-foreground">{t("report.ids.identifiedTitle")}</h2>
+      <div className="flex items-center gap-1.5">
+        <h2 className="text-lg font-semibold text-foreground">{t("report.ids.identifiedTitle")}</h2>
+        <CoachHint surfaceKey="report.ids.identifiedTitle" />
+      </div>
       <p className="text-sm text-muted-foreground mb-4">
         {t("report.ids.identifiedSubtitle")}
       </p>

@@ -61,6 +61,7 @@ import {
   type KpiRoleAssignment,
 } from "@/hooks/useKpiRoleAssignments";
 import KpiExcelMenu from "@/components/kpi/KpiExcelMenu";
+import { CoachHint } from "@/components/coaching/CoachHint";
 
 const UNIT_OPTIONS = ["€", "%", "nb", "/10", "j", "pts"] as const;
 
@@ -723,9 +724,12 @@ function SettingsDialog({
               Changer le rôle REMPLACE l'assignation (pas de doublon orphelin). Le
               « + Ajouter » ne propose que les rôles encore libres. */}
           <div className="border-t pt-4">
-            <label className="text-xs font-medium text-muted-foreground block mb-2">
-              {t("kpiConfig.roleAssignment")}
-            </label>
+            <div className="flex items-center gap-1.5 mb-2">
+              <label className="text-xs font-medium text-muted-foreground">
+                {t("kpiConfig.roleAssignment")}
+              </label>
+              <CoachHint surfaceKey="kpiConfig.roleAssignment" />
+            </div>
 
             {assignments.length > 0 && (
               <div className="flex flex-col gap-2 mb-3">

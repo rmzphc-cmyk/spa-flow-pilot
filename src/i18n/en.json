@@ -1291,5 +1291,14 @@
     "submitting": "Sending…",
     "sent": "A reset link has been sent to your email address. Please check your inbox.",
     "backToLogin": "Back to sign in"
+  },
+  "coach": {
+    "title": "Why it matters",
+    "ariaOpen": "Why this field?",
+    "pourquoi": "Why",
+    "benefice": "How it helps you",
+    "objection": "Common myth",
+    "exemple": "Example",
+    "piege": "Avoid"
   }
 }

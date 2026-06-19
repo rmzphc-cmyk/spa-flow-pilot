@@ -1292,5 +1292,14 @@
     "submitting": "Envoi…",
     "sent": "Un lien de réinitialisation a été envoyé à votre adresse email. Vérifiez votre boîte de réception.",
     "backToLogin": "Retour à la connexion"
+  },
+  "coach": {
+    "title": "Pourquoi ça compte",
+    "ariaOpen": "Pourquoi ce champ ?",
+    "pourquoi": "Pourquoi",
+    "benefice": "En quoi ça t'aide",
+    "objection": "Idée reçue",
+    "exemple": "Exemple",
+    "piege": "À éviter"
   }
 }
