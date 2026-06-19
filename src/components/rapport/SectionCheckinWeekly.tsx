@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { CoachHint } from "@/components/coaching/CoachHint";
 import { Sparkles, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -78,7 +79,10 @@ export function SectionCheckinWeekly({ reportId, onStatusChange, isLocked = fals
 
   return (
     <section className="mb-8">
-      <h2 className="text-lg font-semibold text-foreground">{t("report.checkinWeekly.title")}</h2>
+      <div className="flex items-center gap-2 flex-wrap">
+        <h2 className="text-lg font-semibold text-foreground">{t("report.checkinWeekly.title")}</h2>
+        <CoachHint surfaceKey="report.checkinWeekly.title" />
+      </div>
       <p className="text-sm text-muted-foreground mb-4">{t("report.checkinWeekly.subtitle")}</p>
 
       <div className="bg-card border border-border rounded-xl p-5 shadow-sm mb-4">

@@ -54,57 +54,51 @@ export type Database = {
       }
       coaching_content: {
         Row: {
-          benefice_metier: string
-          concept_slug: string
+          a_retenir: string | null
+          comment: string
           created_at: string
           display_order: number
           exemple: string | null
-          expert_note: string | null
           id: string
           is_active: boolean
           lang: string
-          objection: string | null
-          piege: string | null
           pourquoi: string
-          quoi: string
           role: string
+          section_slug: string
           surface_key: string
+          titre: string
           updated_at: string
         }
         Insert: {
-          benefice_metier: string
-          concept_slug: string
+          a_retenir?: string | null
+          comment: string
           created_at?: string
           display_order?: number
           exemple?: string | null
-          expert_note?: string | null
           id?: string
           is_active?: boolean
           lang?: string
-          objection?: string | null
-          piege?: string | null
           pourquoi: string
-          quoi: string
           role?: string
+          section_slug: string
           surface_key: string
+          titre: string
           updated_at?: string
         }
         Update: {
-          benefice_metier?: string
-          concept_slug?: string
+          a_retenir?: string | null
+          comment?: string
           created_at?: string
           display_order?: number
           exemple?: string | null
-          expert_note?: string | null
           id?: string
           is_active?: boolean
           lang?: string
-          objection?: string | null
-          piege?: string | null
           pourquoi?: string
-          quoi?: string
           role?: string
+          section_slug?: string
           surface_key?: string
+          titre?: string
           updated_at?: string
         }
         Relationships: []

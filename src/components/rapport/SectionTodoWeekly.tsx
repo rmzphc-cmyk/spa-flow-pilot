@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { CoachHint } from "@/components/coaching/CoachHint";
 import { AlertTriangle, CalendarClock, Check, CheckCircle2, Play, RotateCcw } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -365,6 +366,7 @@ export function SectionTodoWeekly({ reportId, periodStart, periodEnd, onStatusCh
     <div className="bg-card border rounded-xl p-4 mt-4">
       <div className="flex items-center gap-2 mb-3">
         <h3 className="text-sm font-semibold text-foreground">{t("report.todo.weekly.thisWeek")}</h3>
+        <CoachHint surfaceKey="report.todo.weekly.thisWeek" />
         <Badge variant="secondary" className="ml-auto">
           {t("report.todo.weekly.actionCount", { count: activeInWeek.length })} {t("report.todo.weekly.toProcess")}
         </Badge>

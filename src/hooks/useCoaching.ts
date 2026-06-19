@@ -4,25 +4,23 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 
 /**
- * Coach onboarding contextuel — lecture du contenu pédagogique attaché à une
- * surface de l'app (clé i18n stable). Une surface peut porter PLUSIEURS unités
- * (ex. KPI hiérarchisé + indicateur de suivi sur `kpiConfig.roleAssignment`).
+ * Coach onboarding contextuel — contenu pédagogique attaché à une SECTION du
+ * rapport (clé i18n stable de son en-tête). Modèle « pourquoi / comment je
+ * remplis cette section », voix corporate-friendly accessible.
  *
  * Le filtrage par rôle est assuré par la RLS (`coaching_content_select`, qui
  * compare au DbRole du JWT `app_metadata.role` — PAS l'AppRole "manager" du
- * front). On ne sélectionne jamais `expert_note` : c'est la couche méthodo de
- * coulisses, réservée au chatbot v2 / IP Polypus.
+ * front).
  */
 export interface CoachingHint {
   id: string;
-  concept_slug: string;
+  section_slug: string;
   surface_key: string;
-  quoi: string;
+  titre: string;
   pourquoi: string;
-  benefice_metier: string;
-  objection: string | null;
+  comment: string;
   exemple: string | null;
-  piege: string | null;
+  a_retenir: string | null;
 }
 
 /** Langue de contenu (2 lettres) dérivée de la langue UI active. */
@@ -47,7 +45,7 @@ export function useCoaching(surfaceKey: string | undefined) {
       const { data, error } = await supabase
         .from("coaching_content")
         .select(
-          "id, concept_slug, surface_key, quoi, pourquoi, benefice_metier, objection, exemple, piege",
+          "id, section_slug, surface_key, titre, pourquoi, comment, exemple, a_retenir",
         )
         .eq("surface_key", surfaceKey!)
         .eq("lang", lang)

@@ -22,7 +22,6 @@ import {
 } from "@/hooks/useIdsItems";
 import { IdsToTodoDialog } from "./IdsToTodoDialog";
 import { IdsToObjectiveDialog } from "./IdsToObjectiveDialog";
-import { CoachHint } from "@/components/coaching/CoachHint";
 
 interface Props {
   reportId: string;
@@ -124,9 +123,8 @@ export function SectionIds({ reportId, reportType, periodStart, periodEnd, onSta
     <Dialog open={!!triagingItem} onOpenChange={(open) => !open && closeTriage()}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-1.5 text-base font-semibold">
+          <DialogTitle className="text-base font-semibold">
             {t("report.ids.triage.dialogTitle")}
-            <CoachHint surfaceKey="report.ids.triage.dialogTitle" />
           </DialogTitle>
           <p className="text-xs text-muted-foreground mt-0.5">
             {t("report.ids.triage.dialogSubtitle")}

@@ -1293,12 +1293,10 @@
     "backToLogin": "Volver al inicio de sesión"
   },
   "coach": {
-    "title": "Por qué importa",
-    "ariaOpen": "¿Por qué este campo?",
+    "trigger": "¿Por qué y cómo?",
     "pourquoi": "Por qué",
-    "benefice": "En qué te ayuda",
-    "objection": "Idea falsa",
+    "comment": "Cómo",
     "exemple": "Ejemplo",
-    "piege": "A evitar"
+    "aRetenir": "A recordar"
   }
 }

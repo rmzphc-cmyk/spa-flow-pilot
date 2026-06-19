@@ -41,7 +41,6 @@ import {
   type RespTemplateFullRow,
 } from "@/hooks/useResponsabilites";
 import RespExcelMenu from "@/components/resp/RespExcelMenu";
-import { CoachHint } from "@/components/coaching/CoachHint";
 
 const CATEGORIES = [
   "RH",
@@ -623,10 +622,7 @@ export default function RespConfig() {
 
           <div className="mt-6 space-y-5">
             <div>
-              <div className="flex items-center gap-1.5">
-                <Label className="text-sm font-medium">{t("respConfig.sheet.titleLabel")}</Label>
-                <CoachHint surfaceKey="respConfig.sheet.titleLabel" />
-              </div>
+              <Label className="text-sm font-medium">{t("respConfig.sheet.titleLabel")}</Label>
               <Input
                 value={editing.title}
                 onChange={(e) =>

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { CoachHint } from "@/components/coaching/CoachHint";
 import { Lock } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -146,7 +147,10 @@ export function SectionResponsabilitesWeekly({ reportId, isLocked = false, onSta
   return (
     <section className="mb-8 px-6">
       <div className="flex items-center justify-between mb-1">
-        <h2 className="text-lg font-semibold text-foreground">{t("report.responsabilites.titleWeekly")}</h2>
+        <div className="flex items-center gap-2 flex-wrap">
+          <h2 className="text-lg font-semibold text-foreground">{t("report.responsabilites.titleWeekly")}</h2>
+          <CoachHint surfaceKey="report.responsabilites.titleWeekly" />
+        </div>
         {isLocked && (
           <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded-full">
             <Lock className="h-3 w-3" /> {t("report.responsabilites.lockedBadge")}

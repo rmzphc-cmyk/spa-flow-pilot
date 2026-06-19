@@ -1294,12 +1294,10 @@
     "backToLogin": "Retour à la connexion"
   },
   "coach": {
-    "title": "Pourquoi ça compte",
-    "ariaOpen": "Pourquoi ce champ ?",
+    "trigger": "Pourquoi & comment ?",
     "pourquoi": "Pourquoi",
-    "benefice": "En quoi ça t'aide",
-    "objection": "Idée reçue",
+    "comment": "Comment",
     "exemple": "Exemple",
-    "piege": "À éviter"
+    "aRetenir": "À retenir"
   }
 }

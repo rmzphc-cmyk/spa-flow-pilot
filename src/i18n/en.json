@@ -1293,12 +1293,10 @@
     "backToLogin": "Back to sign in"
   },
   "coach": {
-    "title": "Why it matters",
-    "ariaOpen": "Why this field?",
+    "trigger": "Why & how?",
     "pourquoi": "Why",
-    "benefice": "How it helps you",
-    "objection": "Common myth",
+    "comment": "How",
     "exemple": "Example",
-    "piege": "Avoid"
+    "aRetenir": "Keep in mind"
   }
 }

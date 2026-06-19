@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
+import { CoachHint } from "@/components/coaching/CoachHint";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Target, Info } from "lucide-react";
@@ -81,7 +82,10 @@ export function SectionObjectifs({ reportId, reportType }: Props) {
   return (
     <section className="mb-8">
       <div className="flex items-center justify-between mb-1">
-        <h2 className="text-lg font-semibold text-foreground">{t("report.objectifs.title")}</h2>
+        <div className="flex items-center gap-2 flex-wrap">
+          <h2 className="text-lg font-semibold text-foreground">{t("report.objectifs.title")}</h2>
+          <CoachHint surfaceKey="report.objectifs.title" />
+        </div>
         <span className="text-sm text-muted-foreground font-medium">
           {t("report.objectifs.active", { count: visible.length })}
         </span>

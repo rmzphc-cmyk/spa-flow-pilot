@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { CoachHint } from "@/components/coaching/CoachHint";
 import { KpiCardSaisie, KpiCardSaisieWeekly, getKpiStatus } from "@/components/KpiCard";
 import type { KpiData, KpiCardValue } from "@/components/KpiCard";
 import type { SectionStatus } from "@/pages/RapportDetail";
@@ -421,9 +422,12 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
     <section className="mb-8">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-xl font-bold text-foreground">
-            {isWeekly ? t("report.kpi.weeklyTitle") : `📊 ${t("report.kpi.title")}`}
-          </h2>
+          <div className="flex items-center gap-2 flex-wrap">
+            <h2 className="text-xl font-bold text-foreground">
+              {isWeekly ? t("report.kpi.weeklyTitle") : `📊 ${t("report.kpi.title")}`}
+            </h2>
+            <CoachHint surfaceKey={isWeekly ? "report.kpi.weeklyTitle" : "report.kpi.title"} />
+          </div>
           <p className="text-sm text-muted-foreground mt-0.5">
             {isWeekly
               ? t("report.kpi.weeklySubtitle")
