@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
           "Content-Type": "application/json",
           Authorization: req.headers.get("Authorization") ?? "",
         },
-        body: JSON.stringify({ report_id }),
+        body: JSON.stringify({ report_id, notify: true }),
       });
     } catch (_e) {
       // silent

@@ -1,4 +1,5 @@
 import { authenticate, authorizeReportAccess, corsHeaders, internalError, json } from "../_shared/auth.ts";
+import { notifyDirectionReportValidated } from "../_shared/email.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -14,7 +15,7 @@ Deno.serve(async (req) => {
       return json({ error: "AI generation unavailable" }, 500);
     }
 
-    const { report_id } = (await req.json()) as { report_id?: string };
+    const { report_id, notify } = (await req.json()) as { report_id?: string; notify?: boolean };
     if (!report_id) return json({ error: "Missing report_id" }, 400);
 
     const access = await authorizeReportAccess(admin, caller, report_id);
@@ -89,6 +90,16 @@ Génère un JSON: { executive_summary (150 mots max), key_actions (array de 3 st
       .select()
       .single();
     if (upErr) throw upErr;
+
+    // Diffusion à la Direction uniquement quand l'appel vient de la finalisation
+    // (notify=true depuis finalize-weekly-report). Non bloquant.
+    if (notify) {
+      try {
+        await notifyDirectionReportValidated(admin, report, parsed.executive_summary ?? null);
+      } catch (_notifErr) {
+        // Diffusion non bloquante
+      }
+    }
 
     return json({ data: summary }, 200);
   } catch (e) {

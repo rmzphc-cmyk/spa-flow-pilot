@@ -1,4 +1,5 @@
 import { authenticate, authorizeReportAccess, corsHeaders, internalError, json } from "../_shared/auth.ts";
+import { notifyDirectionReportValidated } from "../_shared/email.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -97,29 +98,11 @@ Deno.serve(async (req) => {
       .single();
     if (fErr) throw fErr;
 
-    // Notifier les utilisateurs Direction
+    // Diffuser à la Direction scopée sur le spa (notif in-app + email). Non bloquant.
     try {
-      const { data: { users } } = await admin.auth.admin.listUsers();
-      const directionUsers = (users ?? []).filter(
-        (u) => u.app_metadata?.role === "direction",
-      );
-      if (directionUsers.length > 0) {
-        await admin.from("notifications").insert(
-          directionUsers.map((u) => ({
-            user_id: u.id,
-            title: "Nouveau rapport disponible",
-            body: `Le rapport mensuel a été validé et est disponible.`,
-            type: "synthesis_ready",
-            language: u.app_metadata?.language ?? "fr",
-            report_id: report_id,
-            spa_id: spaId,
-            is_read: false,
-            created_at: now,
-          })),
-        );
-      }
+      await notifyDirectionReportValidated(admin, finalReport, summary.executive_summary);
     } catch (_notifErr) {
-      // Notifications non bloquantes
+      // Diffusion non bloquante
     }
 
     return json({ data: finalReport, warnings: missingCount > 0 ? `${missingCount} IDS sans solution` : null }, 200);
