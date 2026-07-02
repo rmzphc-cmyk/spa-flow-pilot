@@ -21,7 +21,10 @@ const fullData: WeeklyPdfData = {
   keyActions: ["Réparer la cabine 3", "Relancer le fournisseur de linge"],
   kpis: [],
   moodScore: 4,
-  teamNote: "Équipe motivée malgré la charge.",
+  managerScore: 3,
+  equipeComment: "Équipe motivée malgré la charge.",
+  managerComment: "",
+  situationGlobale: "Le spa tient le rythme malgré les incidents techniques.",
   responsibilities: [],
   // Objectif AVEC date cible → c'est exactement le cas qui faisait planter (formatDateFr).
   objectives: [

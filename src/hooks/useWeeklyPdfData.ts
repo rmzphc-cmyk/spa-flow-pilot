@@ -107,7 +107,10 @@ export interface WeeklyPdfData {
   keyActions: string[];
   kpis: WeeklyPdfKpi[];
   moodScore: number;
-  teamNote: string;
+  managerScore: number;
+  equipeComment: string;
+  managerComment: string;
+  situationGlobale: string;
   responsibilities: WeeklyPdfResponsibility[];
   ids: WeeklyPdfIds[];
   objectives: WeeklyPdfObjective[];
@@ -403,7 +406,10 @@ export function useWeeklyPdfData(
     keyActions: parseKeyActions(summaryQ.data?.key_actions).map(safeText),
     kpis,
     moodScore: checkinQ.data?.mood_score ?? 0,
-    teamNote: safeText(kc.note),
+    managerScore: checkinQ.data?.focus_level ?? 0,
+    equipeComment: safeText(kc.equipeComment),
+    managerComment: safeText(kc.managerComment),
+    situationGlobale: safeText(kc.situation ?? kc.note),
     objectives,
     responsibilities,
     ids,

@@ -590,13 +590,35 @@ export function WeeklyReportPdf({ data }: Props) {
           <View style={styles.section} wrap={false}>
             <SectionHeader title="Équipe" />
             <View style={styles.narr}>
+              {/* Météo équipe */}
               <View style={styles.teamRow}>
-                <Text style={styles.teamMeteo}>Météo : {moodLabel(data.moodScore)}</Text>
+                <Text style={styles.teamMeteo}>Météo équipe : {moodLabel(data.moodScore)}</Text>
                 <Text style={styles.teamScore}>{data.moodScore} / 5</Text>
               </View>
-              <Text style={styles.narrBody}>
-                {data.teamNote || "Aucun commentaire cette semaine."}
-              </Text>
+              {data.equipeComment ? <Text style={styles.narrBody}>{data.equipeComment}</Text> : null}
+
+              {/* Énergie manager */}
+              {data.managerScore > 0 ? (
+                <>
+                  <View style={[styles.teamRow, { marginTop: 6 }]}>
+                    <Text style={styles.teamMeteo}>Énergie manager : {moodLabel(data.managerScore)}</Text>
+                    <Text style={styles.teamScore}>{data.managerScore} / 5</Text>
+                  </View>
+                  {data.managerComment ? <Text style={styles.narrBody}>{data.managerComment}</Text> : null}
+                </>
+              ) : null}
+
+              {/* Situation globale */}
+              {data.situationGlobale ? (
+                <>
+                  <Text style={styles.narrSubLabel}>Situation globale</Text>
+                  <Text style={styles.narrBody}>{data.situationGlobale}</Text>
+                </>
+              ) : null}
+
+              {data.moodScore === 0 && data.managerScore === 0 && !data.situationGlobale ? (
+                <Text style={styles.narrBody}>Aucun commentaire cette semaine.</Text>
+              ) : null}
             </View>
           </View>
 
