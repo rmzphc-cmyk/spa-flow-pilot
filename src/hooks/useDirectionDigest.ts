@@ -166,7 +166,9 @@ export function useDirectionDigest(weekOffset = 0) {
             .in("spa_id", spaIds),
           supabase
             .from("objectives")
-            .select("id, spa_id, title, description, target_date, status")
+            .select(
+              "id, spa_id, title, description, target_date, status, kind, metric, unit, start_value, target_value, current_value",
+            )
             .in("spa_id", spaIds)
             .eq("status", "active"),
         ]);
@@ -176,6 +178,26 @@ export function useDirectionDigest(weekOffset = 0) {
       if (reportsRes.error) throw reportsRes.error;
       if (todosRes.error) throw todosRes.error;
       if (objectivesRes.error) throw objectivesRes.error;
+
+      // Étapes des objectifs "projet" — la résolution partagée en a besoin
+      // (avancement = étapes faites/total) dans computeWeeklyException.
+      const objectiveIds = (objectivesRes.data ?? []).map((o: { id: string }) => o.id);
+      const stepsByObjective = new Map<string, { is_done: boolean }[]>();
+      if (objectiveIds.length > 0) {
+        const stepsRes = await supabase
+          .from("objective_steps")
+          .select("objective_id, is_done")
+          .in("objective_id", objectiveIds);
+        if (stepsRes.error) throw stepsRes.error;
+        for (const s of (stepsRes.data ?? []) as Array<{
+          objective_id: string;
+          is_done: boolean;
+        }>) {
+          const list = stepsByObjective.get(s.objective_id) ?? [];
+          list.push({ is_done: s.is_done });
+          stepsByObjective.set(s.objective_id, list);
+        }
+      }
 
       const spas = (spasRes.data ?? []) as Array<{ id: string; name: string }>;
       const managerBySpa = new Map<string, string>();
@@ -271,7 +293,7 @@ export function useDirectionDigest(weekOffset = 0) {
         ObjectiveInput & { spa_id: string }
       >) {
         const list = objsBySpa.get(o.spa_id) ?? [];
-        list.push(o);
+        list.push({ ...o, steps: stepsByObjective.get(o.id) ?? [] });
         objsBySpa.set(o.spa_id, list);
       }
 

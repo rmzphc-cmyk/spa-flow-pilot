@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CoachHint } from "@/components/coaching/CoachHint";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -21,7 +20,12 @@ import {
   type DbObjectiveUpdate,
   type DbObjectiveStep,
 } from "@/hooks/useObjectives";
-import { computeObjectiveProgress } from "@/lib/objectiveProgress";
+import {
+  resolveObjectiveDisplay,
+  objectiveStatusMeta,
+  isObjectiveOverdue,
+} from "@/lib/objectiveDisplay";
+import { ObjectiveBadges, ObjectiveProgressRow } from "./ObjectiveCardParts";
 import { ObjectiveCreateDialog } from "./ObjectiveCreateDialog";
 import { ObjectiveJournalSection } from "./ObjectiveJournalSection";
 import { ObjectiveStepsChecklist } from "./ObjectiveStepsChecklist";
@@ -178,68 +182,64 @@ export function SectionObjectifs({ reportId, reportType, isLocked = false, onSta
         <div className="space-y-4">
           {visible.map((obj) => {
             const parsed = getParsed(obj);
-            const isProject = obj.kind === "steps";
             const steps = stepsByObjective.get(obj.id) ?? [];
             const entries = updatesByObjective.get(obj.id) ?? [];
 
-            // Colonnes réelles (Phase 0/2) d'abord, blob legacy en repli.
-            const unit = obj.unit ?? parsed.unit;
-            const metric = obj.metric ?? parsed.metric;
-            const target = isProject
-              ? (steps.length > 0 ? steps.length : parsed.target)
-              : (obj.target_value ?? parsed.target);
-            const start = isProject ? 0 : (obj.start_value ?? parsed.start);
-            const current = isProject
-              ? (steps.length > 0 ? steps.filter((s) => s.is_done).length : parsed.current)
-              : (obj.current_value ?? parsed.current);
-            const progress = computeObjectiveProgress(current, target, start);
+            // Résolution partagée (colonnes réelles d'abord, blob en repli).
+            // Le draft du bilan mensuel prime sur current_value : sinon
+            // l'Input resterait figé sur la valeur serveur pendant l'écriture
+            // débouncée.
+            const draftCurrent = drafts[obj.id]?.current;
+            const display = resolveObjectiveDisplay(
+              obj.kind === "numeric" && draftCurrent !== undefined
+                ? { ...obj, current_value: draftCurrent }
+                : obj,
+              parsed,
+              steps,
+            );
+            const isProject = display.isProject;
+            const meta = objectiveStatusMeta(parsed.status_ui);
+            const overdue = isObjectiveOverdue(obj.target_date, obj.status);
 
             return (
               <div key={obj.id} className="bg-card border border-border rounded-xl p-5 shadow-sm">
                 <div className="flex items-start justify-between mb-3 gap-2">
                   <div>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-medium text-foreground text-sm">{obj.title}</h3>
-                      {isProject && (
-                        <Badge variant="secondary" className="shrink-0">
-                          {t("objectifs.form.typeSteps")}
-                        </Badge>
-                      )}
-                    </div>
-                    {!isProject && (
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        {metric} — {t("report.objectifs.cible")} : {target}
-                        {unit}
-                      </p>
+                    <h3 className="font-medium text-foreground text-sm">{obj.title}</h3>
+                    {!isProject && display.metric && (
+                      <p className="text-xs text-muted-foreground mt-0.5">{display.metric}</p>
                     )}
                   </div>
+                  <ObjectiveBadges
+                    isProject={isProject}
+                    statusUi={parsed.status_ui}
+                    overdue={overdue}
+                  />
                 </div>
 
                 {/* Valeur + barre : weekly = lecture (la saisie passe par le
                     journal) ; monthly chiffré = input du bilan. */}
-                <div className="flex items-center gap-4 mb-3">
-                  {isProject || isWeekly ? (
-                    <span className="text-sm font-medium text-foreground tabular-nums shrink-0">
-                      {current}
-                      {isProject ? `/${target}` : unit}
-                    </span>
-                  ) : (
-                    <Input
-                      type="number"
-                      className="w-24 text-right"
-                      value={current}
-                      onChange={(e) =>
-                        handleUpdate(obj, { current: Number(e.target.value) })
-                      }
-                    />
-                  )}
-                  <div className="flex-1 h-2 bg-border rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all ${progress >= 100 ? "bg-emerald-500" : progress >= 70 ? "bg-amber-500" : "bg-red-500"}`}
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                  <span className="text-sm font-medium text-foreground w-12 text-right">{progress}%</span>
+                <div className="mb-3">
+                  <ObjectiveProgressRow
+                    current={display.current}
+                    target={display.target}
+                    unit={display.unit}
+                    isProject={isProject}
+                    progress={display.progress}
+                    barClass={meta.barClass}
+                    valueSlot={
+                      !isProject && !isWeekly ? (
+                        <Input
+                          type="number"
+                          className="w-24 text-right"
+                          value={display.current}
+                          onChange={(e) =>
+                            handleUpdate(obj, { current: Number(e.target.value) })
+                          }
+                        />
+                      ) : undefined
+                    }
+                  />
                 </div>
 
                 {/* Bilan mensuel : statut + commentaire (jugement du manager) */}
@@ -284,7 +284,7 @@ export function SectionObjectifs({ reportId, reportType, isLocked = false, onSta
                   objective={obj}
                   entries={entries}
                   reportId={reportId}
-                  unit={unit}
+                  unit={display.unit}
                   lastValue={obj.current_value ?? (entries.find((e) => e.value !== null)?.value ?? null)}
                   isLocked={isLocked}
                   canAddEntry={isWeekly}

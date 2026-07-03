@@ -8,7 +8,7 @@
  */
 
 import { parseObjectiveDescription } from "@/hooks/useObjectives";
-import { computeObjectiveProgress } from "@/lib/objectiveProgress";
+import { resolveObjectiveDisplay } from "@/lib/objectiveDisplay";
 import { parseTodoDescription } from "@/hooks/useTodos";
 
 export type ProblemSeverity =
@@ -81,6 +81,14 @@ export interface ObjectiveInput {
   title: string;
   description: string | null;
   target_date: string | null;
+  /** Colonnes réelles (résolution partagée) — absentes = repli blob legacy. */
+  kind?: string;
+  metric?: string | null;
+  unit?: string | null;
+  start_value?: number | null;
+  target_value?: number | null;
+  current_value?: number | null;
+  steps?: { is_done: boolean }[];
 }
 
 export function formatDateFr(iso: string | null | undefined): string {
@@ -186,8 +194,19 @@ export function computeWeeklyException(
     const td = new Date(o.target_date);
     if (weekEnd && td > weekEnd) continue;
     const parsed = parseObjectiveDescription(o.description);
-    const progress = computeObjectiveProgress(parsed.current, parsed.target, parsed.start);
-    if (progress >= 100) continue;
+    const display = resolveObjectiveDisplay(
+      {
+        kind: o.kind ?? "numeric",
+        metric: o.metric ?? null,
+        unit: o.unit ?? null,
+        start_value: o.start_value ?? null,
+        target_value: o.target_value ?? null,
+        current_value: o.current_value ?? null,
+      },
+      parsed,
+      o.steps ?? [],
+    );
+    if (display.progress >= 100) continue;
     const late = lateDaysOf(o.target_date);
     const c: ExceptionCommitment = {
       kind: "objective",
@@ -196,12 +215,12 @@ export function computeWeeklyException(
       dueLabel: fmtDate(o.target_date),
       lateDays: late > 0 ? late : 0,
       detail:
-        parsed.current +
+        display.current +
         "/" +
-        parsed.target +
-        (parsed.unit ? " " + parsed.unit : "") +
+        display.target +
+        (display.unit ? " " + display.unit : "") +
         " · " +
-        progress +
+        display.progress +
         "%",
       deferredCount: 0,
     };

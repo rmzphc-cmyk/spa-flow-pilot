@@ -38,6 +38,12 @@ const DATA_LABELS: Record<Lang, {
   idsNone: string;
   objTitle: string;
   objNone: string;
+  objClosedTitle: string;
+  objAchieved: string;
+  objAbandoned: string;
+  objSteps: (done: number, total: number) => string;
+  objTarget: (target: string) => string;
+  situations: Record<string, string>;
   transcriptTitle: string;
 }> = {
   fr: {
@@ -54,8 +60,14 @@ const DATA_LABELS: Record<Lang, {
     respNone: "Aucune",
     idsTitle: "IDS capturés:",
     idsNone: "Aucun",
-    objTitle: "Objectifs actifs:",
+    objTitle: "Objectifs actifs (avec journal des actions hebdo):",
     objNone: "Aucun",
+    objClosedTitle: "Objectifs clôturés sur la période:",
+    objAchieved: "atteint",
+    objAbandoned: "abandonné",
+    objSteps: (d, t) => `projet : ${d}/${t} étapes`,
+    objTarget: (x) => `cible ${x}`,
+    situations: { on_track: "en bonne voie", complicated: "compliqué", struggling: "en difficulté" },
     transcriptTitle: "Transcript de la réunion (Whisper, extrait) :",
   },
   en: {
@@ -72,8 +84,14 @@ const DATA_LABELS: Record<Lang, {
     respNone: "None",
     idsTitle: "Captured IDS:",
     idsNone: "None",
-    objTitle: "Active objectives:",
+    objTitle: "Active objectives (with weekly action journal):",
     objNone: "None",
+    objClosedTitle: "Objectives closed during the period:",
+    objAchieved: "achieved",
+    objAbandoned: "abandoned",
+    objSteps: (d, t) => `project: ${d}/${t} steps`,
+    objTarget: (x) => `target ${x}`,
+    situations: { on_track: "on track", complicated: "complicated", struggling: "struggling" },
     transcriptTitle: "Meeting transcript (Whisper, excerpt):",
   },
   es: {
@@ -90,8 +108,14 @@ const DATA_LABELS: Record<Lang, {
     respNone: "Ninguna",
     idsTitle: "IDS capturados:",
     idsNone: "Ninguno",
-    objTitle: "Objetivos activos:",
+    objTitle: "Objetivos activos (con diario de acciones semanal):",
     objNone: "Ninguno",
+    objClosedTitle: "Objetivos cerrados durante el periodo:",
+    objAchieved: "logrado",
+    objAbandoned: "abandonado",
+    objSteps: (d, t) => `proyecto: ${d}/${t} etapas`,
+    objTarget: (x) => `meta ${x}`,
+    situations: { on_track: "en buen camino", complicated: "complicado", struggling: "en dificultad" },
     transcriptTitle: "Transcripción de la reunión (Whisper, extracto):",
   },
 };
@@ -133,7 +157,7 @@ Deno.serve(async (req) => {
     const transcriptText: string | null =
       existing?.transcript_status === "done" ? existing.transcript_text ?? null : null;
 
-    const [{ data: kpis }, { data: checkin }, { data: resps }, { data: ids }, { data: objs }] =
+    const [{ data: kpis }, { data: checkin }, { data: resps }, { data: ids }, { data: objs }, { data: closedObjs }] =
       await Promise.all([
         admin
           .from("kpi_entries")
@@ -154,10 +178,38 @@ Deno.serve(async (req) => {
           .eq("report_id", report_id),
         admin
           .from("objectives")
-          .select("title, description, status")
+          .select("id, title, description, status, kind, metric, unit, start_value, target_value, current_value")
           .eq("spa_id", report.spa_id)
           .eq("status", "active"),
+        admin
+          .from("objectives")
+          .select("id, title, status, updated_at")
+          .eq("spa_id", report.spa_id)
+          .in("status", ["achieved", "abandoned"])
+          .gte("updated_at", report.period_start),
       ]);
+
+    // Journal + étapes des objectifs actifs (Phase 3 : l'IA lit le journal
+    // hebdo pour nourrir le bilan mensuel).
+    const objIdList = (objs ?? []).map((o: any) => o.id);
+    let objUpdates: any[] = [];
+    let objSteps: any[] = [];
+    if (objIdList.length > 0) {
+      const [u, s] = await Promise.all([
+        admin
+          .from("objective_updates")
+          .select("objective_id, action_text, value, situation, created_at")
+          .in("objective_id", objIdList)
+          .order("created_at", { ascending: false })
+          .limit(60),
+        admin
+          .from("objective_steps")
+          .select("objective_id, is_done")
+          .in("objective_id", objIdList),
+      ]);
+      objUpdates = u.data ?? [];
+      objSteps = s.data ?? [];
+    }
 
     const kpisListPrompt = kpis ?? [];
     const excellentKpisCount = kpisListPrompt.filter((k: any) => k.status === "excellent").length;
@@ -166,6 +218,37 @@ Deno.serve(async (req) => {
     const redKpisCount = kpisListPrompt.filter((k: any) => k.status === "red").length;
 
     const L = DATA_LABELS[lang];
+
+    // Une ligne par objectif actif : état (colonnes réelles, blob legacy en
+    // repli) + jusqu'à 5 entrées de journal (les plus récentes d'abord).
+    const buildObjectiveLines = (o: any): string => {
+      let blob: any = {};
+      try {
+        blob = JSON.parse(o.description ?? "{}");
+      } catch {
+        // Blob legacy illisible : les colonnes réelles suffisent.
+      }
+      const isProject = o.kind === "steps";
+      const steps = objSteps.filter((s: any) => s.objective_id === o.id);
+      const done = steps.filter((s: any) => s.is_done).length;
+      const unit = o.unit ?? blob.unit ?? "";
+      const target = isProject
+        ? (steps.length || blob.target || 0)
+        : (o.target_value ?? blob.target ?? 0);
+      const current = isProject ? done : (o.current_value ?? blob.current ?? 0);
+      const head = isProject
+        ? `- "${o.title}" (${L.objSteps(current, target)})`
+        : `- "${o.title}" (${o.metric ?? blob.metric ?? "?"}: ${current}${unit}, ${L.objTarget(`${target}${unit}`)})`;
+      const lines = objUpdates
+        .filter((u: any) => u.objective_id === o.id)
+        .slice(0, 5)
+        .map((u: any) => {
+          const situation = u.situation ? L.situations[u.situation] ?? u.situation : null;
+          const value = u.value !== null && u.value !== undefined ? ` (${u.value}${unit})` : "";
+          return `  · [${(u.created_at ?? "").slice(0, 10)}${situation ? `, ${situation}` : ""}] ${u.action_text ?? ""}${value}`;
+        });
+      return [head, ...lines].join("\n");
+    };
 
     const userPrompt = `${L.header(report.cycle_label, report.period_start, report.period_end)}
 
@@ -184,7 +267,10 @@ ${L.idsTitle}
 ${(ids ?? []).map((i: any) => `- [${i.status}] ${i.capture_text}${i.proposed_solution ? ` → ${i.proposed_solution}` : ""}`).join("\n") || L.idsNone}
 
 ${L.objTitle}
-${(objs ?? []).map((o: any) => `- ${o.title}`).join("\n") || L.objNone}
+${(objs ?? []).map(buildObjectiveLines).join("\n") || L.objNone}
+
+${L.objClosedTitle}
+${(closedObjs ?? []).map((o: any) => `- "${o.title}" (${o.status === "achieved" ? L.objAchieved : L.objAbandoned})`).join("\n") || L.objNone}
 
 ${OUTPUT_INSTRUCTIONS[lang]}${transcriptText ? `\n\n${L.transcriptTitle}\n${transcriptText.slice(0, 3000)}` : ""}`;
 

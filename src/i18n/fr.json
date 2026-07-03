@@ -488,7 +488,9 @@
         "colIndicator": "Indicateur",
         "colN1": "N-1",
         "colReal": "Réel",
-        "colEvolution": "Évolution"
+        "colEvolution": "Évolution",
+        "countBadge_one": "{{count}} KPI",
+        "countBadge_other": "{{count}} KPIs"
       },
       "checkin": {
         "noData": "Pas de check-in renseigné.",
@@ -564,7 +566,9 @@
         "noIds": "Aucun IDS remonté ce mois.",
         "toConvert": "À convertir",
         "todoBadge": "To-Do ✓",
-        "objectiveBadge": "Objectif ✓"
+        "objectiveBadge": "Objectif ✓",
+        "itemCount_one": "{{count}} item",
+        "itemCount_other": "{{count}} items"
       },
       "validation": {
         "aiSummaryLabel": "Synthèse IA",
@@ -1249,6 +1253,17 @@
     },
     "steps": {
       "title": "Étapes"
+    },
+    "overdue": "Échéance dépassée",
+    "tabs": {
+      "active": "Actifs",
+      "history": "Historique"
+    },
+    "history": {
+      "achievedBadge": "Atteint",
+      "abandonedBadge": "Abandonné",
+      "closedOn": "Clôturé le {{date}}",
+      "empty": "Aucun objectif clôturé pour l'instant"
     }
   },
   "login": {

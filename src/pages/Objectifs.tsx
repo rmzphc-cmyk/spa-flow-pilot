@@ -3,17 +3,30 @@ import { useTranslation } from "react-i18next";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   useObjectives,
+  useClosedObjectives,
+  useSpaObjectiveSteps,
   useCloseObjective,
   parseObjectiveDescription,
   MAX_ACTIVE_OBJECTIVES,
   type CloseObjectiveStatus,
   type DbObjective,
+  type DbClosedObjective,
+  type DbObjectiveStep,
 } from "@/hooks/useObjectives";
-import { computeObjectiveProgress } from "@/lib/objectiveProgress";
+import {
+  resolveObjectiveDisplay,
+  objectiveStatusMeta,
+  isObjectiveOverdue,
+} from "@/lib/objectiveDisplay";
+import {
+  ObjectiveBadges,
+  ObjectiveProgressRow,
+} from "@/components/rapport/ObjectiveCardParts";
 import { useReports } from "@/hooks/useReports";
-import { Loader2, Target, Info, Calendar, FileText, Plus, Check, X } from "lucide-react";
+import { Loader2, Target, Info, Calendar, FileText, Plus, Check, X, History } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -28,41 +41,18 @@ import { toast } from "@/hooks/use-toast";
 import { friendlyError } from "@/lib/errorMessages";
 import { ObjectiveCreateDialog } from "@/components/rapport/ObjectiveCreateDialog";
 
-type StatusUI = "on_track" | "at_risk" | "behind";
-
-const statusConfig: Record<
-  StatusUI,
-  { labelKey: string; badgeClass: string; barClass: string }
-> = {
-  on_track: {
-    labelKey: "objectifs.statusOnTrack",
-    badgeClass: "bg-success text-success-foreground hover:bg-success",
-    barClass: "bg-success",
-  },
-  at_risk: {
-    labelKey: "objectifs.statusAtRisk",
-    badgeClass: "bg-warning text-warning-foreground hover:bg-warning",
-    barClass: "bg-warning",
-  },
-  behind: {
-    labelKey: "objectifs.statusBehind",
-    badgeClass: "bg-destructive text-destructive-foreground hover:bg-destructive",
-    barClass: "bg-destructive",
-  },
-};
-
 const DATE_LOCALES: Record<string, string> = {
   fr: "fr-FR",
   en: "en-GB",
   es: "es-ES",
 };
 
-function formatDueDate(dateStr: string | null, lang: string): string | null {
+function formatIsoDate(dateStr: string | null, lang: string): string | null {
   if (!dateStr) return null;
   try {
     // Parse LOCAL des composants yyyy-mm-dd : new Date("yyyy-mm-dd") serait
     // interprété en UTC et décalerait d'un jour sur les fuseaux négatifs.
-    const [y, m, d] = dateStr.split("-").map(Number);
+    const [y, m, d] = dateStr.slice(0, 10).split("-").map(Number);
     if (!Number.isFinite(y) || !Number.isFinite(m) || !Number.isFinite(d)) return null;
     const locale = DATE_LOCALES[lang.split("-")[0]] ?? "fr-FR";
     return new Date(y, m - 1, d).toLocaleDateString(locale, {
@@ -78,16 +68,18 @@ function formatDueDate(dateStr: string | null, lang: string): string | null {
 function ObjectiveCard({
   objective,
   reportLabel,
+  steps,
 }: {
   objective: DbObjective;
   reportLabel: string | null;
+  steps: DbObjectiveStep[];
 }) {
   const { t, i18n } = useTranslation();
   const parsed = parseObjectiveDescription(objective.description);
-  const progress = computeObjectiveProgress(parsed.current, parsed.target, parsed.start);
-  const config = statusConfig[parsed.status_ui] ?? statusConfig.on_track;
-  const dueDate = formatDueDate(objective.target_date, i18n.language);
-  const isProject = objective.kind === "steps";
+  const display = resolveObjectiveDisplay(objective, parsed, steps);
+  const meta = objectiveStatusMeta(parsed.status_ui);
+  const overdue = isObjectiveOverdue(objective.target_date, objective.status);
+  const dueDate = formatIsoDate(objective.target_date, i18n.language);
 
   const closeObjective = useCloseObjective();
   // Clôture demandée en attente de confirmation (null = dialog fermé).
@@ -111,40 +103,35 @@ function ObjectiveCard({
 
   return (
     <div className="bg-card rounded-card shadow-sm p-6 border border-border">
-      <div className="flex items-start justify-between gap-4 mb-4">
+      <div className="flex items-start justify-between gap-4 mb-1">
         <h3 className="font-semibold text-foreground text-lg leading-tight">
           {objective.title}
         </h3>
-        <div className="flex items-center gap-2 shrink-0">
-          {isProject && (
-            <Badge variant="outline">{t("objectifs.form.typeSteps")}</Badge>
-          )}
-          <Badge className={config.badgeClass}>{t(config.labelKey)}</Badge>
-        </div>
+        <ObjectiveBadges
+          isProject={display.isProject}
+          statusUi={parsed.status_ui}
+          overdue={overdue}
+        />
       </div>
+      {!display.isProject && display.metric && (
+        <p className="text-sm text-muted-foreground mb-4">{display.metric}</p>
+      )}
 
-      <div className="space-y-4">
-        {/* Progress bar */}
-        <div>
-          <div className="flex justify-between text-sm mb-1.5">
-            <span className="text-muted-foreground">
-              {parsed.current}
-              {parsed.unit} / {parsed.target}
-              {parsed.unit}
-            </span>
-            <span className="font-medium text-foreground">{progress}%</span>
-          </div>
-          <div className="h-2.5 w-full bg-muted rounded-full overflow-hidden">
-            <div
-              className={`h-full ${config.barClass} rounded-full transition-all duration-500`}
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
+      <div className="space-y-4 mt-4">
+        <ObjectiveProgressRow
+          current={display.current}
+          target={display.target}
+          unit={display.unit}
+          isProject={display.isProject}
+          progress={display.progress}
+          barClass={meta.barClass}
+        />
 
         {/* Due date */}
         {dueDate && (
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <div
+            className={`flex items-center gap-2 text-sm ${overdue ? "text-destructive" : "text-muted-foreground"}`}
+          >
             <Calendar className="w-4 h-4 shrink-0" />
             <span>{t("objectifs.dueDate", { date: dueDate })}</span>
           </div>
@@ -212,10 +199,59 @@ function ObjectiveCard({
   );
 }
 
+/** Carte d'historique — lecture seule, valeurs figées à la clôture. */
+function ClosedObjectiveCard({
+  objective,
+  steps,
+}: {
+  objective: DbClosedObjective;
+  steps: DbObjectiveStep[];
+}) {
+  const { t, i18n } = useTranslation();
+  const parsed = parseObjectiveDescription(objective.description);
+  const display = resolveObjectiveDisplay(objective, parsed, steps);
+  const isAchieved = objective.status === "achieved";
+  const closedDate = formatIsoDate(objective.achieved_at ?? objective.updated_at, i18n.language);
+
+  return (
+    <div className="bg-card rounded-card shadow-sm p-6 border border-border">
+      <div className="flex items-start justify-between gap-4 mb-1">
+        <h3 className="font-semibold text-foreground leading-tight">{objective.title}</h3>
+        <ObjectiveBadges
+          isProject={display.isProject}
+          closedStatus={isAchieved ? "achieved" : "abandoned"}
+        />
+      </div>
+      {!display.isProject && display.metric && (
+        <p className="text-sm text-muted-foreground mb-4">{display.metric}</p>
+      )}
+
+      <div className="space-y-3 mt-4">
+        <ObjectiveProgressRow
+          current={display.current}
+          target={display.target}
+          unit={display.unit}
+          isProject={display.isProject}
+          progress={display.progress}
+          barClass={isAchieved ? "bg-success" : "bg-muted-foreground/40"}
+        />
+        {closedDate && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <Calendar className="w-4 h-4 shrink-0" />
+            <span>{t("objectifs.history.closedOn", { date: closedDate })}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Objectifs() {
   const { t } = useTranslation();
   const { spaId } = useAuth();
   const { data: objectives, isLoading } = useObjectives(spaId);
+  const { data: closedObjectives, isLoading: closedLoading } = useClosedObjectives(spaId);
+  const { data: allSteps } = useSpaObjectiveSteps(spaId);
   const { data: reports } = useReports();
   const [createOpen, setCreateOpen] = useState(false);
 
@@ -224,6 +260,16 @@ export default function Objectifs() {
     reports?.forEach((r) => map.set(r.id, r.cycle_label));
     return map;
   }, [reports]);
+
+  const stepsByObjective = useMemo(() => {
+    const map = new Map<string, DbObjectiveStep[]>();
+    for (const s of allSteps ?? []) {
+      const list = map.get(s.objective_id);
+      if (list) list.push(s);
+      else map.set(s.objective_id, [s]);
+    }
+    return map;
+  }, [allSteps]);
 
   const activeCount = objectives?.length ?? 0;
   const atLimit = activeCount >= MAX_ACTIVE_OBJECTIVES;
@@ -237,6 +283,7 @@ export default function Objectifs() {
   }
 
   const isEmpty = !objectives || objectives.length === 0;
+  const historyEmpty = !closedObjectives || closedObjectives.length === 0;
 
   return (
     <div className="space-y-6">
@@ -261,37 +308,69 @@ export default function Objectifs() {
         )}
       </div>
 
-      <div className="bg-accent/50 rounded-card p-4 flex items-start gap-3">
-        <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-        <p className="text-sm text-accent-foreground">
-          {atLimit
-            ? t("objectifs.limitReached")
-            : t("objectifs.createdInfo")}
-        </p>
-      </div>
+      <Tabs defaultValue="active">
+        <TabsList>
+          <TabsTrigger value="active">{t("objectifs.tabs.active")}</TabsTrigger>
+          <TabsTrigger value="history" className="gap-1.5">
+            <History className="w-3.5 h-3.5" />
+            {t("objectifs.tabs.history")}
+          </TabsTrigger>
+        </TabsList>
 
-      {isEmpty ? (
-        <div className="bg-card rounded-card shadow-sm border border-dashed border-border p-12 text-center">
-          <Target className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-          <p className="text-muted-foreground">
-            {t("objectifs.emptyState")}
-          </p>
-        </div>
-      ) : (
-        <div className="grid gap-4">
-          {objectives.map((obj) => (
-            <ObjectiveCard
-              key={obj.id}
-              objective={obj}
-              reportLabel={
-                obj.report_id_created
-                  ? reportLabelMap.get(obj.report_id_created) ?? null
-                  : null
-              }
-            />
-          ))}
-        </div>
-      )}
+        <TabsContent value="active" className="space-y-6 mt-4">
+          <div className="bg-accent/50 rounded-card p-4 flex items-start gap-3">
+            <Info className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+            <p className="text-sm text-accent-foreground">
+              {atLimit ? t("objectifs.limitReached") : t("objectifs.createdInfo")}
+            </p>
+          </div>
+
+          {isEmpty ? (
+            <div className="bg-card rounded-card shadow-sm border border-dashed border-border p-12 text-center">
+              <Target className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">{t("objectifs.emptyState")}</p>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {objectives.map((obj) => (
+                <ObjectiveCard
+                  key={obj.id}
+                  objective={obj}
+                  steps={stepsByObjective.get(obj.id) ?? []}
+                  reportLabel={
+                    obj.report_id_created
+                      ? reportLabelMap.get(obj.report_id_created) ?? null
+                      : null
+                  }
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="history" className="mt-4">
+          {closedLoading ? (
+            <div className="flex items-center justify-center h-32">
+              <Loader2 className="w-6 h-6 animate-spin text-primary" />
+            </div>
+          ) : historyEmpty ? (
+            <div className="bg-card rounded-card shadow-sm border border-dashed border-border p-12 text-center">
+              <History className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">{t("objectifs.history.empty")}</p>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {closedObjectives.map((obj) => (
+                <ClosedObjectiveCard
+                  key={obj.id}
+                  objective={obj}
+                  steps={stepsByObjective.get(obj.id) ?? []}
+                />
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
 
       <ObjectiveCreateDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>

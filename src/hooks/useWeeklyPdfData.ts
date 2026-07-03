@@ -13,8 +13,8 @@ import {
   calcWeeklyExpected,
 } from "@/hooks/useResponsabilites";
 import { useKpiRoleAssignments } from "@/hooks/useKpiRoleAssignments";
-import { useObjectives, parseObjectiveDescription } from "@/hooks/useObjectives";
-import { computeObjectiveProgress } from "@/lib/objectiveProgress";
+import { useObjectives, useSpaObjectiveSteps, parseObjectiveDescription } from "@/hooks/useObjectives";
+import { resolveObjectiveDisplay } from "@/lib/objectiveDisplay";
 import {
   computeWeeklyException,
   type ExceptionCommitment,
@@ -223,6 +223,7 @@ export function useWeeklyPdfData(
   const kpiDefIds = (defsQ.data ?? []).map((d) => d.id);
   const roleAssignmentsQ = useKpiRoleAssignments(kpiDefIds);
   const objectivesQ = useObjectives(spaId);
+  const objStepsQ = useSpaObjectiveSteps(spaId);
 
   const isLoading =
     spaQ.isLoading ||
@@ -236,7 +237,8 @@ export function useWeeklyPdfData(
     templatesQ.isLoading ||
     logsQ.isLoading ||
     roleAssignmentsQ.isLoading ||
-    objectivesQ.isLoading;
+    objectivesQ.isLoading ||
+    objStepsQ.isLoading;
 
   if (isLoading) return { data: null, isLoading: true };
 
@@ -339,16 +341,20 @@ export function useWeeklyPdfData(
       };
     });
 
+  const stepsOf = (objectiveId: string) =>
+    (objStepsQ.data ?? []).filter((s) => s.objective_id === objectiveId);
+
   const objectives: WeeklyPdfObjective[] = (objectivesQ.data ?? []).map((o) => {
     const parsed = parseObjectiveDescription(o.description);
-    const progress = computeObjectiveProgress(parsed.current, parsed.target, parsed.start);
+    const display = resolveObjectiveDisplay(o, parsed, stepsOf(o.id));
     return {
       title: safeText(o.title),
-      metric: safeText(parsed.metric),
-      target: parsed.target,
-      unit: parsed.unit,
-      current: parsed.current,
-      progress,
+      // Le PDF est FR par design (dette connue) — "Étapes" suit la convention du fichier.
+      metric: display.isProject ? "Étapes" : safeText(display.metric),
+      target: display.target,
+      unit: display.isProject ? "" : display.unit,
+      current: display.current,
+      progress: display.progress,
       status_ui: parsed.status_ui,
       comment: safeText(parsed.comment),
       targetDate: o.target_date,
@@ -358,7 +364,7 @@ export function useWeeklyPdfData(
   // ---- Synthèse Direction : problèmes par gravité + engagements non tenus ----
   // Logique factorisée dans src/lib/weeklyException.ts (réutilisée par
   // useDirectionDigest pour que web et PDF disent strictement la même chose).
-  const objsRaw = objectivesQ.data ?? [];
+  const objsRaw = (objectivesQ.data ?? []).map((o) => ({ ...o, steps: stepsOf(o.id) }));
   const exception = computeWeeklyException(
     (idsQ.data ?? []),
     allTodos,

@@ -488,7 +488,9 @@
         "colIndicator": "Indicator",
         "colN1": "N-1",
         "colReal": "Actual",
-        "colEvolution": "Change"
+        "colEvolution": "Change",
+        "countBadge_one": "{{count}} KPI",
+        "countBadge_other": "{{count}} KPIs"
       },
       "checkin": {
         "noData": "No check-in entered.",
@@ -564,7 +566,9 @@
         "noIds": "No IDS raised this month.",
         "toConvert": "To convert",
         "todoBadge": "To-Do ✓",
-        "objectiveBadge": "Objective ✓"
+        "objectiveBadge": "Objective ✓",
+        "itemCount_one": "{{count}} item",
+        "itemCount_other": "{{count}} items"
       },
       "validation": {
         "aiSummaryLabel": "AI Summary",
@@ -1249,6 +1253,17 @@
     },
     "steps": {
       "title": "Steps"
+    },
+    "overdue": "Overdue",
+    "tabs": {
+      "active": "Active",
+      "history": "History"
+    },
+    "history": {
+      "achievedBadge": "Achieved",
+      "abandonedBadge": "Abandoned",
+      "closedOn": "Closed on {{date}}",
+      "empty": "No closed objectives yet"
     }
   },
   "login": {

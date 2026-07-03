@@ -131,6 +131,33 @@ export function useObjectives(spaId: string | null) {
   });
 }
 
+/** Colonne DB portant la date de clôture d'un objectif atteint. */
+export interface DbClosedObjective extends DbObjective {
+  achieved_at: string | null;
+}
+
+/**
+ * Historique des objectifs clôturés (atteints ou abandonnés) — onglet
+ * Historique de /objectifs. Plus récemment clôturés d'abord.
+ */
+export function useClosedObjectives(spaId: string | null) {
+  return useQuery({
+    queryKey: ["objectives_closed", spaId],
+    enabled: !!spaId,
+    queryFn: async (): Promise<DbClosedObjective[]> => {
+      const { data, error } = await supabase
+        .from("objectives")
+        .select("*")
+        .eq("spa_id", spaId!)
+        .in("status", ["achieved", "abandoned"])
+        .order("updated_at", { ascending: false })
+        .limit(100);
+      if (error) throw error;
+      return (data ?? []) as DbClosedObjective[];
+    },
+  });
+}
+
 export interface UpdateObjectiveInput {
   objectiveId: string;
   spaId: string;
@@ -235,6 +262,7 @@ export function useCloseObjective() {
     },
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["objectives", vars.spaId] });
+      qc.invalidateQueries({ queryKey: ["objectives_closed", vars.spaId] });
     },
   });
 }

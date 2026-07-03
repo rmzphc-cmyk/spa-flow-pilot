@@ -27,8 +27,19 @@ import { useKpiEntries } from "@/hooks/useKpiEntries";
 import { useKpiDefinitions } from "@/hooks/useKpiDefinitions";
 import { useCheckin, parseKeyContext } from "@/hooks/useCheckin";
 import { useTodos, parseTodoDescription } from "@/hooks/useTodos";
-import { useObjectives, parseObjectiveDescription } from "@/hooks/useObjectives";
-import { computeObjectiveProgress } from "@/lib/objectiveProgress";
+import {
+  useObjectives,
+  useSpaObjectiveUpdates,
+  useSpaObjectiveSteps,
+  parseObjectiveDescription,
+} from "@/hooks/useObjectives";
+import {
+  resolveObjectiveDisplay,
+  objectiveStatusMeta,
+  isObjectiveOverdue,
+  SITUATION_EMOJI,
+} from "@/lib/objectiveDisplay";
+import { ObjectiveBadges, ObjectiveProgressRow } from "./ObjectiveCardParts";
 import {
   useIdsItems,
   useAddIdsItem,
@@ -88,7 +99,7 @@ interface Props {
 export function MeetingView({ report, periodStart, periodEnd, readOnly = false }: Props) {
   const navigate = useNavigate();
   const { spaId } = useAuth();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   const [currentSlide, setCurrentSlide] = useState(0);
   const [meetingPhase, setMeetingPhase] = useState<"live" | "closing">("live");
@@ -137,6 +148,8 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
   const checkinQ     = useCheckin(report.id);
   const todosQ       = useTodos(report.id, spaId);
   const objectivesQ  = useObjectives(spaId);
+  const objUpdatesQ  = useSpaObjectiveUpdates(spaId);
+  const objStepsQ    = useSpaObjectiveSteps(spaId);
   const idsQ         = useIdsItems(report.id);
   const monthlyIdsQ  = useIdsItemsForMonthlyPeriod(
     report.type === "monthly" ? spaId ?? undefined : undefined,
@@ -423,7 +436,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                         {ROLE_LABELS_VIEW[role]}
                       </span>
                       <span className={`ml-auto text-xs font-medium px-2 py-0.5 rounded-full ${colors.bg} ${colors.text} border ${colors.border}`}>
-                        {rows.length} KPI{rows.length > 1 ? "s" : ""}
+                        {t("report.meeting.kpi.countBadge", { count: rows.length })}
                       </span>
                     </div>
                     <div className="overflow-x-auto">
@@ -560,46 +573,66 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
         );
 
       /* ── 4 : Objectifs ── */
-      case 4:
+      case 4: {
+        const allObjUpdates = objUpdatesQ.data ?? [];
+        const allObjSteps = objStepsQ.data ?? [];
         return (
           <div className="space-y-4">
             {(objectivesQ.data ?? []).length === 0
               ? <p className="text-muted-foreground">{t("report.meeting.objectives.noData")}</p>
               : (objectivesQ.data ?? []).map((o) => {
-                  const parsed   = parseObjectiveDescription(o.description);
-                  const badgeLabel =
-                    parsed.status_ui === "on_track" ? t("report.meeting.objectives.onTrack") :
-                    parsed.status_ui === "at_risk"  ? t("report.meeting.objectives.atRisk") :
-                    t("report.meeting.objectives.behind");
-                  const badgeCls =
-                    parsed.status_ui === "on_track" ? "bg-emerald-100 text-emerald-800" :
-                    parsed.status_ui === "at_risk"  ? "bg-amber-100 text-amber-800" :
-                    "bg-red-100 text-red-800";
-                  const progress = computeObjectiveProgress(parsed.current, parsed.target, parsed.start);
+                  const parsed = parseObjectiveDescription(o.description);
+                  const display = resolveObjectiveDisplay(
+                    o,
+                    parsed,
+                    allObjSteps.filter((s) => s.objective_id === o.id),
+                  );
+                  const meta = objectiveStatusMeta(parsed.status_ui);
+                  const overdue = isObjectiveOverdue(o.target_date, o.status);
+                  // Densité réunion (O6) : l'entrée courante + la précédente
+                  // seulement — la timeline complète vit dans le weekly.
+                  const lastEntries = allObjUpdates
+                    .filter((u) => u.objective_id === o.id)
+                    .slice(0, 2);
                   return (
                     <div key={o.id} className="rounded-xl border border-border p-5 bg-card">
                       <div className="flex items-center justify-between mb-3 gap-2">
                         <span className="font-semibold text-foreground">{o.title}</span>
-                        <span className="flex items-center gap-1.5 shrink-0">
-                          {o.kind === "steps" && (
-                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-muted text-muted-foreground">{t("objectifs.form.typeSteps")}</span>
-                          )}
-                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badgeCls}`}>{badgeLabel}</span>
-                        </span>
+                        <ObjectiveBadges
+                          isProject={display.isProject}
+                          statusUi={parsed.status_ui}
+                          overdue={overdue}
+                        />
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-lg font-bold text-foreground tabular-nums">{parsed.current}{parsed.unit}</span>
-                        <div className="flex-1 h-2.5 bg-border rounded-full overflow-hidden">
-                          <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${progress}%` }} />
+                      <ObjectiveProgressRow
+                        current={display.current}
+                        target={display.target}
+                        unit={display.unit}
+                        isProject={display.isProject}
+                        progress={display.progress}
+                        barClass={meta.barClass}
+                      />
+                      {lastEntries.length > 0 && (
+                        <div className="mt-3 pt-2 border-t border-border space-y-1">
+                          {lastEntries.map((u) => (
+                            <p key={u.id} className="text-xs text-muted-foreground">
+                              <span className="font-medium text-foreground">
+                                {new Date(u.created_at).toLocaleDateString(i18n.language)}
+                              </span>{" "}
+                              {u.situation ? `${SITUATION_EMOJI[u.situation] ?? ""} ` : ""}
+                              {u.action_text ?? ""}
+                              {u.value !== null ? ` — ${u.value}${display.unit}` : ""}
+                            </p>
+                          ))}
                         </div>
-                        <span className="text-sm text-muted-foreground tabular-nums">{parsed.target}{parsed.unit}</span>
-                      </div>
+                      )}
                       {parsed.comment && <p className="text-xs text-muted-foreground mt-2 italic">{parsed.comment}</p>}
                     </div>
                   );
                 })}
           </div>
         );
+      }
 
       /* ── 5 : IDS ── */
       case 5:
@@ -1014,7 +1047,7 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                       {sectionLabel}
                     </span>
                     <span className={`text-xs font-medium px-2 py-0.5 rounded-full bg-white/60 ${sectionText}`}>
-                      {items.length} item{items.length > 1 ? "s" : ""}
+                      {t("report.meeting.idsStructure.itemCount", { count: items.length })}
                     </span>
                   </div>
                   <div className="space-y-1.5 pl-2">
