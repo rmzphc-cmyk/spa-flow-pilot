@@ -350,7 +350,9 @@
       "title": "Objectives",
       "active": "{{count}}/3 active",
       "subtitle": "Cycle objectives tracking",
+      "subtitleWeekly": "This week's check on your long-term objectives",
       "info": "Objectives are created by converting an issue (IDS) during a meeting, or directly via \"New objective\".",
+      "infoWeekly": "Each week, add a journal entry for each objective: your situation (🟢🟠🔴), the new value if the objective is numeric, and what you put in place.",
       "loading": "Loading objectives…",
       "empty": {
         "title": "No active objectives for this cycle",
@@ -1229,6 +1231,24 @@
       "addStep": "Add a step",
       "removeStep": "Remove step",
       "stepsEmpty": "Add at least one step to create this objective"
+    },
+    "journal": {
+      "newEntry": "This week's check-in",
+      "doneThisWeek": "✓ Already logged this week",
+      "situationOnTrack": "On track",
+      "situationComplicated": "Complicated",
+      "situationStruggling": "Struggling",
+      "valueLabel": "New value",
+      "lastValue": "(last: {{value}}{{unit}})",
+      "actionPlaceholder": "What I did / put in place this week…",
+      "submitBtn": "Add to journal",
+      "successToast": "Entry added to the journal",
+      "successDesc": "The objective's progress has been updated.",
+      "historyTitle": "Journal ({{count}})",
+      "noHistory": "No journal entries yet"
+    },
+    "steps": {
+      "title": "Steps"
     }
   },
   "login": {

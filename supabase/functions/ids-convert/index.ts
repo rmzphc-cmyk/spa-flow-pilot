@@ -17,7 +17,13 @@ import { authenticate, corsHeaders, internalError, json } from "../_shared/auth.
 // `trg_objective_active_limit` (décision C) → on catche son erreur, on ne
 // pré-compte pas (race condition).
 
-type Action = "set_triage" | "convert_to_todo" | "convert_to_objective" | "create_objective";
+type Action =
+  | "set_triage"
+  | "convert_to_todo"
+  | "convert_to_objective"
+  | "create_objective"
+  | "add_objective_update"
+  | "toggle_objective_step";
 
 type ObjectiveKind = "numeric" | "steps";
 
@@ -30,6 +36,7 @@ interface Payload {
   due_date?: string | null;
   target_date?: string | null;
   responsible?: string;
+  report_id?: string | null;
   // Refonte objectifs (Phase 1)
   // create_objective : requis. convert_to_objective : optionnel — s'il est non
   // vide, il remplace capture_text comme titre de l'objectif.
@@ -41,6 +48,14 @@ interface Payload {
   start_value?: number;
   target_value?: number;
   steps?: string[];
+  // Phase 2 — Journal weekly (add_objective_update)
+  objective_id?: string;
+  situation?: string | null;
+  action_text?: string | null;
+  value?: number | null;
+  // Phase 2 — étapes (toggle_objective_step)
+  step_id?: string;
+  is_done?: boolean;
 }
 
 // Client service_role tel que renvoyé par authenticate() — évite de réimporter
@@ -263,6 +278,190 @@ Deno.serve(async (req) => {
       if (!inserted.ok) return inserted.response;
 
       return json({ ok: true, objective_id: inserted.objectiveId }, 200);
+    }
+
+    // ── Journal weekly : ajout d'une entrée sur un objectif (Phase 2) ──────
+    // POURQUOI via EF : un insert client sur objective_updates lié à un weekly
+    // verrouillé serait perdu en silence (bug IDS bis) — le journal est
+    // transversal aux cycles, donc pas de garde is_locked ici.
+    if (body.action === "add_objective_update") {
+      const objectiveId = body.objective_id;
+      if (!objectiveId) return json({ error: "Missing objective_id" }, 400);
+
+      const VALID_SITUATIONS = ["on_track", "complicated", "struggling"];
+      const situation = typeof body.situation === "string" ? body.situation : null;
+      if (situation !== null && !VALID_SITUATIONS.includes(situation)) {
+        return json({ error: "INVALID_SITUATION" }, 400);
+      }
+
+      // Charger l'objectif — source de vérité du spa + kind.
+      const { data: obj, error: objErr } = await admin
+        .from("objectives")
+        .select("id, spa_id, kind, status, description")
+        .eq("id", objectiveId)
+        .maybeSingle();
+      if (objErr) return json({ error: objErr.message }, 400);
+      if (!obj) return json({ error: "Objectif introuvable." }, 404);
+      const objSpaId = (obj as unknown as { spa_id: string }).spa_id;
+      const isNumeric = (obj as unknown as { kind: string }).kind === "numeric";
+
+      // Autorisation : spa_manager du spa de l'objectif, ou admin.
+      const isOwnerManager = caller.role === "spa_manager" && caller.spaId === objSpaId;
+      if (caller.role !== "admin" && !isOwnerManager) {
+        return json({ error: "Forbidden" }, 403);
+      }
+      if ((obj as unknown as { status: string }).status !== "active") {
+        return json({ error: "OBJECTIVE_NOT_ACTIVE" }, 400);
+      }
+
+      // Tag : requis pour le chiffré (mémoire du moral) ; « ressenti »
+      // optionnel pour le projet (décision 4) — mais jamais d'entrée vide.
+      const actionText = strOrNull(body.action_text);
+      if (isNumeric && situation === null) {
+        return json({ error: "SITUATION_REQUIRED" }, 400);
+      }
+      const value = isNumeric ? numOrNull(body.value ?? null) : null;
+      if (situation === null && actionText === null && value === null) {
+        return json({ error: "EMPTY_ENTRY" }, 400);
+      }
+
+      // report_id = pointeur d'audit vers le weekly source — vérifie qu'il
+      // appartient bien au même spa avant de le stocker.
+      let reportId: string | null = null;
+      if (typeof body.report_id === "string" && body.report_id) {
+        const { data: rep } = await admin
+          .from("reports")
+          .select("id, spa_id")
+          .eq("id", body.report_id)
+          .maybeSingle();
+        if (rep && (rep as unknown as { spa_id: string }).spa_id === objSpaId) {
+          reportId = (rep as unknown as { id: string }).id;
+        }
+      }
+
+      const { data: entry, error: insertErr } = await admin
+        .from("objective_updates")
+        .insert({
+          objective_id: objectiveId,
+          spa_id: objSpaId,
+          created_by: caller.userId,
+          situation,
+          report_id: reportId,
+          action_text: actionText,
+          value,
+        })
+        .select()
+        .single();
+      if (insertErr) return json({ error: insertErr.message }, 400);
+
+      // Dual-write (chiffré, valeur fournie) : current_value = dernière valeur
+      // du journal + blob legacy pour les lecteurs non migrés (PDF, Direction).
+      // Non-fatal : l'entrée journal est déjà enregistrée.
+      if (isNumeric && value !== null) {
+        let blobPatch: Record<string, unknown> = {};
+        try {
+          blobPatch = {
+            ...JSON.parse((obj as unknown as { description: string | null }).description ?? "{}"),
+            current: value,
+          };
+        } catch {
+          blobPatch = { current: value };
+        }
+        const { error: updateErr } = await admin
+          .from("objectives")
+          .update({
+            current_value: value,
+            description: JSON.stringify(blobPatch),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", objectiveId);
+        if (updateErr) {
+          console.error(
+            `[ids-convert] dual-write current_value failed for objective ${objectiveId}:`,
+            updateErr,
+          );
+        }
+      }
+
+      return json({ ok: true, update_id: (entry as unknown as { id: string }).id }, 200);
+    }
+
+    // ── Étapes : cocher/décocher une étape d'un objectif projet (Phase 2) ──
+    // Via EF pour le dual-write blob (« x/N » des lecteurs legacy) — même
+    // logique transversale que le journal, pas de garde is_locked.
+    if (body.action === "toggle_objective_step") {
+      const stepId = body.step_id;
+      if (!stepId) return json({ error: "Missing step_id" }, 400);
+      if (typeof body.is_done !== "boolean") {
+        return json({ error: "Missing is_done" }, 400);
+      }
+
+      const { data: step, error: stepErr } = await admin
+        .from("objective_steps")
+        .select("id, objective_id, spa_id")
+        .eq("id", stepId)
+        .maybeSingle();
+      if (stepErr) return json({ error: stepErr.message }, 400);
+      if (!step) return json({ error: "Étape introuvable." }, 404);
+      const stepSpaId = (step as unknown as { spa_id: string }).spa_id;
+      const stepObjectiveId = (step as unknown as { objective_id: string }).objective_id;
+
+      const isOwnerManager = caller.role === "spa_manager" && caller.spaId === stepSpaId;
+      if (caller.role !== "admin" && !isOwnerManager) {
+        return json({ error: "Forbidden" }, 403);
+      }
+
+      const { data: obj, error: objErr } = await admin
+        .from("objectives")
+        .select("id, status, description")
+        .eq("id", stepObjectiveId)
+        .maybeSingle();
+      if (objErr) return json({ error: objErr.message }, 400);
+      if (!obj) return json({ error: "Objectif introuvable." }, 404);
+      if ((obj as unknown as { status: string }).status !== "active") {
+        return json({ error: "OBJECTIVE_NOT_ACTIVE" }, 400);
+      }
+
+      const { error: updErr } = await admin
+        .from("objective_steps")
+        .update({ is_done: body.is_done })
+        .eq("id", stepId);
+      if (updErr) return json({ error: updErr.message }, 400);
+
+      // Recompte puis dual-write blob : current = étapes faites, target = total.
+      const { data: allSteps, error: countErr } = await admin
+        .from("objective_steps")
+        .select("is_done")
+        .eq("objective_id", stepObjectiveId);
+      if (!countErr && allSteps) {
+        const total = allSteps.length;
+        const done = (allSteps as unknown as { is_done: boolean }[]).filter((s) => s.is_done).length;
+        let blobPatch: Record<string, unknown> = {};
+        try {
+          blobPatch = {
+            ...JSON.parse((obj as unknown as { description: string | null }).description ?? "{}"),
+            current: done,
+            target: total,
+          };
+        } catch {
+          blobPatch = { current: done, target: total };
+        }
+        const { error: blobErr } = await admin
+          .from("objectives")
+          .update({
+            description: JSON.stringify(blobPatch),
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", stepObjectiveId);
+        if (blobErr) {
+          console.error(
+            `[ids-convert] dual-write steps count failed for objective ${stepObjectiveId}:`,
+            blobErr,
+          );
+        }
+      }
+
+      return json({ ok: true }, 200);
     }
 
     // ── Actions IDS existantes ──────────────────────────────────────────────

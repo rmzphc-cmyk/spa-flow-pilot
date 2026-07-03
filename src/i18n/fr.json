@@ -350,7 +350,9 @@
       "title": "Objectifs",
       "active": "{{count}}/3 actifs",
       "subtitle": "Suivi des objectifs du cycle",
+      "subtitleWeekly": "Le point de la semaine sur vos objectifs long terme",
       "info": "Les objectifs se créent en convertissant un problème (IDS) en réunion, ou directement via « Nouvel objectif ».",
+      "infoWeekly": "Chaque semaine, ajoutez une entrée au journal de chaque objectif : votre situation (🟢🟠🔴), la nouvelle valeur si l'objectif est chiffré, et ce que vous avez mis en place.",
       "loading": "Chargement des objectifs…",
       "empty": {
         "title": "Aucun objectif actif pour ce cycle",
@@ -1229,6 +1231,24 @@
       "addStep": "Ajouter une étape",
       "removeStep": "Retirer l'étape",
       "stepsEmpty": "Ajoutez au moins une étape pour créer cet objectif"
+    },
+    "journal": {
+      "newEntry": "Point de la semaine",
+      "doneThisWeek": "✓ Point déjà fait cette semaine",
+      "situationOnTrack": "En bonne voie",
+      "situationComplicated": "Compliqué",
+      "situationStruggling": "En difficulté",
+      "valueLabel": "Nouvelle valeur",
+      "lastValue": "(dernière : {{value}}{{unit}})",
+      "actionPlaceholder": "Ce que j'ai fait / mis en place cette semaine…",
+      "submitBtn": "Ajouter au journal",
+      "successToast": "Entrée ajoutée au journal",
+      "successDesc": "L'avancement de l'objectif a été mis à jour.",
+      "historyTitle": "Journal ({{count}})",
+      "noHistory": "Aucune entrée de journal pour le moment"
+    },
+    "steps": {
+      "title": "Étapes"
     }
   },
   "login": {

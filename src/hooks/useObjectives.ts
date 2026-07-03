@@ -135,6 +135,8 @@ export interface UpdateObjectiveInput {
   objectiveId: string;
   spaId: string;
   description: string;
+  /** Dual-write : synchronise la colonne réelle avec le `current` du blob (chiffré). */
+  currentValue?: number;
 }
 
 export function useUpdateObjectiveProgress() {
@@ -143,9 +145,16 @@ export function useUpdateObjectiveProgress() {
 
   const mutation = useMutation({
     mutationFn: async (input: UpdateObjectiveInput) => {
+      const patch: { description: string; updated_at: string; current_value?: number } = {
+        description: input.description,
+        updated_at: new Date().toISOString(),
+      };
+      if (input.currentValue !== undefined && Number.isFinite(input.currentValue)) {
+        patch.current_value = input.currentValue;
+      }
       const { error } = await supabase
         .from("objectives")
-        .update({ description: input.description, updated_at: new Date().toISOString() })
+        .update(patch)
         .eq("id", input.objectiveId);
       if (error) throw error;
     },
@@ -225,6 +234,139 @@ export function useCloseObjective() {
       if (error) throw error;
     },
     onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["objectives", vars.spaId] });
+    },
+  });
+}
+
+// ── Journal weekly + étapes (Phase 2) ───────────────────────────────────────
+
+export type ObjectiveSituation = "on_track" | "complicated" | "struggling";
+
+export interface DbObjectiveUpdate {
+  id: string;
+  objective_id: string;
+  spa_id: string;
+  report_id: string | null;
+  created_by: string;
+  action_text: string | null;
+  value: number | null;
+  situation: ObjectiveSituation | null;
+  created_at: string;
+}
+
+export interface DbObjectiveStep {
+  id: string;
+  objective_id: string;
+  spa_id: string;
+  label: string;
+  is_done: boolean;
+  display_order: number;
+  created_at: string;
+}
+
+/**
+ * Journal de TOUS les objectifs du spa en une requête (les sections groupent
+ * ensuite par objective_id) — évite N requêtes par carte.
+ */
+export function useSpaObjectiveUpdates(spaId: string | null) {
+  return useQuery({
+    queryKey: ["objective_updates", spaId],
+    enabled: !!spaId,
+    queryFn: async (): Promise<DbObjectiveUpdate[]> => {
+      const { data, error } = await supabase
+        .from("objective_updates")
+        .select("*")
+        .eq("spa_id", spaId!)
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as DbObjectiveUpdate[];
+    },
+  });
+}
+
+/** Étapes de tous les objectifs du spa (type projet), ordonnées. */
+export function useSpaObjectiveSteps(spaId: string | null) {
+  return useQuery({
+    queryKey: ["objective_steps", spaId],
+    enabled: !!spaId,
+    queryFn: async (): Promise<DbObjectiveStep[]> => {
+      const { data, error } = await supabase
+        .from("objective_steps")
+        .select("*")
+        .eq("spa_id", spaId!)
+        .order("display_order", { ascending: true });
+      if (error) throw error;
+      return (data ?? []) as DbObjectiveStep[];
+    },
+  });
+}
+
+export interface AddObjectiveUpdateInput {
+  objectiveId: string;
+  spaId: string;
+  /** Requis pour un objectif chiffré ; « ressenti » optionnel pour un projet. */
+  situation: ObjectiveSituation | null;
+  actionText?: string;
+  value?: number | null;
+  reportId?: string | null;
+}
+
+/**
+ * Ajout d'une entrée de journal — via l'EF ids-convert (service_role) : un
+ * insert client lié à un weekly verrouillé serait perdu en silence (bug IDS
+ * bis). Le journal est transversal aux cycles, l'EF n'a pas de garde is_locked.
+ */
+export function useAddObjectiveUpdate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: AddObjectiveUpdateInput) => {
+      const { data, error } = await supabase.functions.invoke("ids-convert", {
+        body: {
+          action: "add_objective_update",
+          objective_id: input.objectiveId,
+          situation: input.situation,
+          action_text: input.actionText ?? null,
+          value: input.value ?? null,
+          report_id: input.reportId ?? null,
+        },
+      });
+      if (error) throw await normalizeEfError(error);
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["objective_updates", vars.spaId] });
+      // La valeur du journal met à jour current_value + blob (dual-write EF).
+      qc.invalidateQueries({ queryKey: ["objectives", vars.spaId] });
+    },
+  });
+}
+
+export interface ToggleObjectiveStepInput {
+  stepId: string;
+  spaId: string;
+  isDone: boolean;
+}
+
+/** Coche/décoche une étape — via EF pour le dual-write du blob « x/N ». */
+export function useToggleObjectiveStep() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: ToggleObjectiveStepInput) => {
+      const { data, error } = await supabase.functions.invoke("ids-convert", {
+        body: {
+          action: "toggle_objective_step",
+          step_id: input.stepId,
+          is_done: input.isDone,
+        },
+      });
+      if (error) throw await normalizeEfError(error);
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["objective_steps", vars.spaId] });
       qc.invalidateQueries({ queryKey: ["objectives", vars.spaId] });
     },
   });

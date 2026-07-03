@@ -35,7 +35,7 @@ interface OutletContext {
   reportType: ReportType;
 }
 
-const weeklySections: SectionId[] = ["kpi", "checkin", "responsabilites", "todo", "ids", "notes"];
+const weeklySections: SectionId[] = ["kpi", "checkin", "responsabilites", "todo", "objectifs", "ids", "notes"];
 const monthlySections: SectionId[] = ["kpi", "checkin", "responsabilites", "todo", "objectifs", "ids", "notes"];
 
 export default function RapportDetail() {
@@ -121,6 +121,11 @@ function PreparationMode({ report, periodStart, periodEnd }: { report: ReportRec
 
   const onTodoWeeklyStatusChange = useCallback(
     (s: SectionStatus) => updateSectionStatus("todo", s),
+    [updateSectionStatus],
+  );
+
+  const onObjectifsStatusChange = useCallback(
+    (s: SectionStatus) => updateSectionStatus("objectifs", s),
     [updateSectionStatus],
   );
 
@@ -259,7 +264,14 @@ function PreparationMode({ report, periodStart, periodEnd }: { report: ReportRec
           onStatusChange={onTodoWeeklyStatusChange}
         />
       )}
-      {activeSection === "objectifs" && !isWeekly && <SectionObjectifs reportId={report.id} reportType={report.type} />}
+      {activeSection === "objectifs" && (
+        <SectionObjectifs
+          reportId={report.id}
+          reportType={report.type}
+          isLocked={isLockedForSave}
+          onStatusChange={isWeekly ? onObjectifsStatusChange : undefined}
+        />
+      )}
       {activeSection === "ids" && !isWeekly && (
         <SectionIds
           reportId={report.id}
