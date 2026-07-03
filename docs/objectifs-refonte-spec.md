@@ -1,6 +1,6 @@
 # Spec — Refonte de la feature « Objectifs »
 
-> **Statut : Phase 0 (DB) ✅ prod · Phase 1 (création unifiée) ✅ implémentée · Code review xhigh ✅ PASSÉ le 2026-07-03 (72 candidats → 30 confirmés → 15 majeurs + cleanups TOUS CORRIGÉS) — EN ATTENTE : déploiement EF `ids-convert` puis commit/push. Phases 2-3 à faire.**
+> **Statut : Phase 0 (DB) ✅ prod · Phase 1 ✅ implémentée · Code review xhigh ✅ corrigé · EF v9 ✅ déployée · commit 89e8f10 ✅ poussé · TESTS LIVE ✅ 2026-07-03 (spa de test Djerba) : création chiffré/projet, 3 validations d'erreur, limite 409 (création ET conversion), clôture→slot libéré, conversion IDS titre édité + liens bidirectionnels, front rebuildé — S6 (JWT direction) non testé live. Zéro résidu de test. Phases 2-3 à faire.**
 > Correctifs review appliqués : progression **baseline-relative** (`start` dans le blob + helper `src/lib/objectiveProgress.ts` + 6 lecteurs + 15 tests), types.ts régénéré, action **Clôturer** (page /objectifs), rendu minimal type Projet, titre éditable à la conversion, admin masqué, toast « déjà converti », fix timezone, verrou concurrence trigger + WITH CHECK journal (migration 20260703093000), compensations EF symétriques et loggées, `ids_item_id` renseigné, SectionIdsWeekly (mort) supprimé, copie i18n corrigée.
 > Reste connu différé : dual-write à l'update (Phase 2), édition des étapes + saisie journal (Phase 2), garde UPDATE-réactivation du trigger (Phase 3), dédup coquille dialogs/mapping (cleanup).
 > Document de référence pour l'implémentation, le code review et le déploiement.
