@@ -752,56 +752,184 @@ export type Database = {
           },
         ]
       }
+      objective_steps: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          is_done: boolean
+          label: string
+          objective_id: string
+          spa_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_done?: boolean
+          label: string
+          objective_id: string
+          spa_id: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          is_done?: boolean
+          label?: string
+          objective_id?: string
+          spa_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "objective_steps_objective_id_fkey"
+            columns: ["objective_id"]
+            isOneToOne: false
+            referencedRelation: "objectives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "objective_steps_spa_id_fkey"
+            columns: ["spa_id"]
+            isOneToOne: false
+            referencedRelation: "spas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      objective_updates: {
+        Row: {
+          action_text: string | null
+          created_at: string
+          created_by: string
+          id: string
+          objective_id: string
+          report_id: string | null
+          situation: Database["public"]["Enums"]["objective_situation"] | null
+          spa_id: string
+          value: number | null
+        }
+        Insert: {
+          action_text?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          objective_id: string
+          report_id?: string | null
+          situation?: Database["public"]["Enums"]["objective_situation"] | null
+          spa_id: string
+          value?: number | null
+        }
+        Update: {
+          action_text?: string | null
+          created_at?: string
+          created_by?: string
+          id?: string
+          objective_id?: string
+          report_id?: string | null
+          situation?: Database["public"]["Enums"]["objective_situation"] | null
+          spa_id?: string
+          value?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "objective_updates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "objective_updates_objective_id_fkey"
+            columns: ["objective_id"]
+            isOneToOne: false
+            referencedRelation: "objectives"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "objective_updates_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "objective_updates_spa_id_fkey"
+            columns: ["spa_id"]
+            isOneToOne: false
+            referencedRelation: "spas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       objectives: {
         Row: {
           achieved_at: string | null
           created_at: string
           created_by: string
+          current_value: number | null
           description: string | null
           id: string
           ids_item_id: string | null
+          kind: Database["public"]["Enums"]["objective_kind"]
+          metric: string | null
           progress_note: string | null
           progress_updated_in_report: string | null
-          report_id_created: string
+          report_id_created: string | null
           source: Database["public"]["Enums"]["objective_source"]
           spa_id: string
+          start_value: number | null
           status: Database["public"]["Enums"]["objective_status"]
           target_date: string | null
+          target_value: number | null
           title: string
+          unit: string | null
           updated_at: string
         }
         Insert: {
           achieved_at?: string | null
           created_at?: string
           created_by: string
+          current_value?: number | null
           description?: string | null
           id?: string
           ids_item_id?: string | null
+          kind?: Database["public"]["Enums"]["objective_kind"]
+          metric?: string | null
           progress_note?: string | null
           progress_updated_in_report?: string | null
-          report_id_created: string
+          report_id_created?: string | null
           source?: Database["public"]["Enums"]["objective_source"]
           spa_id: string
+          start_value?: number | null
           status?: Database["public"]["Enums"]["objective_status"]
           target_date?: string | null
+          target_value?: number | null
           title: string
+          unit?: string | null
           updated_at?: string
         }
         Update: {
           achieved_at?: string | null
           created_at?: string
           created_by?: string
+          current_value?: number | null
           description?: string | null
           id?: string
           ids_item_id?: string | null
+          kind?: Database["public"]["Enums"]["objective_kind"]
+          metric?: string | null
           progress_note?: string | null
           progress_updated_in_report?: string | null
-          report_id_created?: string
+          report_id_created?: string | null
           source?: Database["public"]["Enums"]["objective_source"]
           spa_id?: string
+          start_value?: number | null
           status?: Database["public"]["Enums"]["objective_status"]
           target_date?: string | null
+          target_value?: number | null
           title?: string
+          unit?: string | null
           updated_at?: string
         }
         Relationships: [
@@ -1495,6 +1623,8 @@ export type Database = {
         | "direction_validated"
         | "prebriefing_ready"
         | "cycle_opened"
+      objective_kind: "numeric" | "steps"
+      objective_situation: "on_track" | "complicated" | "struggling"
       objective_source: "manual" | "ids_conversion"
       objective_status: "active" | "achieved" | "abandoned"
       report_status:
@@ -1662,6 +1792,8 @@ export const Constants = {
         "prebriefing_ready",
         "cycle_opened",
       ],
+      objective_kind: ["numeric", "steps"],
+      objective_situation: ["on_track", "complicated", "struggling"],
       objective_source: ["manual", "ids_conversion"],
       objective_status: ["active", "achieved", "abandoned"],
       report_status: [

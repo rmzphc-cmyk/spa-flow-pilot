@@ -8,6 +8,8 @@ export interface ParsedObjectiveDescription {
   target: number;
   unit: string;
   current: number;
+  /** Valeur de départ (baseline) — les blobs legacy ne l'ont pas → défaut 0. */
+  start: number;
   status_ui: "on_track" | "at_risk" | "behind";
   comment: string;
 }
@@ -17,6 +19,7 @@ export const defaultDescription: ParsedObjectiveDescription = {
   target: 0,
   unit: "",
   current: 0,
+  start: 0,
   status_ui: "on_track",
   comment: "",
 };
@@ -30,6 +33,7 @@ export function parseObjectiveDescription(raw: string | null): ParsedObjectiveDe
       target: typeof p.target === "number" ? p.target : 0,
       unit: typeof p.unit === "string" ? p.unit : "",
       current: typeof p.current === "number" ? p.current : 0,
+      start: typeof p.start === "number" ? p.start : 0,
       status_ui: ["on_track", "at_risk", "behind"].includes(p.status_ui) ? p.status_ui : "on_track",
       comment: typeof p.comment === "string" ? p.comment : "",
     };
@@ -42,16 +46,70 @@ export function stringifyObjectiveDescription(parsed: ParsedObjectiveDescription
   return JSON.stringify(parsed);
 }
 
+/** Nature d'un objectif : chiffré (indicateur départ→cible) ou projet (étapes). */
+export type ObjectiveKind = "numeric" | "steps";
+
+/** Limite d'objectifs actifs par spa (décision C — appliquée UI + serveur). */
+export const MAX_ACTIVE_OBJECTIVES = 3;
+
+/** Code d'erreur renvoyé par le trigger serveur quand la limite est atteinte. */
+export const OBJECTIVE_LIMIT_ERROR = "OBJECTIVE_LIMIT_REACHED";
+
+/** Vrai si l'erreur correspond à la limite de 3 objectifs actifs (HTTP 409 EF). */
+export function isObjectiveLimitError(error: unknown): boolean {
+  return error instanceof Error && error.message.includes(OBJECTIVE_LIMIT_ERROR);
+}
+
+/** Vrai si l'EF a refusé un objectif chiffré dont la cible égale le départ (HTTP 400). */
+export function isTargetEqualsStartError(error: unknown): boolean {
+  return error instanceof Error && error.message.includes("TARGET_EQUALS_START");
+}
+
+/**
+ * Normalise l'erreur d'une invocation d'Edge Function : sur un non-2xx,
+ * supabase-js renvoie un FunctionsHttpError générique (data=null) — le vrai
+ * code métier (ex. OBJECTIVE_LIMIT_REACHED en 409) est dans le corps JSON de
+ * la réponse, accessible via error.context.
+ */
+export async function normalizeEfError(error: unknown): Promise<Error> {
+  const ctx = (error as { context?: Response } | null)?.context;
+  if (ctx && typeof ctx.clone === "function") {
+    try {
+      const text = await ctx.clone().text();
+      if (text) {
+        try {
+          const parsed = JSON.parse(text);
+          const msg = parsed?.error ?? parsed?.message;
+          if (typeof msg === "string" && msg) return new Error(msg);
+        } catch {
+          return new Error(text);
+        }
+      }
+    } catch {
+      // Corps illisible : on retombe sur l'erreur d'origine.
+    }
+  }
+  return error instanceof Error ? error : new Error(String(error));
+}
+
 export interface DbObjective {
   id: string;
   spa_id: string;
-  report_id_created: string;
+  /** Nullable depuis la Phase 1 : la création directe n'a pas de rapport source. */
+  report_id_created: string | null;
   created_by: string;
   title: string;
   description: string | null;
   status: string;
   source: string | null;
   target_date: string | null;
+  // Colonnes réelles Phase 0 (remplacent progressivement le blob description)
+  kind: ObjectiveKind;
+  metric: string | null;
+  unit: string | null;
+  start_value: number | null;
+  target_value: number | null;
+  current_value: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -120,52 +178,89 @@ export function useUpdateObjectiveProgress() {
   return { ...mutation, debouncedUpdate, immediateUpdate };
 }
 
-export function useAddObjectiveFromIds() {
+export interface CreateObjectiveInput {
+  title: string;
+  /** Date cible ISO (yyyy-mm-dd) ou null. */
+  targetDate?: string | null;
+  /** Nature de l'objectif — défaut serveur : numeric. */
+  kind?: ObjectiveKind;
+  metric?: string;
+  unit?: string;
+  startValue?: number;
+  targetValue?: number;
+  /** Étapes du projet (kind = steps). */
+  steps?: string[];
+}
+
+export type CloseObjectiveStatus = "achieved" | "abandoned";
+
+export interface CloseObjectiveInput {
+  objectiveId: string;
+  spaId: string;
+  status: CloseObjectiveStatus;
+}
+
+/**
+ * Clôture d'un objectif actif (atteint ou abandonné) — libère un slot de la
+ * limite de 3 actifs. Update client direct : la RLS autorise déjà le manager
+ * à modifier les objectifs de son spa (cf. useUpdateObjectiveProgress).
+ */
+export function useCloseObjective() {
   const qc = useQueryClient();
-  const { spaId, user } = useAuth();
   return useMutation({
-    mutationFn: async (input: {
-      idsItemId: string;
-      reportId: string;
-      title: string;
-      targetDate: string | null;
-    }) => {
-      if (!spaId || !user) throw new Error("Not authenticated");
-      const { data: obj, error: e1 } = await supabase
+    mutationFn: async (input: CloseObjectiveInput) => {
+      const patch: {
+        status: CloseObjectiveStatus;
+        updated_at: string;
+        achieved_at?: string;
+      } = {
+        status: input.status,
+        updated_at: new Date().toISOString(),
+      };
+      if (input.status === "achieved") patch.achieved_at = new Date().toISOString();
+      const { error } = await supabase
         .from("objectives")
-        .insert({
-          spa_id: spaId,
-          report_id_created: input.reportId,
-          created_by: user.id,
-          title: input.title,
-          status: "active",
-          source: "ids_conversion",
-          target_date: input.targetDate,
-          description: JSON.stringify({
-            metric: "",
-            target: 0,
-            unit: "",
-            current: 0,
-            status_ui: "on_track",
-            comment: "",
-          }),
-        })
-        .select()
-        .single();
-      if (e1) throw e1;
-      const { error: e2 } = await supabase
-        .from("ids_items")
-        .update({
-          converted_to_objective_id: obj.id,
-          status: "converted",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", input.idsItemId);
-      if (e2) throw e2;
-      return obj;
+        .update(patch)
+        .eq("id", input.objectiveId);
+      if (error) throw error;
     },
-    onSuccess: (_d, vars) => {
-      qc.invalidateQueries({ queryKey: ["ids_items", vars.reportId] });
+    onSuccess: (_data, vars) => {
+      qc.invalidateQueries({ queryKey: ["objectives", vars.spaId] });
+    },
+  });
+}
+
+/**
+ * Création directe d'un objectif (décision A — chemin secondaire).
+ * Passe par l'EF ids-convert (service_role) : c'est elle qui porte la garde
+ * de limite serveur et le dual-write legacy — jamais d'insert client direct.
+ */
+export function useCreateObjective() {
+  const qc = useQueryClient();
+  const { spaId } = useAuth();
+  return useMutation({
+    mutationFn: async (input: CreateObjectiveInput) => {
+      const { data, error } = await supabase.functions.invoke("ids-convert", {
+        body: {
+          action: "create_objective",
+          title: input.title,
+          target_date: input.targetDate ?? null,
+          kind: input.kind ?? "numeric",
+          metric: input.metric,
+          unit: input.unit,
+          start_value: input.startValue,
+          target_value: input.targetValue,
+          steps: input.steps,
+          // Ignoré côté serveur pour un spa_manager (spa dérivé de sa ligne
+          // users) ; requis pour un admin.
+          spa_id: spaId ?? undefined,
+        },
+      });
+      if (error) throw await normalizeEfError(error);
+      if (data?.error) throw new Error(data.error);
+      return data;
+    },
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["objectives", spaId] });
     },
   });

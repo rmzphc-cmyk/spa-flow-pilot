@@ -8,6 +8,7 @@
  */
 
 import { parseObjectiveDescription } from "@/hooks/useObjectives";
+import { computeObjectiveProgress } from "@/lib/objectiveProgress";
 import { parseTodoDescription } from "@/hooks/useTodos";
 
 export type ProblemSeverity =
@@ -185,10 +186,7 @@ export function computeWeeklyException(
     const td = new Date(o.target_date);
     if (weekEnd && td > weekEnd) continue;
     const parsed = parseObjectiveDescription(o.description);
-    const progress = Math.min(
-      100,
-      Math.round((parsed.current / (parsed.target || 1)) * 100),
-    );
+    const progress = computeObjectiveProgress(parsed.current, parsed.target, parsed.start);
     if (progress >= 100) continue;
     const late = lateDaysOf(o.target_date);
     const c: ExceptionCommitment = {

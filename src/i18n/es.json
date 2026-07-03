@@ -15,6 +15,7 @@
     "spaHistory": "Historial spa",
     "configKpi": "Config KPI",
     "configResp": "Config Resp.",
+    "adminOrganization": "Organización",
     "backToReports": "Volver a informes",
     "submitForReview": "Enviar para revisión"
   },
@@ -349,11 +350,11 @@
       "title": "Objetivos",
       "active": "{{count}}/3 activos",
       "subtitle": "Seguimiento de objetivos del ciclo",
-      "info": "Los objetivos se definen en reunión o en la sección Cierre post-reunión.",
+      "info": "Los objetivos se crean convirtiendo un problema (IDS) durante una reunión, o directamente mediante «Nuevo objetivo».",
       "loading": "Cargando objetivos…",
       "empty": {
         "title": "Sin objetivos activos para este ciclo",
-        "subtitle": "A definir en la próxima reunión"
+        "subtitle": "Convierte un IDS durante una reunión o crea uno directamente"
       },
       "cible": "Objetivo",
       "comment": {
@@ -441,6 +442,8 @@
       "toastTodoDesc": "Visible en la sección Acciones del informe Monthly",
       "toastObjectifTitle": "Objetivo creado",
       "toastObjectifDesc": "Visible en la sección Objetivos del informe Monthly",
+      "toastObjectifAlreadyTitle": "Ya convertido",
+      "toastObjectifAlreadyDesc": "Este problema ya se había convertido en objetivo — no se creó ningún duplicado.",
       "toastError": "Error",
       "convertTodoTitle": "Convertir en To-do",
       "labelTitle": "Título *",
@@ -1191,9 +1194,42 @@
     "dueDate": "Fecha límite: {{date}}",
     "createdDuring": "Creado durante {{label}}",
     "activeCount": "{{count}}/3 activos",
-    "createdInfo": "Los objetivos se crean únicamente durante las posreuniones mensuales.",
-    "emptyState": "Ningún objetivo activo — se crearán durante tu próxima reunión mensual",
-    "limitReached": "Límite alcanzado — crear solo mediante posreunión"
+    "createdInfo": "Los objetivos se crean convirtiendo un problema (IDS) durante una reunión, o directamente mediante «Nuevo objetivo».",
+    "emptyState": "Ningún objetivo activo — convierte un IDS durante una reunión o crea uno directamente",
+    "limitReached": "Límite de 3 objetivos activos alcanzado",
+    "limitReachedError": "No se puede crear el objetivo: se alcanzó el límite de 3 objetivos activos.",
+    "create": {
+      "button": "Nuevo objetivo",
+      "title": "Crear un objetivo",
+      "titlePlaceholder": "Ej.: Subir el rebooking del 10 % al 25 %",
+      "toastDesc": "El objetivo se ha añadido a tu seguimiento."
+    },
+    "close": {
+      "achieveBtn": "Objetivo logrado",
+      "abandonBtn": "Abandonar",
+      "confirmAchieveTitle": "¿Marcar este objetivo como logrado?",
+      "confirmAbandonTitle": "¿Abandonar este objetivo?",
+      "confirmDesc": "El objetivo se retirará de la lista de objetivos activos y liberará un espacio (máx. 3)."
+    },
+    "form": {
+      "typeLabel": "Tipo de objetivo",
+      "typeNumeric": "Numérico",
+      "typeNumericDesc": "Un indicador que debe evolucionar de un valor inicial a una meta",
+      "typeSteps": "Proyecto",
+      "typeStepsDesc": "Un proyecto dividido en etapas que completar",
+      "metricLabel": "Indicador seguido",
+      "metricPlaceholder": "Ej.: Tasa de rebooking",
+      "unitLabel": "Unidad",
+      "unitPlaceholder": "%, €, sesiones…",
+      "startLabel": "Valor inicial",
+      "targetLabel": "Meta *",
+      "targetEqualsStartError": "La meta debe ser distinta del valor inicial.",
+      "stepsLabel": "Etapas del proyecto *",
+      "stepPlaceholder": "Describe la etapa…",
+      "addStep": "Añadir una etapa",
+      "removeStep": "Quitar la etapa",
+      "stepsEmpty": "Añade al menos una etapa para crear este objetivo"
+    }
   },
   "login": {
     "subtitle": "Inicia sesión en tu espacio",

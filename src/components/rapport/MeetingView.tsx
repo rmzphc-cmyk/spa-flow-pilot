@@ -28,6 +28,7 @@ import { useKpiDefinitions } from "@/hooks/useKpiDefinitions";
 import { useCheckin, parseKeyContext } from "@/hooks/useCheckin";
 import { useTodos, parseTodoDescription } from "@/hooks/useTodos";
 import { useObjectives, parseObjectiveDescription } from "@/hooks/useObjectives";
+import { computeObjectiveProgress } from "@/lib/objectiveProgress";
 import {
   useIdsItems,
   useAddIdsItem,
@@ -574,12 +575,17 @@ export function MeetingView({ report, periodStart, periodEnd, readOnly = false }
                     parsed.status_ui === "on_track" ? "bg-emerald-100 text-emerald-800" :
                     parsed.status_ui === "at_risk"  ? "bg-amber-100 text-amber-800" :
                     "bg-red-100 text-red-800";
-                  const progress = parsed.target > 0 ? Math.min(100, Math.round((parsed.current / parsed.target) * 100)) : 0;
+                  const progress = computeObjectiveProgress(parsed.current, parsed.target, parsed.start);
                   return (
                     <div key={o.id} className="rounded-xl border border-border p-5 bg-card">
-                      <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center justify-between mb-3 gap-2">
                         <span className="font-semibold text-foreground">{o.title}</span>
-                        <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badgeCls}`}>{badgeLabel}</span>
+                        <span className="flex items-center gap-1.5 shrink-0">
+                          {o.kind === "steps" && (
+                            <span className="text-xs px-2 py-0.5 rounded-full font-medium bg-muted text-muted-foreground">{t("objectifs.form.typeSteps")}</span>
+                          )}
+                          <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${badgeCls}`}>{badgeLabel}</span>
+                        </span>
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-lg font-bold text-foreground tabular-nums">{parsed.current}{parsed.unit}</span>

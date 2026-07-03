@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useRef, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { normalizeEfError, type ObjectiveKind } from "@/hooks/useObjectives";
 
 export type IdsStatus = "captured" | "structured" | "converted" | "closed_no_action";
 export type IdsCycleType = "weekly" | "monthly";
@@ -187,25 +188,52 @@ export function useConvertIdsToTodo(reportId: string) {
 
 export interface ConvertIdsToObjectiveInput {
   item: DbIdsItem;
+  /** Titre éditable de l'objectif — défaut serveur : capture_text de l'IDS. */
+  title?: string;
   /** Date cible ISO (yyyy-mm-dd) ou null. */
   targetDate?: string | null;
+  /** Nature de l'objectif — défaut serveur : numeric. */
+  kind?: ObjectiveKind;
+  metric?: string;
+  unit?: string;
+  startValue?: number;
+  targetValue?: number;
+  /** Étapes du projet (kind = steps). */
+  steps?: string[];
+}
+
+/** Réponse de l'EF ids-convert — `already` = l'IDS était déjà converti. */
+export interface ConvertIdsToObjectiveResult {
+  already?: boolean;
+  [key: string]: unknown;
 }
 
 export function useConvertIdsToObjective(reportId: string) {
   const qc = useQueryClient();
   const { spaId } = useAuth();
   return useMutation({
-    mutationFn: async (input: ConvertIdsToObjectiveInput) => {
+    mutationFn: async (
+      input: ConvertIdsToObjectiveInput,
+    ): Promise<ConvertIdsToObjectiveResult> => {
       const { data, error } = await supabase.functions.invoke("ids-convert", {
         body: {
           action: "convert_to_objective",
           ids_item_id: input.item.id,
+          title: input.title,
           target_date: input.targetDate ?? null,
+          kind: input.kind ?? "numeric",
+          metric: input.metric,
+          unit: input.unit,
+          start_value: input.startValue,
+          target_value: input.targetValue,
+          steps: input.steps,
         },
       });
-      if (error) throw error;
+      // normalizeEfError extrait le code métier du corps de réponse
+      // (ex. OBJECTIVE_LIMIT_REACHED en 409) — mappé en i18n côté dialog.
+      if (error) throw await normalizeEfError(error);
       if (data?.error) throw new Error(data.error);
-      return data;
+      return (data ?? {}) as ConvertIdsToObjectiveResult;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["ids_items", reportId] });

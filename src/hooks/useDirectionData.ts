@@ -1,11 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { computeObjectiveProgress } from "@/lib/objectiveProgress";
 import type { SpaOverview, SpaDetail, SpaAlert } from "@/data/directionMockData";
 
 interface ObjectiveDesc {
   current?: number | string | null;
   target?: number | string | null;
+  /** Valeur de départ (baseline) — absente des blobs legacy → défaut 0. */
+  start?: number | string | null;
   status_ui?: string;
 }
 
@@ -336,9 +339,14 @@ export function useDirectionSpaDetail(
         const desc = tryParseJson<ObjectiveDesc>(o.description, {});
         const current = desc.current;
         const target = desc.target;
+        // Progression baseline-relative ; données absentes (« — ») → 0 %.
         const progress =
-          target && Number(target) > 0
-            ? Math.min(100, Math.round((Number(current) / Number(target)) * 100))
+          current != null && target != null
+            ? computeObjectiveProgress(
+                Number(current),
+                Number(target),
+                Number(desc.start ?? 0),
+              )
             : 0;
         const status_ui = desc.status_ui === "at_risk" ? "at_risk" : "on_track";
         return {

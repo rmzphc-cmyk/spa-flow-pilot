@@ -15,6 +15,7 @@
     "spaHistory": "Spa History",
     "configKpi": "KPI Config",
     "configResp": "Resp. Config",
+    "adminOrganization": "Organization",
     "backToReports": "Back to reports",
     "submitForReview": "Submit for review"
   },
@@ -349,11 +350,11 @@
       "title": "Objectives",
       "active": "{{count}}/3 active",
       "subtitle": "Cycle objectives tracking",
-      "info": "Objectives are defined during meetings or in the post-meeting Closing section.",
+      "info": "Objectives are created by converting an issue (IDS) during a meeting, or directly via \"New objective\".",
       "loading": "Loading objectives…",
       "empty": {
         "title": "No active objectives for this cycle",
-        "subtitle": "To be defined at the next meeting"
+        "subtitle": "Convert an IDS during a meeting or create one directly"
       },
       "cible": "Target",
       "comment": {
@@ -441,6 +442,8 @@
       "toastTodoDesc": "Visible in the Actions section of the Monthly report",
       "toastObjectifTitle": "Objective created",
       "toastObjectifDesc": "Visible in the Objectives section of the Monthly report",
+      "toastObjectifAlreadyTitle": "Already converted",
+      "toastObjectifAlreadyDesc": "This issue had already been converted into an objective — no duplicate created.",
       "toastError": "Error",
       "convertTodoTitle": "Convert to To-do",
       "labelTitle": "Title *",
@@ -1191,9 +1194,42 @@
     "dueDate": "Due: {{date}}",
     "createdDuring": "Created during {{label}}",
     "activeCount": "{{count}}/3 active",
-    "createdInfo": "Objectives are created only during monthly post-meetings.",
-    "emptyState": "No active objectives — they will be created during your next monthly meeting",
-    "limitReached": "Limit reached — create only via post-meeting"
+    "createdInfo": "Objectives are created by converting an issue (IDS) during a meeting, or directly via \"New objective\".",
+    "emptyState": "No active objectives — convert an IDS during a meeting or create one directly",
+    "limitReached": "Limit of 3 active objectives reached",
+    "limitReachedError": "Cannot create the objective: the limit of 3 active objectives has been reached.",
+    "create": {
+      "button": "New objective",
+      "title": "Create an objective",
+      "titlePlaceholder": "E.g.: Grow rebooking from 10% to 25%",
+      "toastDesc": "The objective has been added to your tracking."
+    },
+    "close": {
+      "achieveBtn": "Objective achieved",
+      "abandonBtn": "Abandon",
+      "confirmAchieveTitle": "Mark this objective as achieved?",
+      "confirmAbandonTitle": "Abandon this objective?",
+      "confirmDesc": "The objective will be removed from the active objectives list, freeing up a slot (max 3)."
+    },
+    "form": {
+      "typeLabel": "Objective type",
+      "typeNumeric": "Numeric",
+      "typeNumericDesc": "An indicator to move from a starting value to a target",
+      "typeSteps": "Project",
+      "typeStepsDesc": "A project broken down into steps to check off",
+      "metricLabel": "Tracked indicator",
+      "metricPlaceholder": "E.g.: Rebooking rate",
+      "unitLabel": "Unit",
+      "unitPlaceholder": "%, €, sessions…",
+      "startLabel": "Starting value",
+      "targetLabel": "Target *",
+      "targetEqualsStartError": "The target must be different from the starting value.",
+      "stepsLabel": "Project steps *",
+      "stepPlaceholder": "Describe the step…",
+      "addStep": "Add a step",
+      "removeStep": "Remove step",
+      "stepsEmpty": "Add at least one step to create this objective"
+    }
   },
   "login": {
     "subtitle": "Sign in to your workspace",

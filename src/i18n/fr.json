@@ -350,11 +350,11 @@
       "title": "Objectifs",
       "active": "{{count}}/3 actifs",
       "subtitle": "Suivi des objectifs du cycle",
-      "info": "Les objectifs se définissent en réunion ou dans la section Clôture post-réunion.",
+      "info": "Les objectifs se créent en convertissant un problème (IDS) en réunion, ou directement via « Nouvel objectif ».",
       "loading": "Chargement des objectifs…",
       "empty": {
         "title": "Aucun objectif actif pour ce cycle",
-        "subtitle": "À définir lors de la prochaine réunion"
+        "subtitle": "Convertissez un IDS en réunion ou créez-en un directement"
       },
       "cible": "Cible",
       "comment": {
@@ -442,6 +442,8 @@
       "toastTodoDesc": "Visible dans la section Actions du rapport Monthly",
       "toastObjectifTitle": "Objectif créé",
       "toastObjectifDesc": "Visible dans la section Objectifs du rapport Monthly",
+      "toastObjectifAlreadyTitle": "Déjà converti",
+      "toastObjectifAlreadyDesc": "Ce problème avait déjà été converti en objectif — aucun doublon créé.",
       "toastError": "Erreur",
       "convertTodoTitle": "Convertir en To-do",
       "labelTitle": "Titre *",
@@ -1192,9 +1194,42 @@
     "dueDate": "Échéance : {{date}}",
     "createdDuring": "Créé lors de {{label}}",
     "activeCount": "{{count}}/3 actifs",
-    "createdInfo": "Les objectifs sont créés uniquement lors des post-réunions mensuelles.",
-    "emptyState": "Aucun objectif actif — ils seront créés lors de votre prochaine réunion mensuelle",
-    "limitReached": "Limite atteinte — créer uniquement via post-réunion"
+    "createdInfo": "Les objectifs se créent en convertissant un problème (IDS) en réunion, ou directement via « Nouvel objectif ».",
+    "emptyState": "Aucun objectif actif — convertissez un IDS en réunion ou créez-en un directement",
+    "limitReached": "Limite de 3 objectifs actifs atteinte",
+    "limitReachedError": "Impossible de créer l'objectif : la limite de 3 objectifs actifs est atteinte.",
+    "create": {
+      "button": "Nouvel objectif",
+      "title": "Créer un objectif",
+      "titlePlaceholder": "Ex. : Passer le rebooking de 10 % à 25 %",
+      "toastDesc": "L'objectif a été ajouté à votre suivi."
+    },
+    "close": {
+      "achieveBtn": "Objectif atteint",
+      "abandonBtn": "Abandonner",
+      "confirmAchieveTitle": "Marquer cet objectif comme atteint ?",
+      "confirmAbandonTitle": "Abandonner cet objectif ?",
+      "confirmDesc": "L'objectif sera retiré de la liste des objectifs actifs et libérera un emplacement (max 3)."
+    },
+    "form": {
+      "typeLabel": "Type d'objectif",
+      "typeNumeric": "Chiffré",
+      "typeNumericDesc": "Un indicateur à faire évoluer d'une valeur de départ vers une cible",
+      "typeSteps": "Projet",
+      "typeStepsDesc": "Un projet découpé en étapes à cocher",
+      "metricLabel": "Indicateur suivi",
+      "metricPlaceholder": "Ex. : Taux de rebooking",
+      "unitLabel": "Unité",
+      "unitPlaceholder": "%, €, séances…",
+      "startLabel": "Valeur de départ",
+      "targetLabel": "Cible *",
+      "targetEqualsStartError": "La cible doit être différente de la valeur de départ.",
+      "stepsLabel": "Étapes du projet *",
+      "stepPlaceholder": "Décrire l'étape…",
+      "addStep": "Ajouter une étape",
+      "removeStep": "Retirer l'étape",
+      "stepsEmpty": "Ajoutez au moins une étape pour créer cet objectif"
+    }
   },
   "login": {
     "subtitle": "Connectez-vous à votre espace",

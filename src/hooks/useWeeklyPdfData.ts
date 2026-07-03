@@ -14,6 +14,7 @@ import {
 } from "@/hooks/useResponsabilites";
 import { useKpiRoleAssignments } from "@/hooks/useKpiRoleAssignments";
 import { useObjectives, parseObjectiveDescription } from "@/hooks/useObjectives";
+import { computeObjectiveProgress } from "@/lib/objectiveProgress";
 import {
   computeWeeklyException,
   type ExceptionCommitment,
@@ -340,7 +341,7 @@ export function useWeeklyPdfData(
 
   const objectives: WeeklyPdfObjective[] = (objectivesQ.data ?? []).map((o) => {
     const parsed = parseObjectiveDescription(o.description);
-    const progress = Math.min(100, Math.round((parsed.current / (parsed.target || 1)) * 100));
+    const progress = computeObjectiveProgress(parsed.current, parsed.target, parsed.start);
     return {
       title: safeText(o.title),
       metric: safeText(parsed.metric),

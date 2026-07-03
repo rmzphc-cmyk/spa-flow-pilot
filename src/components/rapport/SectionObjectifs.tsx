@@ -1,18 +1,23 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { CoachHint } from "@/components/coaching/CoachHint";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Target, Info } from "lucide-react";
+import { Target, Info, Plus } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   useObjectives,
   useUpdateObjectiveProgress,
   parseObjectiveDescription,
   stringifyObjectiveDescription,
+  MAX_ACTIVE_OBJECTIVES,
   type ParsedObjectiveDescription,
   type DbObjective,
 } from "@/hooks/useObjectives";
+import { computeObjectiveProgress } from "@/lib/objectiveProgress";
+import { ObjectiveCreateDialog } from "./ObjectiveCreateDialog";
 
 interface Props {
   reportId: string;
@@ -32,19 +37,8 @@ export function SectionObjectifs({ reportId, reportType }: Props) {
   ];
 
   const [drafts, setDrafts] = useState<Record<string, Partial<ParsedObjectiveDescription>>>({});
-
-  useEffect(() => {
-    if (!objectives) return;
-    setDrafts((prev) => {
-      const next: Record<string, Partial<ParsedObjectiveDescription>> = { ...prev };
-      for (const obj of objectives) {
-        if (!next[obj.id]) {
-          // No local draft yet — will read from DB description on render
-        }
-      }
-      return next;
-    });
-  }, [objectives]);
+  // Création directe (secondaire) — même dialog que la page /objectifs.
+  const [createOpen, setCreateOpen] = useState(false);
 
   const getParsed = (obj: DbObjective): ParsedObjectiveDescription => {
     const draft = drafts[obj.id];
@@ -86,9 +80,22 @@ export function SectionObjectifs({ reportId, reportType }: Props) {
           <h2 className="text-lg font-semibold text-foreground">{t("report.objectifs.title")}</h2>
           <CoachHint surfaceKey="report.objectifs.title" />
         </div>
-        <span className="text-sm text-muted-foreground font-medium">
-          {t("report.objectifs.active", { count: visible.length })}
-        </span>
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm text-muted-foreground font-medium">
+            {t("report.objectifs.active", { count: visible.length })}
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={() => setCreateOpen(true)}
+            disabled={visible.length >= MAX_ACTIVE_OBJECTIVES}
+            title={t("objectifs.create.title")}
+            aria-label={t("objectifs.create.title")}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        </div>
       </div>
       <p className="text-sm text-muted-foreground mb-4">{t("report.objectifs.subtitle")}</p>
 
@@ -111,31 +118,48 @@ export function SectionObjectifs({ reportId, reportType }: Props) {
         <div className="space-y-4">
           {visible.map((obj) => {
             const parsed = getParsed(obj);
+            const isProject = obj.kind === "steps";
             const current = parsed.current;
-            const progress = Math.min(100, Math.round((current / (parsed.target || 1)) * 100));
+            const progress = computeObjectiveProgress(current, parsed.target, parsed.start);
 
             return (
               <div key={obj.id} className="bg-card border border-border rounded-xl p-5 shadow-sm">
-                <div className="flex items-start justify-between mb-3">
+                <div className="flex items-start justify-between mb-3 gap-2">
                   <div>
-                    <h3 className="font-medium text-foreground text-sm">{obj.title}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {parsed.metric} — {t("report.objectifs.cible")} : {parsed.target}
-                      {parsed.unit}
-                    </p>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-medium text-foreground text-sm">{obj.title}</h3>
+                      {isProject && (
+                        <Badge variant="secondary" className="shrink-0">
+                          {t("objectifs.form.typeSteps")}
+                        </Badge>
+                      )}
+                    </div>
+                    {!isProject && (
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {parsed.metric} — {t("report.objectifs.cible")} : {parsed.target}
+                        {parsed.unit}
+                      </p>
+                    )}
                   </div>
                 </div>
 
-                {/* Value + progress */}
+                {/* Value + progress — projet : lecture seule (avancement étapes
+                    dans le blob 0/N, édition des étapes en Phase 2) */}
                 <div className="flex items-center gap-4 mb-3">
-                  <Input
-                    type="number"
-                    className="w-24 text-right"
-                    value={current}
-                    onChange={(e) =>
-                      handleUpdate(obj, { current: Number(e.target.value) })
-                    }
-                  />
+                  {isProject ? (
+                    <span className="text-sm font-medium text-foreground tabular-nums shrink-0">
+                      {current}/{parsed.target}
+                    </span>
+                  ) : (
+                    <Input
+                      type="number"
+                      className="w-24 text-right"
+                      value={current}
+                      onChange={(e) =>
+                        handleUpdate(obj, { current: Number(e.target.value) })
+                      }
+                    />
+                  )}
                   <div className="flex-1 h-2 bg-border rounded-full overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all ${progress >= 100 ? "bg-emerald-500" : progress >= 70 ? "bg-amber-500" : "bg-red-500"}`}
@@ -178,6 +202,8 @@ export function SectionObjectifs({ reportId, reportType }: Props) {
           })}
         </div>
       )}
+
+      <ObjectiveCreateDialog open={createOpen} onOpenChange={setCreateOpen} />
     </section>
   );
 }
