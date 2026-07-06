@@ -54,7 +54,7 @@ Deno.serve(async (req) => {
     const formData = new FormData();
     formData.append("file", fileData, `recording.${ext}`);
     formData.append("model", "whisper-1");
-    formData.append("language", "fr");
+    // No "language" param → Whisper auto-detects; detected language stored in reports.meeting_language
     formData.append("response_format", "verbose_json");
 
     const whisperResp = await fetch("https://api.openai.com/v1/audio/transcriptions", {
@@ -74,20 +74,33 @@ Deno.serve(async (req) => {
     const whisperResult = await whisperResp.json();
     const transcriptText = whisperResult.text ?? "";
     const transcriptDuration = whisperResult.duration ?? report.audio_duration_s ?? null;
+    const detectedLanguage: string | null = whisperResult.language ?? null;
 
-    const { error: upErr } = await admin.from("meeting_summaries").upsert(
-      {
-        report_id,
-        transcript_text: transcriptText,
-        transcript_status: "done",
-        transcript_generated_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "report_id" },
-    );
+    // Persist transcript + detected language in parallel
+    const [upErr, langErr] = await Promise.all([
+      admin.from("meeting_summaries").upsert(
+        {
+          report_id,
+          transcript_text: transcriptText,
+          transcript_status: "done",
+          transcript_generated_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "report_id" },
+      ).then((r) => r.error),
+
+      detectedLanguage
+        ? admin.from("reports")
+            .update({ meeting_language: detectedLanguage, updated_at: new Date().toISOString() })
+            .eq("id", report_id)
+            .then((r) => r.error)
+        : Promise.resolve(null),
+    ]);
+
     if (upErr) throw upErr;
+    if (langErr) console.error("Erreur stockage meeting_language:", langErr);
 
-    return json({ data: { transcript_text: transcriptText, duration: transcriptDuration } }, 200);
+    return json({ data: { transcript_text: transcriptText, duration: transcriptDuration, language: detectedLanguage } }, 200);
   } catch (e) {
     return internalError(e);
   }
