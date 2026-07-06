@@ -27,7 +27,7 @@ Le repo est édité **à la fois par Lovable et en local (VS Code)**. Lovable po
 ## Supabase
 - Projet : `zvitfplilnkhbclgrtru`. Clés client dans `.env` (`VITE_*`) — **publiques par design**, la sécurité repose sur les RLS.
 - **Migrations appliquées MANUELLEMENT** via Dashboard → SQL Editor. **PAS** de `supabase db push` / CLI. Les `.sql` sources vivent dans `~/Google Drive/Claude Dev/Sanagua OMS/`, pas tous dans `supabase/migrations/`.
-- **Edge Functions déployées via Lovable/Supabase**, pas par push GitHub. 12 EF dans `supabase/functions/`.
+- **Edge Functions déployées via Lovable/Supabase ou CLI** (`supabase functions deploy <nom> --project-ref zvitfplilnkhbclgrtru`), **jamais** par push GitHub. Déploiement prod = action sensible, exige un Go explicite. 12 EF dans `supabase/functions/`.
 - Rôles (RLS) : `admin` | `direction` | `spa_manager`.
 - **NEVER** committer de `service_role` key ni de mot de passe.
 
@@ -42,6 +42,7 @@ Le repo est édité **à la fois par Lovable et en local (VS Code)**. Lovable po
 ## Règles métier
 - **Rapport Monthly = mois PRÉCÉDANT la réunion.** Réunion le 2 juin → couvre mai (`period_start = 2026-05-01`).
 - IDS = Issues/Decisions/Solutions capturés en réunion. `triage_mode` : `bloquant` 🔴 | `deleguer` 🔵 | `priorite` 🟡 | `veille` ⚫ | `NULL` = à trier.
+- **Conversion IDS → to-do/objectif : le titre porte la SOLUTION (l'action à mener), jamais le problème.** L'IDS `capture_text` = le problème, il reste la référence (lié via `ids_item_id` / `converted_to_*`). To-do : champ « Action à mener » optionnel (repli `capture_text` si vide). Objectif : titre obligatoire, non pré-rempli. Idem `validate-final-report` (auto-todo → `proposed_solution`).
 - KPI : rôles `therapist|spa_concierge|spa_manager|ambassador` × niveaux `prioritaire|secondaire|suivi` (table `kpi_role_assignments`).
 
 ## Conventions
