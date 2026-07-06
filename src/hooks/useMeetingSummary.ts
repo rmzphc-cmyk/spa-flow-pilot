@@ -9,6 +9,8 @@ import { withTimeout } from "@/lib/withTimeout";
 export interface MeetingSummaryRow {
   id: string;
   report_id: string;
+  /** Sortie complète de l'agent coach mensuel (JSONB) — voir useAiArbitrage. */
+  ai_output: unknown | null;
   executive_summary: string | null;
   kpi_synthesis: string | null;
   management_synthesis: string | null;
