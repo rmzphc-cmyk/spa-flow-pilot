@@ -594,6 +594,7 @@ export type Database = {
       }
       meeting_summaries: {
         Row: {
+          ai_output: Json | null
           created_at: string
           edit_history: Json | null
           executive_summary: string | null
@@ -619,6 +620,7 @@ export type Database = {
           validated_by: string | null
         }
         Insert: {
+          ai_output?: Json | null
           created_at?: string
           edit_history?: Json | null
           executive_summary?: string | null
@@ -644,6 +646,7 @@ export type Database = {
           validated_by?: string | null
         }
         Update: {
+          ai_output?: Json | null
           created_at?: string
           edit_history?: Json | null
           executive_summary?: string | null
@@ -1008,9 +1011,11 @@ export type Database = {
           is_locked: boolean
           manager_id: string
           meeting_closed_at: string | null
+          meeting_language: string | null
           meeting_started_at: string | null
           period_end: string
           period_start: string
+          snapshot_before_meeting: Json | null
           spa_id: string
           status: Database["public"]["Enums"]["report_status"]
           updated_at: string
@@ -1030,9 +1035,11 @@ export type Database = {
           is_locked?: boolean
           manager_id: string
           meeting_closed_at?: string | null
+          meeting_language?: string | null
           meeting_started_at?: string | null
           period_end: string
           period_start: string
+          snapshot_before_meeting?: Json | null
           spa_id: string
           status?: Database["public"]["Enums"]["report_status"]
           updated_at?: string
@@ -1052,9 +1059,11 @@ export type Database = {
           is_locked?: boolean
           manager_id?: string
           meeting_closed_at?: string | null
+          meeting_language?: string | null
           meeting_started_at?: string | null
           period_end?: string
           period_start?: string
+          snapshot_before_meeting?: Json | null
           spa_id?: string
           status?: Database["public"]["Enums"]["report_status"]
           updated_at?: string
@@ -1609,7 +1618,7 @@ export type Database = {
       ids_status: "captured" | "structured" | "converted" | "closed_no_action"
       kpi_category: "financial" | "operational" | "customer" | "hr" | "custom"
       kpi_status: "green" | "amber" | "red" | "not_applicable" | "excellent"
-      language_code: "fr" | "en" | "es"
+      language_code: "fr" | "en" | "es" | "ro"
       memory_type:
         | "kpi_trend"
         | "recurring_issue"
@@ -1776,7 +1785,7 @@ export const Constants = {
       ids_status: ["captured", "structured", "converted", "closed_no_action"],
       kpi_category: ["financial", "operational", "customer", "hr", "custom"],
       kpi_status: ["green", "amber", "red", "not_applicable", "excellent"],
-      language_code: ["fr", "en", "es"],
+      language_code: ["fr", "en", "es", "ro"],
       memory_type: [
         "kpi_trend",
         "recurring_issue",
