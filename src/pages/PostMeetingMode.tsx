@@ -1,9 +1,11 @@
-import { useMemo } from "react";
+import { useMemo, useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { useReport, useReopenMeeting } from "@/hooks/useReports";
 import {
   useMeetingSummary,
   useTranscribeMeeting,
+  useGenerateMeetingSummary,
+  useValidateMonthlySummary,
 } from "@/hooks/useMeetingSummary";
 import { useIdsItems } from "@/hooks/useIdsItems";
 import { useParams, useNavigate } from "react-router-dom";
@@ -32,9 +34,39 @@ export default function PostMeetingMode() {
   const { data: dbIds } = useIdsItems(id);
   const transcribeMeeting = useTranscribeMeeting();
   const reopenMeeting = useReopenMeeting();
+  const generateSummary = useGenerateMeetingSummary();
+  const validateSummary = useValidateMonthlySummary();
 
   const isMonthly = row?.cycle_type === "monthly";
   const isPostMeeting = row?.status === "post_meeting_generated";
+
+  // ── Orchestration post-réunion : transcription PUIS synthèse coach ──────────
+  // À l'arrivée sur l'écran (après "Fin de réunion") : si un audio existe et
+  // n'est pas transcrit → Whisper ; quand le transcript est prêt (ou pas d'audio)
+  // et que le coach n'a pas encore tourné → génération. Résilient au reload.
+  const transcribeStartedRef = useRef(false);
+  const generateStartedRef = useRef(false);
+  useEffect(() => {
+    if (!isPostMeeting || !isMonthly || !id) return;
+    const hasAiOutput = !!(summaryRow as { ai_output?: unknown } | null | undefined)?.ai_output;
+    if (hasAiOutput) return; // coach déjà passé
+    const hasAudio = !!row?.audio_storage_path;
+    const tStatus = summaryRow?.transcript_status;
+    // 1) transcription si audio dispo et pas encore faite
+    if (hasAudio && (!tStatus || tStatus === "none") && !transcribeStartedRef.current && !transcribeMeeting.isPending) {
+      transcribeStartedRef.current = true;
+      transcribeMeeting.mutate({ reportId: id });
+      return;
+    }
+    if (hasAudio && tStatus === "pending") return; // Whisper en cours (poll auto)
+    // 2) génération : pas d'audio, ou transcript prêt (done|error)
+    const canGenerate = !hasAudio || tStatus === "done" || tStatus === "error";
+    if (canGenerate && !generateStartedRef.current && !generateSummary.isPending) {
+      generateStartedRef.current = true;
+      generateSummary.mutate({ reportId: id });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPostMeeting, isMonthly, id, summaryRow, row?.audio_storage_path]);
 
   const decisionsFromAi = useMemo<string[]>(() => {
     if (!summaryRow?.key_actions) return [];
@@ -84,6 +116,19 @@ export default function PostMeetingMode() {
                   ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   : <RotateCcw className="h-3.5 w-3.5" />}
                 {t("postMeeting.reopenMeeting")}
+              </Button>
+            )}
+            {isPostMeeting && isMonthly && (
+              <Button
+                size="sm"
+                className="gap-1.5 text-xs bg-teal-600 hover:bg-teal-700 text-white"
+                disabled={!aiReady || validateSummary.isPending}
+                onClick={() => id && validateSummary.mutate({ reportId: id })}
+              >
+                {validateSummary.isPending
+                  ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  : <Check className="h-3.5 w-3.5" />}
+                {t("postMeeting.closeMonthly")}
               </Button>
             )}
             <Button

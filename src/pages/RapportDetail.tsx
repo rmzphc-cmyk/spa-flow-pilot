@@ -1,7 +1,7 @@
-import { useMemo, useCallback } from "react";
+import { useMemo, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useIsMutating } from "@tanstack/react-query";
-import { useParams, useOutletContext, useNavigate, useLocation } from "react-router-dom";
+import { useParams, useOutletContext, useNavigate, useLocation, Navigate } from "react-router-dom";
 import { ReportHeader } from "@/components/rapport/ReportHeader";
 import { SectionKpi } from "@/components/rapport/SectionKpi";
 import { SectionCheckin } from "@/components/rapport/SectionCheckin";
@@ -16,12 +16,21 @@ import { SectionNotes } from "@/components/rapport/SectionNotes";
 
 import { MeetingView } from "@/components/rapport/MeetingView";
 import { type ReportRecord } from "@/lib/reportsStore";
-import { useReport, mapReportRowToRecord, useUpdateReportStatus, useStartMeeting, useFinalizeWeekly } from "@/hooks/useReports";
+import { useReport, mapReportRowToRecord, useUpdateReportStatus, useStartMeeting, useFinalizeWeekly, useCloseMeeting } from "@/hooks/useReports";
+import { useAudioRecorder } from "@/hooks/useAudioRecorder";
+import { useUploadMeetingAudio } from "@/hooks/useAudioUpload";
+import { useAuth } from "@/contexts/AuthContext";
 import { Loader2, Lock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
-import { CheckCircle2, Play } from "lucide-react";
+import { CheckCircle2, Play, Square, Mic } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+
+function formatDuration(s: number): string {
+  const m = Math.floor(s / 60);
+  const sec = s % 60;
+  return `${m}:${sec.toString().padStart(2, "0")}`;
+}
 
 export type ReportType = "monthly" | "weekly";
 export type SectionId = "kpi" | "checkin" | "responsabilites" | "todo" | "objectifs" | "ids" | "notes";
@@ -65,9 +74,15 @@ export default function RapportDetail() {
 
   const report: ReportRecord = mapReportRowToRecord(row);
 
-  // MEETING MODE — monthly, réunion active OU Phase 2 (clôture en cours)
-  if (report.type === "monthly" && (report.state === "in_meeting" || (report.state === "post_meeting_generated" && !forceReadOnly))) {
-    return <MeetingView report={report} periodStart={row.period_start} periodEnd={row.period_end} />;
+  // LIVE MEETING — monthly in_meeting : sections éditables EN DIRECT + enregistrement.
+  // (Refonte : plus de slides lecture seule ; on édite les vraies sections.)
+  if (report.type === "monthly" && report.state === "in_meeting") {
+    return <PreparationMode report={report} periodStart={row.period_start} periodEnd={row.period_end} spaId={row.spa_id} />;
+  }
+
+  // POST-MEETING (arbitrage) — redirection vers l'écran /post-reunion.
+  if (report.type === "monthly" && report.state === "post_meeting_generated" && !forceReadOnly) {
+    return <Navigate to={`/post-reunion/${report.id}`} replace />;
   }
 
   // REPLAY MODE — lecture seule : validated, ou "Voir la présentation" depuis PostMeetingMode
@@ -76,11 +91,11 @@ export default function RapportDetail() {
   }
 
   // PREPARATION MODE (incl. validated read-only) — keep existing editable layout
-  return <PreparationMode report={report} periodStart={row.period_start} periodEnd={row.period_end} />;
+  return <PreparationMode report={report} periodStart={row.period_start} periodEnd={row.period_end} spaId={row.spa_id} />;
 }
 
 
-function PreparationMode({ report, periodStart, periodEnd }: { report: ReportRecord; periodStart: string; periodEnd: string }) {
+function PreparationMode({ report, periodStart, periodEnd, spaId }: { report: ReportRecord; periodStart: string; periodEnd: string; spaId?: string }) {
   const { t } = useTranslation();
   const { activeSection, sectionStatuses, setSectionStatuses } = useOutletContext<OutletContext>();
   const isWeekly = report.type === "weekly";
@@ -142,8 +157,102 @@ function PreparationMode({ report, periodStart, periodEnd }: { report: ReportRec
   const isValidated = report.state === "validated";
   const isLockedForSave = isValidated || finalizeWeekly.isPending;
 
+  // ── Réunion EN DIRECT (monthly in_meeting) : enregistrement + fin de réunion ──
+  const navigate = useNavigate();
+  const { spaId: authSpaId } = useAuth();
+  const effectiveSpaId = spaId ?? authSpaId ?? "";
+  const isInMeeting = report.type === "monthly" && report.state === "in_meeting";
+  const recorder = useAudioRecorder();
+  const uploadAudio = useUploadMeetingAudio();
+  const closeMeeting = useCloseMeeting();
+  const [ending, setEnding] = useState(false);
+  const closeStartedRef = useRef(false);
+
+  // Auto-démarrage de l'enregistrement à l'entrée en réunion.
+  useEffect(() => {
+    if (isInMeeting && recorder.status === "idle") {
+      recorder.startRecording().catch(() => {/* micro refusé — la réunion continue sans audio */});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isInMeeting]);
+
+  const finishClose = useCallback(
+    (audio: { storagePath: string; mimeType: string; durationSeconds: number } | null) => {
+      closeMeeting.mutate(
+        {
+          reportId: report.id,
+          audioStoragePath: audio?.storagePath,
+          audioMimeType: audio?.mimeType,
+          audioDurationS: audio?.durationSeconds,
+        },
+        {
+          onSuccess: () => navigate(`/post-reunion/${report.id}`),
+          onError: (e) => {
+            setEnding(false);
+            closeStartedRef.current = false;
+            toast({ title: t("common.error"), description: (e as Error).message, variant: "destructive" });
+          },
+        },
+      );
+    },
+    [closeMeeting, report.id, navigate, t],
+  );
+
+  const handleEndMeeting = () => {
+    setEnding(true);
+    if (recorder.status === "recording" || recorder.status === "paused") {
+      recorder.stopRecording(); // → onstop pose le blob ; l'effet ci-dessous enchaîne
+    } else if (!closeStartedRef.current) {
+      closeStartedRef.current = true;
+      finishClose(null); // pas d'enregistrement actif → clôture sans audio
+    }
+  };
+
+  // Après l'arrêt du micro : upload (si blob) puis clôture — une seule fois.
+  useEffect(() => {
+    if (!ending || closeStartedRef.current) return;
+    if (recorder.status !== "stopped") return;
+    closeStartedRef.current = true;
+    if (recorder.blob && effectiveSpaId) {
+      const mime = recorder.blob.type || "audio/webm";
+      const ext = mime.includes("mp4") ? "mp4" : mime.includes("ogg") ? "ogg" : "webm";
+      uploadAudio.mutate(
+        {
+          reportId: report.id,
+          spaId: effectiveSpaId,
+          blob: recorder.blob,
+          mimeType: mime,
+          durationSeconds: recorder.durationSeconds,
+          filename: `audio.${ext}`,
+        },
+        {
+          onSuccess: (res) =>
+            finishClose({ storagePath: res.storagePath, mimeType: res.mimeType, durationSeconds: res.durationSeconds }),
+          onError: () => finishClose(null), // upload raté → on clôture quand même
+        },
+      );
+    } else {
+      finishClose(null);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ending, recorder.status, recorder.blob]);
+
   const renderActionButton = () => {
     if (isValidated) return null;
+    // Monthly : "Fin de réunion" pendant la réunion en direct
+    if (isInMeeting) {
+      return (
+        <Button
+          size="sm"
+          className="gap-1.5 bg-rose-600 hover:bg-rose-700 text-white"
+          disabled={ending}
+          onClick={handleEndMeeting}
+        >
+          {ending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Square className="h-4 w-4" />}
+          {ending ? t("rapportDetail.endingMeeting") : t("rapportDetail.endMeeting")}
+        </Button>
+      );
+    }
     // Monthly : "Lancer la réunion" depuis draft_preparation OU ready_for_review
     if (report.type === "monthly" && (report.state === "draft_preparation" || report.state === "ready_for_review")) {
       return (
@@ -226,6 +335,30 @@ function PreparationMode({ report, periodStart, periodEnd }: { report: ReportRec
         <div className="mx-6 mt-4 mb-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 flex items-center gap-2 text-emerald-900">
           <Lock className="h-4 w-4" />
           <span className="text-sm font-medium">{t("rapportDetail.validatedReadOnly")}</span>
+        </div>
+      )}
+
+      {isInMeeting && (
+        <div className="mx-6 mt-4 mb-2 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 flex items-center gap-3">
+          {recorder.status === "recording" ? (
+            <>
+              <span className="relative flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-rose-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-rose-600" />
+              </span>
+              <span className="text-sm font-medium text-rose-900">
+                {t("rapportDetail.recordingLive", { duration: formatDuration(recorder.durationSeconds) })}
+              </span>
+            </>
+          ) : recorder.status === "acquiring" ? (
+            <span className="text-sm text-rose-900 flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" /> {t("rapportDetail.micStarting")}
+            </span>
+          ) : (
+            <span className="text-sm text-amber-700 flex items-center gap-2">
+              <Mic className="h-4 w-4" /> {t("rapportDetail.micUnavailable")}
+            </span>
+          )}
         </div>
       )}
 
