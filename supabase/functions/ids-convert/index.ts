@@ -22,6 +22,8 @@ type Action =
   | "convert_to_todo"
   | "convert_to_objective"
   | "create_objective"
+  | "create_ids"
+  | "create_todo"
   | "add_objective_update"
   | "toggle_objective_step";
 
@@ -42,6 +44,9 @@ interface Payload {
   // optionnel — s'il est non vide, il remplace capture_text comme intitulé
   // (le problème IDS reste la référence, la conversion capture la solution).
   title?: string;
+  // Matérialisation d'une proposition IA (create_ids / create_todo) :
+  // le problème/contexte. Sur un IDS → capture_text ; sur un to-do → followUp.
+  problem?: string | null;
   spa_id?: string; // admin uniquement (create_objective) — ignoré sinon
   kind?: ObjectiveKind;
   metric?: string;
@@ -221,6 +226,41 @@ async function insertObjectiveWithSteps(
   return { ok: true, objectiveId };
 }
 
+// Résout le spa (source de vérité = app_metadata via caller, spa_id client
+// ignoré sauf admin) et valide que le report_id cible appartient bien à ce spa.
+// Utilisé par create_ids / create_todo (matérialisation de propositions IA).
+async function resolveSpaAndReport(
+  admin: AdminClient,
+  caller: { role: string; spaId: string | null; userId: string },
+  body: Payload,
+): Promise<{ ok: true; spaId: string; reportId: string } | { ok: false; response: Response }> {
+  let spaId: string | null = null;
+  if (caller.role === "spa_manager") {
+    spaId = caller.spaId;
+    if (!spaId) {
+      return { ok: false, response: json({ error: "Aucun spa associé (app_metadata.spa_id manquant)." }, 400) };
+    }
+  } else if (caller.role === "admin") {
+    spaId = strOrNull(body.spa_id);
+    if (!spaId) return { ok: false, response: json({ error: "Missing spa_id" }, 400) };
+  } else {
+    return { ok: false, response: json({ error: "Forbidden" }, 403) };
+  }
+
+  const reportId = strOrNull(body.report_id ?? null);
+  if (!reportId) return { ok: false, response: json({ error: "Missing report_id" }, 400) };
+
+  const { data: rep } = await admin
+    .from("reports")
+    .select("id, spa_id")
+    .eq("id", reportId)
+    .maybeSingle();
+  if (!rep || (rep as unknown as { spa_id: string }).spa_id !== spaId) {
+    return { ok: false, response: json({ error: "Forbidden" }, 403) };
+  }
+  return { ok: true, spaId, reportId };
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -279,6 +319,69 @@ Deno.serve(async (req) => {
       if (!inserted.ok) return inserted.response;
 
       return json({ ok: true, objective_id: inserted.objectiveId }, 200);
+    }
+
+    // ── Matérialisation proposition IA : création directe d'un IDS ─────────
+    // (proposition acceptée à l'arbitrage post-réunion ; pas d'IDS source).
+    if (body.action === "create_ids") {
+      const resolved = await resolveSpaAndReport(admin, caller, body);
+      if (!resolved.ok) return resolved.response;
+      const title = strOrNull(body.title);
+      const problem = strOrNull(body.problem);
+      if (!title && !problem) return json({ error: "Missing title/problem" }, 400);
+
+      const mode = body.triage_mode ?? null;
+      if (mode !== null && !TRIAGE_MODES.includes(mode)) {
+        return json({ error: `Invalid triage_mode: ${mode}` }, 400);
+      }
+
+      // Règle métier : capture_text = le problème (référence) ;
+      // proposed_solution = l'action. Sans problème, l'action sert de capture_text.
+      const { data: created, error } = await admin
+        .from("ids_items")
+        .insert({
+          spa_id: resolved.spaId,
+          report_id: resolved.reportId,
+          capture_text: problem ?? title,
+          proposed_solution: problem ? title : null,
+          triage_mode: mode,
+          cycle_type: "monthly",
+          created_by: caller.userId,
+        })
+        .select()
+        .single();
+      if (error) return json({ error: error.message }, 400);
+      return json({ ok: true, ids_item_id: (created as unknown as { id: string }).id }, 200);
+    }
+
+    // ── Matérialisation proposition IA : création directe d'un to-do ───────
+    if (body.action === "create_todo") {
+      const resolved = await resolveSpaAndReport(admin, caller, body);
+      if (!resolved.ok) return resolved.response;
+      const title = strOrNull(body.title);
+      if (!title) return json({ error: "Missing title" }, 400);
+
+      const { data: created, error } = await admin
+        .from("todos")
+        .insert({
+          spa_id: resolved.spaId,
+          report_id: resolved.reportId,
+          title, // l'action à mener (la solution)
+          description: JSON.stringify({
+            responsible: (body.responsible ?? "").trim() || "—",
+            followUp: strOrNull(body.problem) ?? "",
+          }),
+          status: "pending",
+          priority: "medium",
+          source: "ai_suggestion",
+          ids_item_id: null,
+          due_date: body.due_date ?? null,
+          created_by: caller.userId,
+        })
+        .select()
+        .single();
+      if (error) return json({ error: error.message }, 400);
+      return json({ ok: true, todo_id: (created as unknown as { id: string }).id }, 200);
     }
 
     // ── Journal weekly : ajout d'une entrée sur un objectif (Phase 2) ──────
