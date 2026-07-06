@@ -30,12 +30,14 @@ interface Props {
 export function IdsToTodoDialog({ reportId, item, onOpenChange, onCreated }: Props) {
   const { t } = useTranslation();
   const convertToTodo = useConvertIdsToTodo(reportId);
+  const [solution, setSolution] = useState("");
   const [responsible, setResponsible] = useState("");
   const [dueDate, setDueDate] = useState("");
 
   // Réinitialise les champs à chaque ouverture / changement d'item.
   useEffect(() => {
     if (item) {
+      setSolution("");
       setResponsible("");
       setDueDate("");
     }
@@ -44,7 +46,7 @@ export function IdsToTodoDialog({ reportId, item, onOpenChange, onCreated }: Pro
   const submit = () => {
     if (!item || !dueDate) return;
     convertToTodo.mutate(
-      { item, dueDate, responsible: responsible.trim() },
+      { item, dueDate, responsible: responsible.trim(), title: solution.trim() },
       {
         onSuccess: () => {
           onOpenChange(false);
@@ -77,6 +79,15 @@ export function IdsToTodoDialog({ reportId, item, onOpenChange, onCreated }: Pro
               {item.capture_text}
             </p>
           )}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">{t("report.ids.labelSolution")}</label>
+            <Input
+              value={solution}
+              onChange={(e) => setSolution(e.target.value)}
+              placeholder={t("report.ids.placeholderSolution")}
+            />
+            <p className="text-xs text-muted-foreground">{t("report.ids.solutionHint")}</p>
+          </div>
           <div className="space-y-1.5">
             <label className="text-sm font-medium">{t("report.ids.labelResponsible")}</label>
             <Input

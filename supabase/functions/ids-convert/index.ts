@@ -38,8 +38,9 @@ interface Payload {
   responsible?: string;
   report_id?: string | null;
   // Refonte objectifs (Phase 1)
-  // create_objective : requis. convert_to_objective : optionnel — s'il est non
-  // vide, il remplace capture_text comme titre de l'objectif.
+  // create_objective : requis. convert_to_objective / convert_to_todo :
+  // optionnel — s'il est non vide, il remplace capture_text comme intitulé
+  // (le problème IDS reste la référence, la conversion capture la solution).
   title?: string;
   spa_id?: string; // admin uniquement (create_objective) — ignoré sinon
   kind?: ObjectiveKind;
@@ -506,7 +507,9 @@ Deno.serve(async (req) => {
         .insert({
           spa_id: (item as any).spa_id,
           report_id: (item as any).report_id,
-          title: (item as any).capture_text,
+          // La conversion capture la solution : titre saisi si fourni, sinon
+          // repli sur le texte du problème (champ optionnel côté client).
+          title: strOrNull(body.title) ?? (item as any).capture_text,
           description: JSON.stringify({
             responsible: (body.responsible ?? "").trim() || "—",
             followUp: "",

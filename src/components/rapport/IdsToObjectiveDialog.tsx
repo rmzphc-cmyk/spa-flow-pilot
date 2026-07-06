@@ -36,7 +36,8 @@ interface Props {
 }
 
 /**
- * Formulaire de conversion IDS → Objectif : titre (pré-rempli avec la capture),
+ * Formulaire de conversion IDS → Objectif : titre (vide — le manager saisit la
+ * solution ; le problème IDS reste affiché en référence au-dessus),
  * nature (chiffré/projet), champs indicateur ou étapes, date cible. La
  * conversion passe par l'EF ids-convert (cf. useConvertIdsToObjective) qui
  * porte la garde de limite serveur.
@@ -56,7 +57,9 @@ export function IdsToObjectiveDialog({ reportId, item, onOpenChange, onCreated }
 
   useEffect(() => {
     if (item) {
-      setValues({ ...makeEmptyObjectiveFormValues(), title: item.capture_text });
+      // Titre laissé vide : le problème (capture_text) reste affiché en
+      // référence au-dessus ; le manager saisit la solution, pas le constat.
+      setValues(makeEmptyObjectiveFormValues());
     }
   }, [item]);
 

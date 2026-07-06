@@ -449,6 +449,9 @@
       "toastError": "Error",
       "convertTodoTitle": "Convert to To-do",
       "labelTitle": "Title *",
+      "labelSolution": "Action to take",
+      "placeholderSolution": "E.g. Train the team on the end-of-treatment protocol",
+      "solutionHint": "Optional — if empty, the problem is used as the title.",
       "labelResponsible": "Responsible",
       "placeholderResponsible": "Responsible person's name",
       "labelDueDate": "Due date *",
@@ -1207,7 +1210,7 @@
     "create": {
       "button": "New objective",
       "title": "Create an objective",
-      "titlePlaceholder": "E.g.: Grow rebooking from 10% to 25%",
+      "titlePlaceholder": "E.g. Train the team on the end-of-treatment protocol → 45% rebooking",
       "toastDesc": "The objective has been added to your tracking."
     },
     "close": {

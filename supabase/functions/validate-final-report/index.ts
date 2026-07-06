@@ -78,8 +78,12 @@ Deno.serve(async (req) => {
       await admin.from("todos").upsert({
         spa_id: spaId,
         report_id: report_id,
-        title: ids.capture_text,
-        description: JSON.stringify({ responsible: "", followUp: ids.proposed_solution }),
+        // La to-do porte la SOLUTION (proposed_solution, garantie non vide
+        // ci-dessus), pas le problème ; capture_text = repli défensif. Le
+        // problème reste consultable via le lien ids_item_id. Miroir de
+        // convert_to_todo (ids-convert).
+        title: ids.proposed_solution?.trim() || ids.capture_text,
+        description: JSON.stringify({ responsible: "—", followUp: "" }),
         status: "pending",
         priority: "medium",
         source: "ids_conversion",

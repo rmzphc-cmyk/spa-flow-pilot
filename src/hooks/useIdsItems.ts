@@ -156,6 +156,8 @@ export interface ConvertIdsToTodoInput {
   /** Date d'échéance ISO (yyyy-mm-dd) ou null si sans date. */
   dueDate?: string | null;
   responsible?: string;
+  /** Intitulé de l'action — optionnel ; vide → repli serveur sur capture_text. */
+  title?: string;
 }
 
 export function useConvertIdsToTodo(reportId: string) {
@@ -171,6 +173,7 @@ export function useConvertIdsToTodo(reportId: string) {
           ids_item_id: input.item.id,
           due_date: input.dueDate ?? null,
           responsible: (input.responsible ?? "").trim(),
+          title: (input.title ?? "").trim() || undefined,
         },
       });
       if (error) throw error;

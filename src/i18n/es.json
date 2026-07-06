@@ -449,6 +449,9 @@
       "toastError": "Error",
       "convertTodoTitle": "Convertir en To-do",
       "labelTitle": "Título *",
+      "labelSolution": "Acción a realizar",
+      "placeholderSolution": "Ej.: Formar al equipo en el protocolo de fin de tratamiento",
+      "solutionHint": "Opcional — si se deja vacío, se usa el problema como título.",
       "labelResponsible": "Responsable",
       "placeholderResponsible": "Nombre del responsable",
       "labelDueDate": "Fecha límite *",
@@ -1207,7 +1210,7 @@
     "create": {
       "button": "Nuevo objetivo",
       "title": "Crear un objetivo",
-      "titlePlaceholder": "Ej.: Subir el rebooking del 10 % al 25 %",
+      "titlePlaceholder": "Ej.: Formar al equipo en el protocolo de fin de tratamiento → 45 % de rebooking",
       "toastDesc": "El objetivo se ha añadido a tu seguimiento."
     },
     "close": {
