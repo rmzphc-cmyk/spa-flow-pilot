@@ -46,7 +46,6 @@ import {
   RefreshCw,
   Loader2,
   Mic,
-  Eye,
   RotateCcw,
   AlertCircle,
   AlertTriangle,
@@ -453,15 +452,6 @@ export default function PostMeetingMode() {
                 {t("postMeeting.closeMonthly")}
               </Button>
             )}
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-1.5 text-xs"
-              onClick={() => navigate(`/rapport/${id}`, { state: { readOnly: true } })}
-            >
-              <Eye className="h-3.5 w-3.5" />
-              {t("postMeeting.viewPresentation")}
-            </Button>
           </div>
         </div>
       </div>

@@ -1,7 +1,7 @@
 import { useMemo, useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useIsMutating } from "@tanstack/react-query";
-import { useParams, useOutletContext, useNavigate, useLocation, Navigate } from "react-router-dom";
+import { useParams, useOutletContext, useNavigate, Navigate } from "react-router-dom";
 import { ReportHeader } from "@/components/rapport/ReportHeader";
 import { SectionKpi } from "@/components/rapport/SectionKpi";
 import { SectionCheckin } from "@/components/rapport/SectionCheckin";
@@ -14,7 +14,6 @@ import { SectionObjectifs } from "@/components/rapport/SectionObjectifs";
 import { SectionIds } from "@/components/rapport/SectionIds";
 import { SectionNotes } from "@/components/rapport/SectionNotes";
 
-import { MeetingView } from "@/components/rapport/MeetingView";
 import { type ReportRecord } from "@/lib/reportsStore";
 import { useReport, mapReportRowToRecord, useUpdateReportStatus, useStartMeeting, useFinalizeWeekly, useCloseMeeting } from "@/hooks/useReports";
 import { useAudioRecorder } from "@/hooks/useAudioRecorder";
@@ -51,8 +50,6 @@ export default function RapportDetail() {
   const { t } = useTranslation();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const location = useLocation();
-  const forceReadOnly = (location.state as { readOnly?: boolean } | null)?.readOnly ?? false;
   const { data: row, isLoading, error } = useReport(id);
 
   if (isLoading) {
@@ -80,17 +77,13 @@ export default function RapportDetail() {
     return <PreparationMode report={report} periodStart={row.period_start} periodEnd={row.period_end} spaId={row.spa_id} />;
   }
 
-  // POST-MEETING (arbitrage) — redirection vers l'écran /post-reunion.
-  if (report.type === "monthly" && report.state === "post_meeting_generated" && !forceReadOnly) {
+  // POST-RÉUNION & ARCHIVE — monthly post_meeting_generated OU validated :
+  // tout passe par l'écran /post-reunion (arbitrage si en cours, lecture seule si validé).
+  if (report.type === "monthly" && (report.state === "post_meeting_generated" || report.state === "validated")) {
     return <Navigate to={`/post-reunion/${report.id}`} replace />;
   }
 
-  // REPLAY MODE — lecture seule : validated, ou "Voir la présentation" depuis PostMeetingMode
-  if (report.type === "monthly" && (report.state === "validated" || (report.state === "post_meeting_generated" && forceReadOnly))) {
-    return <MeetingView report={report} periodStart={row.period_start} periodEnd={row.period_end} readOnly />;
-  }
-
-  // PREPARATION MODE (incl. validated read-only) — keep existing editable layout
+  // PREPARATION MODE — prépa monthly + tous les weekly (validé = lecture seule intégrée)
   return <PreparationMode report={report} periodStart={row.period_start} periodEnd={row.period_end} spaId={row.spa_id} />;
 }
 
