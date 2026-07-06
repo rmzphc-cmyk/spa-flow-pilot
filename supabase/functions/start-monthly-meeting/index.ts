@@ -1,4 +1,5 @@
 import { authenticate, authorizeReportAccess, corsHeaders, internalError, json } from "../_shared/auth.ts";
+import { buildMeetingSections } from "../_shared/meetingSnapshot.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
@@ -21,61 +22,11 @@ Deno.serve(async (req) => {
     }
 
     // -------------------------------------------------------------------------
-    // Snapshot "avant" — photographier les 7 sections au moment du lancement
+    // Snapshot "avant" — photographier les 7 sections au moment du lancement.
+    // Même shape que l'état "après" (module partagé) pour un diff comparable.
     // -------------------------------------------------------------------------
-    const [kpiRes, checkinRes, respRes, todosRes, objectifsRes, idsRes] = await Promise.all([
-      admin
-        .from("kpi_entries")
-        .select("kpi_definition_id, value_current, value_n1, target_value, status, is_na, comment, kpi_definition:kpi_definitions(name, unit)")
-        .eq("report_id", report_id),
-
-      admin
-        .from("checkins")
-        .select("mood_score, focus_level, key_context")
-        .eq("report_id", report_id)
-        .maybeSingle(),
-
-      admin
-        .from("responsibility_logs")
-        .select("responsibility_template_id, actual_count, completion_rate, comment, template:responsibility_templates(name, category)")
-        .eq("report_id", report_id),
-
-      admin
-        .from("todos")
-        .select("id, title, status, due_date, priority")
-        .eq("spa_id", report.spa_id)
-        .not("status", "eq", "done"),
-
-      admin
-        .from("objectives")
-        .select("id, title, status, target_date, progress_note, current_value, target_value, metric, unit")
-        .eq("spa_id", report.spa_id)
-        .eq("status", "active"),
-
-      admin
-        .from("ids_items")
-        .select("id, capture_text, triage_mode, proposed_solution, status")
-        .eq("report_id", report_id),
-    ]);
-
-    const checkinRow = checkinRes.data;
-    let parsedCtx: Record<string, unknown> = {};
-    if (checkinRow?.key_context) {
-      try { parsedCtx = JSON.parse(checkinRow.key_context); } catch { /* keep empty */ }
-    }
-
-    const snapshot = {
-      captured_at: new Date().toISOString(),
-      kpi: kpiRes.data ?? [],
-      checkin: checkinRow
-        ? { mood_score: checkinRow.mood_score, focus_level: checkinRow.focus_level }
-        : null,
-      notes: typeof parsedCtx.free_note === "string" ? parsedCtx.free_note : null,
-      responsabilites: respRes.data ?? [],
-      todos: todosRes.data ?? [],
-      objectifs: objectifsRes.data ?? [],
-      ids: idsRes.data ?? [],
-    };
+    const sections = await buildMeetingSections(admin, report);
+    const snapshot = { captured_at: new Date().toISOString(), ...sections };
 
     // -------------------------------------------------------------------------
     // Transition de statut + écriture du snapshot
