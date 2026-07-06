@@ -22,8 +22,17 @@ Deno.serve(async (req) => {
       return json({ error: "Aucun enregistrement audio disponible pour ce rapport." }, 404);
     }
 
+    // generated_by_agent est NOT NULL : le fournir permet à cet upsert de CRÉER
+    // la ligne quand la transcription est le premier écrivain (nouveau flux :
+    // transcription AVANT synthèse). Sinon l'INSERT échoue → aucune ligne →
+    // le coach ne se déclenche jamais.
     await admin.from("meeting_summaries").upsert(
-      { report_id, transcript_status: "pending", updated_at: new Date().toISOString() },
+      {
+        report_id,
+        transcript_status: "pending",
+        generated_by_agent: "transcribe-meeting-audio",
+        updated_at: new Date().toISOString(),
+      },
       { onConflict: "report_id" },
     );
 
@@ -84,6 +93,7 @@ Deno.serve(async (req) => {
           transcript_text: transcriptText,
           transcript_status: "done",
           transcript_generated_at: new Date().toISOString(),
+          generated_by_agent: "transcribe-meeting-audio",
           updated_at: new Date().toISOString(),
         },
         { onConflict: "report_id" },

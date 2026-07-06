@@ -325,21 +325,22 @@ export default function PostMeetingMode() {
     if (summaryRow?.ai_output) return; // coach déjà passé
     const hasAudio = !!row?.audio_storage_path;
     const tStatus = summaryRow?.transcript_status;
-    // 1) transcription si audio dispo et pas encore faite
-    if (hasAudio && (!tStatus || tStatus === "none") && !transcribeStartedRef.current && !transcribeMeeting.isPending) {
+    // 1) transcription : une seule tentative, si audio et pas encore de transcript
+    if (hasAudio && !transcribeStartedRef.current && (!tStatus || tStatus === "none")) {
       transcribeStartedRef.current = true;
       transcribeMeeting.mutate({ reportId: id });
       return;
     }
-    if (hasAudio && tStatus === "pending") return; // Whisper en cours (poll auto)
-    // 2) génération : pas d'audio, ou transcript prêt (done|error)
-    const canGenerate = !hasAudio || tStatus === "done" || tStatus === "error";
-    if (canGenerate && !generateStartedRef.current && !generateSummary.isPending) {
+    // 2) transcription en cours → on attend (poll auto de useMeetingSummary)
+    if (transcribeMeeting.isPending || tStatus === "pending") return;
+    // 3) génération : transcript prêt/échoué, pas d'audio, OU transcription déjà
+    //    tentée sans résultat exploitable → on ne reste jamais bloqué.
+    if (!generateStartedRef.current && !generateSummary.isPending) {
       generateStartedRef.current = true;
       generateSummary.mutate({ reportId: id });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isPostMeeting, isMonthly, id, summaryRow, row?.audio_storage_path]);
+  }, [isPostMeeting, isMonthly, id, summaryRow, row?.audio_storage_path, transcribeMeeting.isPending, generateSummary.isPending]);
 
   const decisionsFromAi = useMemo<string[]>(() => {
     if (!summaryRow?.key_actions) return [];

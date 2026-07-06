@@ -62,6 +62,7 @@ export function useGenerateMeetingSummary() {
           body: { report_id: input.reportId, language: lang },
         }),
         "La génération de la synthèse",
+        120_000, // GPT-4o sur transcript complet dépasse souvent 30 s
       );
       if (error) throw new Error(data?.error ?? error.message ?? "Erreur génération");
       if (data?.error) throw new Error(data.error);
