@@ -41,6 +41,7 @@ export function useKpiImport() {
       qc.invalidateQueries({ queryKey: ["kpi_definitions_all"] });
       qc.invalidateQueries({ queryKey: ["kpi_definitions"] });
       qc.invalidateQueries({ queryKey: ["kpi_monthly_targets"] });
+      qc.invalidateQueries({ queryKey: ["kpi_threshold_history"] });
       qc.invalidateQueries({ queryKey: ["kpi_role_assignments"] });
     },
   });

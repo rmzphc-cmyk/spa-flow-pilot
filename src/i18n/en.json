@@ -883,6 +883,7 @@
     "colThGood": "Good",
     "colThCorrect": "Fair",
     "thresholdsAreDefault": "These thresholds are the KPI's default baseline. Adjust them month by month in the table (Excellent / Good / Fair columns) so they evolve with performance.",
+    "inheritedThreshold": "Value inherited from the last configured month (shown in teal): it already applies as-is. Enter a value to change it from this month onward; leave empty to keep it.",
     "sectionSpa": "Spa KPI",
     "sectionManager": "Manager KPI",
     "groupLabelSpa": "Spa KPI",

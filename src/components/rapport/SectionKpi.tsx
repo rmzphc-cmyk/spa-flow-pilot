@@ -18,6 +18,7 @@ import {
   getWeeklyTarget,
   resolveThresholds,
   type KpiMonthlyTarget,
+  type ResolvedThresholds,
 } from "@/hooks/useKpiMonthlyTargets";
 import {
   useKpiRoleAssignments,
@@ -65,10 +66,10 @@ function defToKpiData(
   def: KpiDefinitionRow,
   entry: KpiEntryRow | undefined,
   liveTarget: KpiMonthlyTarget | undefined,
-  prevTarget: KpiMonthlyTarget | undefined,
+  effective: ResolvedThresholds | undefined,
   isWeekly: boolean,
 ): KpiData {
-  const th = resolveThresholds(def, liveTarget, prevTarget);
+  const th = resolveThresholds(def, effective);
   let target: number;
   if (liveTarget) {
     target = isWeekly
@@ -122,7 +123,7 @@ function kpiNeedsComment(
   isWeekly: boolean,
   entriesByDef: Map<string, KpiEntryRow>,
   liveTargetMap: Map<string, KpiMonthlyTarget>,
-  prevTargetMap: Map<string, KpiMonthlyTarget>,
+  effectiveMap: Map<string, ResolvedThresholds>,
 ): boolean {
   if (cv.isNa) return false;
   if (cv.value === "") return false;
@@ -131,7 +132,7 @@ function kpiNeedsComment(
   if (isNaN(n)) return false;
 
   const liveTarget = liveTargetMap.get(def.id);
-  const th = resolveThresholds(def, liveTarget, prevTargetMap.get(def.id));
+  const th = resolveThresholds(def, effectiveMap.get(def.id));
 
   if (isWeekly) {
     const entryData = entriesByDef.get(def.id);
@@ -179,7 +180,7 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
 
   const { data: definitions = [] } = useKpiDefinitions(spaId);
   const { data: entries = [] } = useKpiEntries(reportId);
-  const { currentMap: liveTargetMap, previousMap: prevTargetMap } = useKpiMonthlyTargets(
+  const { currentMap: liveTargetMap, effectiveThresholdsMap } = useKpiMonthlyTargets(
     spaId,
     yearMonth ?? "",
   );
@@ -274,7 +275,7 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
         } else {
           value_current = n;
           const liveTarget = liveTargetMap.get(def.id);
-          const th = resolveThresholds(def, liveTarget, prevTargetMap.get(def.id));
+          const th = resolveThresholds(def, effectiveThresholdsMap.get(def.id));
           if (isWeekly) {
             const entryData = entriesByDef.get(def.id);
             const divisor =
@@ -326,7 +327,7 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
       });
       delete pendingRef.current[def.id];
     },
-    [reportId, upsert, entriesByDef, isWeekly, liveTargetMap, prevTargetMap],
+    [reportId, upsert, entriesByDef, isWeekly, liveTargetMap, effectiveThresholdsMap],
   );
 
   // Garde une réf vers le dernier persist pour pouvoir flusher au démontage
@@ -369,7 +370,7 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
         continue;
       }
       const liveTarget = liveTargetMap.get(def.id);
-      const th = resolveThresholds(def, liveTarget, prevTargetMap.get(def.id));
+      const th = resolveThresholds(def, effectiveThresholdsMap.get(def.id));
       if (isWeekly) {
         const entryData = entriesByDef.get(def.id);
         const divisor =
@@ -408,7 +409,7 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
       }
     }
     return true;
-  }, [local, sortedDefs, isWeekly, entriesByDef, liveTargetMap, prevTargetMap]);
+  }, [local, sortedDefs, isWeekly, entriesByDef, liveTargetMap, effectiveThresholdsMap]);
 
   useEffect(() => {
     onStatusChange(isComplete ? "complete" : "incomplete");
@@ -419,12 +420,12 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
     for (const def of sortedDefs) {
       const cv = local[def.id];
       if (!cv) continue;
-      if (kpiNeedsComment(def, cv, isWeekly, entriesByDef, liveTargetMap, prevTargetMap)) {
+      if (kpiNeedsComment(def, cv, isWeekly, entriesByDef, liveTargetMap, effectiveThresholdsMap)) {
         missing.push({ id: def.id, label: def.name });
       }
     }
     return missing;
-  }, [local, sortedDefs, isWeekly, entriesByDef, liveTargetMap, prevTargetMap]);
+  }, [local, sortedDefs, isWeekly, entriesByDef, liveTargetMap, effectiveThresholdsMap]);
 
   return (
     <section className="mb-8">
@@ -504,9 +505,9 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
                 {items.map(({ def, niveau }) => {
                   const entry = entriesByDef.get(def.id);
                   const liveTarget = liveTargetMap.get(def.id);
-                  const data = defToKpiData(def, entry, liveTarget, prevTargetMap.get(def.id), isWeekly);
+                  const data = defToKpiData(def, entry, liveTarget, effectiveThresholdsMap.get(def.id), isWeekly);
                   const cv = local[def.id] ?? entryToCardValue(entry);
-                  const needsComment = kpiNeedsComment(def, cv, isWeekly, entriesByDef, liveTargetMap, prevTargetMap);
+                  const needsComment = kpiNeedsComment(def, cv, isWeekly, entriesByDef, liveTargetMap, effectiveThresholdsMap);
                   return (
                     <div key={`${role}-${def.id}`} className="flex flex-col gap-0">
                       <div
@@ -572,9 +573,9 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
               {groupedByRole.unassigned.map((def) => {
                 const entry = entriesByDef.get(def.id);
                 const liveTarget = liveTargetMap.get(def.id);
-                const data = defToKpiData(def, entry, liveTarget, prevTargetMap.get(def.id), isWeekly);
+                const data = defToKpiData(def, entry, liveTarget, effectiveThresholdsMap.get(def.id), isWeekly);
                 const cv = local[def.id] ?? entryToCardValue(entry);
-                const needsComment = kpiNeedsComment(def, cv, isWeekly, entriesByDef, liveTargetMap, prevTargetMap);
+                const needsComment = kpiNeedsComment(def, cv, isWeekly, entriesByDef, liveTargetMap, effectiveThresholdsMap);
                 return (
                   <div key={def.id} className="flex flex-col">
                     {isWeekly ? (

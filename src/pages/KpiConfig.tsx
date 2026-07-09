@@ -48,9 +48,11 @@ import {
   useUpsertKpiMonthlyTarget,
   getWeeklyTarget,
   getPrevYearMonth,
+  resolveThresholds,
   type KpiMonthlyTarget,
   type WeeklyMode,
   type UpsertKpiMonthlyTargetInput,
+  type ResolvedThresholds,
 } from "@/hooks/useKpiMonthlyTargets";
 import {
   useKpiRoleAssignments,
@@ -97,10 +99,8 @@ export default function KpiConfig() {
   const addMut = useAddKpiDefinition();
   const updateMut = useUpdateKpiDefinition();
   const deleteMut = useSoftDeleteKpiDefinition();
-  const { targets, currentMap, previousMap, isLoading: targetsLoading } = useKpiMonthlyTargets(
-    spaId,
-    yearMonth,
-  );
+  const { targets, currentMap, previousMap, effectiveThresholdsMap, isLoading: targetsLoading } =
+    useKpiMonthlyTargets(spaId, yearMonth);
   const upsertMut = useUpsertKpiMonthlyTarget();
   const upsertRole = useUpsertKpiRoleAssignment();
   const queryClient = useQueryClient();
@@ -182,6 +182,7 @@ export default function KpiConfig() {
             yearMonth={yearMonth}
             current={currentMap.get(k.id)}
             previous={previousMap.get(k.id)}
+            inherited={resolveThresholds(k, effectiveThresholdsMap.get(k.id))}
             isFirst={idx === 0}
             isLast={idx === list.length - 1}
             onUpdate={(fields, toastIt) => handleUpdate(k.id, fields, toastIt)}
@@ -371,6 +372,7 @@ interface UnifiedKpiRowProps {
   yearMonth: string;
   current: KpiMonthlyTarget | undefined;
   previous: KpiMonthlyTarget | undefined;
+  inherited: ResolvedThresholds;
   isFirst: boolean;
   isLast: boolean;
   onUpdate: (fields: Partial<KpiDefinitionFull>, toastIt?: boolean) => void;
@@ -387,6 +389,7 @@ function UnifiedKpiRow({
   yearMonth,
   current,
   previous,
+  inherited,
   isFirst,
   isLast,
   onUpdate,
@@ -486,11 +489,11 @@ function UnifiedKpiRow({
 
   const showPrevHint = !current && previous?.monthly_value != null;
 
-  // Seuils hérités (mois précédent → défaut de la définition) affichés en placeholder
-  // pour montrer au manager la valeur réellement appliquée s'il ne saisit rien.
-  const inheritedExc = previous?.threshold_excellent ?? kpi.threshold_excellent;
-  const inheritedAmb = previous?.threshold_amber ?? kpi.threshold_amber;
-  const inheritedRed = previous?.threshold_red ?? kpi.threshold_red;
+  // Seuils hérités (dernier mois configuré → défaut de la définition) affichés en
+  // placeholder : la valeur réellement appliquée si le manager ne saisit rien ce mois.
+  const inheritedExc = inherited.excellent;
+  const inheritedAmb = inherited.amber;
+  const inheritedRed = inherited.red;
 
 
   return (
@@ -598,7 +601,8 @@ function UnifiedKpiRow({
       <td className="px-2 py-2">
         <Input
           type="number"
-          className="h-8 text-sm w-full"
+          title={t("kpiConfig.inheritedThreshold")}
+          className={`h-8 text-sm w-full ${thExcLocal === "" && inheritedExc != null ? "placeholder:text-teal-600 placeholder:font-medium bg-teal-50/40" : ""}`}
           value={thExcLocal}
           placeholder={inheritedExc != null ? String(inheritedExc) : "—"}
           onChange={(e) => setThExcLocal(e.target.value)}
@@ -609,7 +613,8 @@ function UnifiedKpiRow({
       <td className="px-2 py-2">
         <Input
           type="number"
-          className="h-8 text-sm w-full"
+          title={t("kpiConfig.inheritedThreshold")}
+          className={`h-8 text-sm w-full ${thAmbLocal === "" && inheritedAmb != null ? "placeholder:text-teal-600 placeholder:font-medium bg-teal-50/40" : ""}`}
           value={thAmbLocal}
           placeholder={inheritedAmb != null ? String(inheritedAmb) : "—"}
           onChange={(e) => setThAmbLocal(e.target.value)}
@@ -620,7 +625,8 @@ function UnifiedKpiRow({
       <td className="px-2 py-2">
         <Input
           type="number"
-          className="h-8 text-sm w-full"
+          title={t("kpiConfig.inheritedThreshold")}
+          className={`h-8 text-sm w-full ${thRedLocal === "" && inheritedRed != null ? "placeholder:text-teal-600 placeholder:font-medium bg-teal-50/40" : ""}`}
           value={thRedLocal}
           placeholder={inheritedRed != null ? String(inheritedRed) : "—"}
           onChange={(e) => setThRedLocal(e.target.value)}

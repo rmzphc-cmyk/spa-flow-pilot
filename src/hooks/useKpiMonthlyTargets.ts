@@ -49,20 +49,18 @@ export interface ResolvedThresholds {
 }
 
 /**
- * Résout les seuils applicables à un mois donné selon la chaîne de priorité :
- * seuils du mois courant → seuils du mois précédent (héritage) → seuils par
- * défaut de la définition. Résolution par champ (un seuil absent retombe seul).
+ * Applique le fallback vers les seuils par défaut de la définition à un jeu de
+ * seuils « effectifs » (déjà résolus mois par mois, cf. effectiveThresholdsMap).
+ * Résolution par champ : un seuil effectif absent retombe sur la définition.
  */
 export function resolveThresholds(
   def: DefaultThresholds,
-  current: KpiMonthlyTarget | null | undefined,
-  previous: KpiMonthlyTarget | null | undefined,
+  effective: ResolvedThresholds | null | undefined,
 ): ResolvedThresholds {
   return {
-    excellent:
-      current?.threshold_excellent ?? previous?.threshold_excellent ?? def.threshold_excellent ?? null,
-    amber: current?.threshold_amber ?? previous?.threshold_amber ?? def.threshold_amber ?? null,
-    red: current?.threshold_red ?? previous?.threshold_red ?? def.threshold_red ?? null,
+    excellent: effective?.excellent ?? def.threshold_excellent ?? null,
+    amber: effective?.amber ?? def.threshold_amber ?? null,
+    red: effective?.red ?? def.threshold_red ?? null,
   };
 }
 
@@ -113,6 +111,27 @@ export function useKpiMonthlyTargets(
     },
   });
 
+  // Historique des seuils jusqu'au mois affiché (inclus), pour résoudre le
+  // « dernier mois configuré » par champ : un seuil saisi en mars continue de
+  // s'appliquer en juin même si avril/mai n'ont rien saisi. year_month est au
+  // format AAAA-MM (zéro-paddé) → l'ordre lexicographique = ordre chronologique.
+  const thresholdHistory = useQuery({
+    queryKey: ["kpi_threshold_history", spaId, yearMonth],
+    enabled: !!spaId,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("kpi_monthly_targets")
+        .select(
+          "kpi_definition_id, year_month, threshold_excellent, threshold_amber, threshold_red"
+        )
+        .eq("spa_id", spaId!)
+        .lte("year_month", yearMonth)
+        .order("year_month", { ascending: true });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
   const currentMap = useMemo(
     () => new Map((current.data ?? []).map((t) => [t.kpi_definition_id, t])),
     [current.data]
@@ -123,11 +142,31 @@ export function useKpiMonthlyTargets(
     [previous.data]
   );
 
+  // Seuils effectifs par KPI = dernier override non-null rencontré par champ,
+  // en parcourant les mois du plus ancien au plus récent (le plus récent gagne).
+  const effectiveThresholdsMap = useMemo(() => {
+    const map = new Map<string, ResolvedThresholds>();
+    for (const row of thresholdHistory.data ?? []) {
+      const prev = map.get(row.kpi_definition_id) ?? {
+        excellent: null,
+        amber: null,
+        red: null,
+      };
+      map.set(row.kpi_definition_id, {
+        excellent: row.threshold_excellent ?? prev.excellent,
+        amber: row.threshold_amber ?? prev.amber,
+        red: row.threshold_red ?? prev.red,
+      });
+    }
+    return map;
+  }, [thresholdHistory.data]);
+
   return {
     targets: current.data ?? [],
     prevTargets: previous.data ?? [],
     currentMap,
     previousMap,
+    effectiveThresholdsMap,
     isLoading: current.isLoading || previous.isLoading,
   };
 }
@@ -151,6 +190,9 @@ export function useUpsertKpiMonthlyTarget() {
       qc.invalidateQueries({
         queryKey: ["kpi_monthly_targets", data.spa_id, data.year_month],
       });
+      // Un seuil saisi ce mois change les seuils effectifs de CE mois et de tous
+      // les mois suivants (héritage) → on invalide tout l'historique des seuils.
+      qc.invalidateQueries({ queryKey: ["kpi_threshold_history"] });
     },
   });
 }

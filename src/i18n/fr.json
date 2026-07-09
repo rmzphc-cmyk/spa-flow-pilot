@@ -883,6 +883,7 @@
     "colThGood": "Bon",
     "colThCorrect": "Correct",
     "thresholdsAreDefault": "Ces seuils sont le socle par défaut du KPI. Ajustez-les mois par mois dans le tableau (colonnes Excellent / Bon / Correct) pour les faire évoluer avec la performance.",
+    "inheritedThreshold": "Valeur héritée du dernier mois configuré (en teal) : elle s'applique déjà telle quelle. Saisissez une valeur pour la faire évoluer à partir de ce mois-ci ; laissez vide pour la conserver.",
     "sectionSpa": "KPI Spa",
     "sectionManager": "KPI Manager",
     "groupLabelSpa": "KPI Spa",
