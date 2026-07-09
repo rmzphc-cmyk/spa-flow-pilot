@@ -514,6 +514,9 @@ export type Database = {
           kpi_definition_id: string
           monthly_value: number | null
           spa_id: string
+          threshold_amber: number | null
+          threshold_excellent: number | null
+          threshold_red: number | null
           updated_at: string
           weekly_mode: string
           weekly_override: number | null
@@ -526,6 +529,9 @@ export type Database = {
           kpi_definition_id: string
           monthly_value?: number | null
           spa_id: string
+          threshold_amber?: number | null
+          threshold_excellent?: number | null
+          threshold_red?: number | null
           updated_at?: string
           weekly_mode?: string
           weekly_override?: number | null
@@ -538,6 +544,9 @@ export type Database = {
           kpi_definition_id?: string
           monthly_value?: number | null
           spa_id?: string
+          threshold_amber?: number | null
+          threshold_excellent?: number | null
+          threshold_red?: number | null
           updated_at?: string
           weekly_mode?: string
           weekly_override?: number | null

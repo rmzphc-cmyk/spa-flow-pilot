@@ -50,6 +50,7 @@ import {
   getPrevYearMonth,
   type KpiMonthlyTarget,
   type WeeklyMode,
+  type UpsertKpiMonthlyTargetInput,
 } from "@/hooks/useKpiMonthlyTargets";
 import {
   useKpiRoleAssignments,
@@ -160,7 +161,7 @@ export default function KpiConfig() {
     <>
       <tr className="bg-muted/40 border-t border-border">
         <td
-          colSpan={9}
+          colSpan={12}
           className="px-3 py-1.5 text-[11px] font-bold uppercase tracking-widest text-muted-foreground"
         >
           {label}
@@ -168,7 +169,7 @@ export default function KpiConfig() {
       </tr>
       {list.length === 0 ? (
         <tr>
-          <td colSpan={9} className="px-3 py-2.5 text-xs text-muted-foreground italic">
+          <td colSpan={12} className="px-3 py-2.5 text-xs text-muted-foreground italic">
             {t("kpiConfig.emptyGroup")}
           </td>
         </tr>
@@ -285,7 +286,7 @@ export default function KpiConfig() {
                 <th colSpan={4} className="bg-muted/60 p-0" />
                 <th className="p-0 bg-border" />
                 <th
-                  colSpan={3}
+                  colSpan={6}
                   className="text-center text-[10px] font-semibold text-teal-700 bg-teal-50/60 px-2 py-1.5 uppercase tracking-wide border-b border-teal-100"
                 >
                   {t("kpiConfig.planningMonthly")}
@@ -301,6 +302,9 @@ export default function KpiConfig() {
                 <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "110px", minWidth: "100px" }}>{t("kpiConfig.colMonthly")}</th>
                 <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "76px", minWidth: "68px" }}>{t("kpiConfig.colMode")}</th>
                 <th className="text-left px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "110px", minWidth: "100px" }}>{t("kpiConfig.colWeekly")}</th>
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-teal-700 uppercase tracking-wide bg-muted/60" style={{ width: "84px", minWidth: "72px" }}>{t("kpiConfig.colThExcellent")}</th>
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-green-700 uppercase tracking-wide bg-muted/60" style={{ width: "84px", minWidth: "72px" }}>{t("kpiConfig.colThGood")}</th>
+                <th className="text-left px-2 py-1.5 text-[10px] font-medium text-orange-600 uppercase tracking-wide bg-muted/60" style={{ width: "84px", minWidth: "72px" }}>{t("kpiConfig.colThCorrect")}</th>
                 <th className="text-center px-2 py-1.5 text-[10px] font-medium text-muted-foreground uppercase tracking-wide bg-muted/60" style={{ width: "88px", minWidth: "80px" }} />
 
 
@@ -400,49 +404,65 @@ function UnifiedKpiRow({
   const [overrideLocal, setOverrideLocal] = useState<string>(
     current?.weekly_override != null ? String(current.weekly_override) : "",
   );
+  const [thExcLocal, setThExcLocal] = useState<string>(
+    current?.threshold_excellent != null ? String(current.threshold_excellent) : "",
+  );
+  const [thAmbLocal, setThAmbLocal] = useState<string>(
+    current?.threshold_amber != null ? String(current.threshold_amber) : "",
+  );
+  const [thRedLocal, setThRedLocal] = useState<string>(
+    current?.threshold_red != null ? String(current.threshold_red) : "",
+  );
 
   useEffect(() => setName(kpi.name), [kpi.name]);
 
   useEffect(() => {
     setMonthlyLocal(current?.monthly_value != null ? String(current.monthly_value) : "");
     setOverrideLocal(current?.weekly_override != null ? String(current.weekly_override) : "");
-  }, [yearMonth, current?.monthly_value, current?.weekly_override]);
+    setThExcLocal(current?.threshold_excellent != null ? String(current.threshold_excellent) : "");
+    setThAmbLocal(current?.threshold_amber != null ? String(current.threshold_amber) : "");
+    setThRedLocal(current?.threshold_red != null ? String(current.threshold_red) : "");
+  }, [
+    yearMonth,
+    current?.monthly_value,
+    current?.weekly_override,
+    current?.threshold_excellent,
+    current?.threshold_amber,
+    current?.threshold_red,
+  ]);
 
 
   const disabled = current?.monthly_value == null;
   const computed = getWeeklyTarget(current);
   const onError = (e: any) => toast.error(e?.message ?? t("kpiConfig.toast.saveError"));
 
+  // Construit le payload complet à partir de l'état courant : l'upsert remplace
+  // toute la ligne (onConflict), donc chaque écriture doit reporter TOUS les champs
+  // sous peine d'écraser les autres (seuils inclus).
+  const buildPayload = (
+    overrides: Partial<UpsertKpiMonthlyTargetInput>,
+  ): UpsertKpiMonthlyTargetInput => ({
+    spa_id: spaId,
+    kpi_definition_id: kpi.id,
+    year_month: yearMonth,
+    monthly_value: current?.monthly_value ?? null,
+    weekly_mode: current?.weekly_mode ?? "divide",
+    weekly_override: current?.weekly_override ?? null,
+    actual_monthly_value: current?.actual_monthly_value ?? null,
+    threshold_excellent: current?.threshold_excellent ?? null,
+    threshold_amber: current?.threshold_amber ?? null,
+    threshold_red: current?.threshold_red ?? null,
+    ...overrides,
+  });
+
   const handleMonthlyBlur = () => {
     const newVal = monthlyLocal === "" ? null : Number(monthlyLocal);
     if (newVal === (current?.monthly_value ?? null)) return;
-    upsertMut.mutate(
-      {
-        spa_id: spaId,
-        kpi_definition_id: kpi.id,
-        year_month: yearMonth,
-        monthly_value: newVal,
-        weekly_mode: current?.weekly_mode ?? "divide",
-        weekly_override: current?.weekly_override ?? null,
-        actual_monthly_value: current?.actual_monthly_value ?? null,
-      },
-      { onError },
-    );
+    upsertMut.mutate(buildPayload({ monthly_value: newVal }), { onError });
   };
 
   const handleModeChange = (newMode: WeeklyMode) => {
-    upsertMut.mutate(
-      {
-        spa_id: spaId,
-        kpi_definition_id: kpi.id,
-        year_month: yearMonth,
-        monthly_value: current?.monthly_value ?? null,
-        weekly_mode: newMode,
-        weekly_override: null,
-        actual_monthly_value: current?.actual_monthly_value ?? null,
-      },
-      { onError },
-    );
+    upsertMut.mutate(buildPayload({ weekly_mode: newMode, weekly_override: null }), { onError });
   };
 
   const handleOverrideBlur = () => {
@@ -450,22 +470,27 @@ function UnifiedKpiRow({
     const isDefault = overrideLocal === "" || (computed !== null && val === computed);
     const newOverride = isDefault ? null : val;
     if (newOverride === (current?.weekly_override ?? null)) return;
-    upsertMut.mutate(
-      {
-        spa_id: spaId,
-        kpi_definition_id: kpi.id,
-        year_month: yearMonth,
-        monthly_value: current?.monthly_value ?? null,
-        weekly_mode: current?.weekly_mode ?? "divide",
-        weekly_override: newOverride,
-        actual_monthly_value: current?.actual_monthly_value ?? null,
-      },
-      { onError },
-    );
+    upsertMut.mutate(buildPayload({ weekly_override: newOverride }), { onError });
+  };
+
+  const handleThresholdBlur = (
+    field: "threshold_excellent" | "threshold_amber" | "threshold_red",
+    raw: string,
+  ) => {
+    const newVal = raw === "" ? null : Number(raw);
+    if (raw !== "" && isNaN(newVal as number)) return;
+    if (newVal === (current?.[field] ?? null)) return;
+    upsertMut.mutate(buildPayload({ [field]: newVal }), { onError });
   };
 
 
   const showPrevHint = !current && previous?.monthly_value != null;
+
+  // Seuils hérités (mois précédent → défaut de la définition) affichés en placeholder
+  // pour montrer au manager la valeur réellement appliquée s'il ne saisit rien.
+  const inheritedExc = previous?.threshold_excellent ?? kpi.threshold_excellent;
+  const inheritedAmb = previous?.threshold_amber ?? kpi.threshold_amber;
+  const inheritedRed = previous?.threshold_red ?? kpi.threshold_red;
 
 
   return (
@@ -568,6 +593,39 @@ function UnifiedKpiRow({
             </span>
           )}
         </div>
+      </td>
+
+      <td className="px-2 py-2">
+        <Input
+          type="number"
+          className="h-8 text-sm w-full"
+          value={thExcLocal}
+          placeholder={inheritedExc != null ? String(inheritedExc) : "—"}
+          onChange={(e) => setThExcLocal(e.target.value)}
+          onBlur={() => handleThresholdBlur("threshold_excellent", thExcLocal)}
+        />
+      </td>
+
+      <td className="px-2 py-2">
+        <Input
+          type="number"
+          className="h-8 text-sm w-full"
+          value={thAmbLocal}
+          placeholder={inheritedAmb != null ? String(inheritedAmb) : "—"}
+          onChange={(e) => setThAmbLocal(e.target.value)}
+          onBlur={() => handleThresholdBlur("threshold_amber", thAmbLocal)}
+        />
+      </td>
+
+      <td className="px-2 py-2">
+        <Input
+          type="number"
+          className="h-8 text-sm w-full"
+          value={thRedLocal}
+          placeholder={inheritedRed != null ? String(inheritedRed) : "—"}
+          onChange={(e) => setThRedLocal(e.target.value)}
+          onBlur={() => handleThresholdBlur("threshold_red", thRedLocal)}
+        />
       </td>
 
 
@@ -717,6 +775,9 @@ function SettingsDialog({
           </div>
           <p className="text-xs text-muted-foreground">
             {t("kpiConfig.belowCorrect")} <span className="text-red-500 font-medium">{t("kpiConfig.insufficient")}</span>
+          </p>
+          <p className="text-[11px] text-muted-foreground bg-muted/40 rounded-md px-2.5 py-2 leading-snug">
+            {t("kpiConfig.thresholdsAreDefault")}
           </p>
 
           {/* Section Rôles — chaque assignation est éditable EN PLACE (rôle + niveau).

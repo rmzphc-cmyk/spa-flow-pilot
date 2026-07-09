@@ -16,6 +16,7 @@ import {
 import {
   useKpiMonthlyTargets,
   getWeeklyTarget,
+  resolveThresholds,
   type KpiMonthlyTarget,
 } from "@/hooks/useKpiMonthlyTargets";
 import {
@@ -64,15 +65,17 @@ function defToKpiData(
   def: KpiDefinitionRow,
   entry: KpiEntryRow | undefined,
   liveTarget: KpiMonthlyTarget | undefined,
+  prevTarget: KpiMonthlyTarget | undefined,
   isWeekly: boolean,
 ): KpiData {
+  const th = resolveThresholds(def, liveTarget, prevTarget);
   let target: number;
   if (liveTarget) {
     target = isWeekly
-      ? (getWeeklyTarget(liveTarget) ?? def.threshold_amber ?? 0)
-      : (liveTarget.monthly_value ?? def.threshold_amber ?? 0);
+      ? (getWeeklyTarget(liveTarget) ?? th.amber ?? 0)
+      : (liveTarget.monthly_value ?? th.amber ?? 0);
   } else {
-    target = entry?.target_value ?? def.threshold_amber ?? 0;
+    target = entry?.target_value ?? th.amber ?? 0;
   }
 
   const weeklyDivisor =
@@ -89,9 +92,9 @@ function defToKpiData(
     target,
     n1: entry?.value_n1 ?? 0,
     category: mapCategory(def),
-    thresholdExcellent: def.threshold_excellent ?? null,
-    thresholdAmber: def.threshold_amber ?? null,
-    thresholdRed: def.threshold_red ?? null,
+    thresholdExcellent: th.excellent,
+    thresholdAmber: th.amber,
+    thresholdRed: th.red,
     comparisonDirection: def.comparison_direction,
     weeklyDivisor,
   };
@@ -119,6 +122,7 @@ function kpiNeedsComment(
   isWeekly: boolean,
   entriesByDef: Map<string, KpiEntryRow>,
   liveTargetMap: Map<string, KpiMonthlyTarget>,
+  prevTargetMap: Map<string, KpiMonthlyTarget>,
 ): boolean {
   if (cv.isNa) return false;
   if (cv.value === "") return false;
@@ -126,14 +130,16 @@ function kpiNeedsComment(
   const n = Number(cv.value);
   if (isNaN(n)) return false;
 
+  const liveTarget = liveTargetMap.get(def.id);
+  const th = resolveThresholds(def, liveTarget, prevTargetMap.get(def.id));
+
   if (isWeekly) {
     const entryData = entriesByDef.get(def.id);
-    const liveTarget = liveTargetMap.get(def.id);
     const divisor =
       liveTarget?.weekly_mode === "divide" && liveTarget?.weekly_override === null ? 4 : 1;
-    const tExcellent = def.threshold_excellent != null ? def.threshold_excellent / divisor : null;
-    const tAmber = def.threshold_amber != null ? def.threshold_amber / divisor : null;
-    const tRed = def.threshold_red != null ? def.threshold_red / divisor : null;
+    const tExcellent = th.excellent != null ? th.excellent / divisor : null;
+    const tAmber = th.amber != null ? th.amber / divisor : null;
+    const tRed = th.red != null ? th.red / divisor : null;
 
     let wStatus: ReturnType<typeof computeKpiStatus> | "excellent" | "green" | "amber" | "red";
     if (tAmber !== null || tRed !== null) {
@@ -156,9 +162,9 @@ function kpiNeedsComment(
   } else {
     const status = computeKpiStatus(
       n,
-      def.threshold_excellent,
-      def.threshold_amber,
-      def.threshold_red,
+      th.excellent,
+      th.amber,
+      th.red,
       def.comparison_direction,
     );
     return (status === "amber" || status === "red") && !cv.comment.trim();
@@ -173,7 +179,10 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
 
   const { data: definitions = [] } = useKpiDefinitions(spaId);
   const { data: entries = [] } = useKpiEntries(reportId);
-  const { currentMap: liveTargetMap } = useKpiMonthlyTargets(spaId, yearMonth ?? "");
+  const { currentMap: liveTargetMap, previousMap: prevTargetMap } = useKpiMonthlyTargets(
+    spaId,
+    yearMonth ?? "",
+  );
   const upsert = useUpsertKpiEntry();
 
   const entriesByDef = useMemo(() => {
@@ -264,14 +273,15 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
           status = "not_applicable";
         } else {
           value_current = n;
+          const liveTarget = liveTargetMap.get(def.id);
+          const th = resolveThresholds(def, liveTarget, prevTargetMap.get(def.id));
           if (isWeekly) {
             const entryData = entriesByDef.get(def.id);
-            const liveTarget = liveTargetMap.get(def.id);
             const divisor =
               liveTarget?.weekly_mode === "divide" && liveTarget?.weekly_override === null ? 4 : 1;
-            const tExcellent = def.threshold_excellent != null ? def.threshold_excellent / divisor : null;
-            const tAmber = def.threshold_amber != null ? def.threshold_amber / divisor : null;
-            const tRed = def.threshold_red != null ? def.threshold_red / divisor : null;
+            const tExcellent = th.excellent != null ? th.excellent / divisor : null;
+            const tAmber = th.amber != null ? th.amber / divisor : null;
+            const tRed = th.red != null ? th.red / divisor : null;
 
             if (tAmber !== null || tRed !== null) {
               status = computeKpiStatus(n, tExcellent, tAmber, tRed, def.comparison_direction);
@@ -290,12 +300,11 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
               }
             }
           } else {
-
             status = computeKpiStatus(
               n,
-              def.threshold_excellent,
-              def.threshold_amber,
-              def.threshold_red,
+              th.excellent,
+              th.amber,
+              th.red,
               def.comparison_direction,
             );
           }
@@ -317,7 +326,7 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
       });
       delete pendingRef.current[def.id];
     },
-    [reportId, upsert, entriesByDef, isWeekly, liveTargetMap],
+    [reportId, upsert, entriesByDef, isWeekly, liveTargetMap, prevTargetMap],
   );
 
   // Garde une réf vers le dernier persist pour pouvoir flusher au démontage
@@ -359,14 +368,15 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
         // Raison optionnelle : cocher « non disponible » suffit à valider.
         continue;
       }
+      const liveTarget = liveTargetMap.get(def.id);
+      const th = resolveThresholds(def, liveTarget, prevTargetMap.get(def.id));
       if (isWeekly) {
         const entryData = entriesByDef.get(def.id);
-        const liveTarget = liveTargetMap.get(def.id);
         const divisor =
           liveTarget?.weekly_mode === "divide" && liveTarget?.weekly_override === null ? 4 : 1;
-        const tExcellent = def.threshold_excellent != null ? def.threshold_excellent / divisor : null;
-        const tAmber = def.threshold_amber != null ? def.threshold_amber / divisor : null;
-        const tRed = def.threshold_red != null ? def.threshold_red / divisor : null;
+        const tExcellent = th.excellent != null ? th.excellent / divisor : null;
+        const tAmber = th.amber != null ? th.amber / divisor : null;
+        const tRed = th.red != null ? th.red / divisor : null;
         const n = Number(cv.value);
         let wStatus: ReturnType<typeof computeKpiStatus> | "excellent" | "green" | "amber" | "red";
         if (tAmber !== null || tRed !== null) {
@@ -389,16 +399,16 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
       } else {
         const status = computeKpiStatus(
           Number(cv.value),
-          def.threshold_excellent,
-          def.threshold_amber,
-          def.threshold_red,
+          th.excellent,
+          th.amber,
+          th.red,
           def.comparison_direction,
         );
         if ((status === "amber" || status === "red") && !cv.comment.trim()) return false;
       }
     }
     return true;
-  }, [local, sortedDefs, isWeekly, entriesByDef, liveTargetMap]);
+  }, [local, sortedDefs, isWeekly, entriesByDef, liveTargetMap, prevTargetMap]);
 
   useEffect(() => {
     onStatusChange(isComplete ? "complete" : "incomplete");
@@ -409,12 +419,12 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
     for (const def of sortedDefs) {
       const cv = local[def.id];
       if (!cv) continue;
-      if (kpiNeedsComment(def, cv, isWeekly, entriesByDef, liveTargetMap)) {
+      if (kpiNeedsComment(def, cv, isWeekly, entriesByDef, liveTargetMap, prevTargetMap)) {
         missing.push({ id: def.id, label: def.name });
       }
     }
     return missing;
-  }, [local, sortedDefs, isWeekly, entriesByDef, liveTargetMap]);
+  }, [local, sortedDefs, isWeekly, entriesByDef, liveTargetMap, prevTargetMap]);
 
   return (
     <section className="mb-8">
@@ -494,9 +504,9 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
                 {items.map(({ def, niveau }) => {
                   const entry = entriesByDef.get(def.id);
                   const liveTarget = liveTargetMap.get(def.id);
-                  const data = defToKpiData(def, entry, liveTarget, isWeekly);
+                  const data = defToKpiData(def, entry, liveTarget, prevTargetMap.get(def.id), isWeekly);
                   const cv = local[def.id] ?? entryToCardValue(entry);
-                  const needsComment = kpiNeedsComment(def, cv, isWeekly, entriesByDef, liveTargetMap);
+                  const needsComment = kpiNeedsComment(def, cv, isWeekly, entriesByDef, liveTargetMap, prevTargetMap);
                   return (
                     <div key={`${role}-${def.id}`} className="flex flex-col gap-0">
                       <div
@@ -562,9 +572,9 @@ export function SectionKpi({ reportId, reportType, yearMonth, onStatusChange }: 
               {groupedByRole.unassigned.map((def) => {
                 const entry = entriesByDef.get(def.id);
                 const liveTarget = liveTargetMap.get(def.id);
-                const data = defToKpiData(def, entry, liveTarget, isWeekly);
+                const data = defToKpiData(def, entry, liveTarget, prevTargetMap.get(def.id), isWeekly);
                 const cv = local[def.id] ?? entryToCardValue(entry);
-                const needsComment = kpiNeedsComment(def, cv, isWeekly, entriesByDef, liveTargetMap);
+                const needsComment = kpiNeedsComment(def, cv, isWeekly, entriesByDef, liveTargetMap, prevTargetMap);
                 return (
                   <div key={def.id} className="flex flex-col">
                     {isWeekly ? (

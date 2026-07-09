@@ -13,6 +13,11 @@ export interface KpiMonthlyTarget {
   weekly_mode: WeeklyMode;
   weekly_override: number | null;
   actual_monthly_value: number | null;
+  // Seuils d'évaluation spécifiques au mois (override). NULL = on retombe sur le
+  // mois précédent puis sur les seuils par défaut de la définition (voir resolveThresholds).
+  threshold_excellent: number | null;
+  threshold_amber: number | null;
+  threshold_red: number | null;
   created_at: string;
   updated_at: string;
 }
@@ -25,6 +30,40 @@ export interface UpsertKpiMonthlyTargetInput {
   weekly_mode: WeeklyMode;
   weekly_override: number | null;
   actual_monthly_value: number | null;
+  threshold_excellent: number | null;
+  threshold_amber: number | null;
+  threshold_red: number | null;
+}
+
+/** Seuils par défaut portés par la définition du KPI (socle stable). */
+export interface DefaultThresholds {
+  threshold_excellent: number | null;
+  threshold_amber: number | null;
+  threshold_red: number | null;
+}
+
+export interface ResolvedThresholds {
+  excellent: number | null;
+  amber: number | null;
+  red: number | null;
+}
+
+/**
+ * Résout les seuils applicables à un mois donné selon la chaîne de priorité :
+ * seuils du mois courant → seuils du mois précédent (héritage) → seuils par
+ * défaut de la définition. Résolution par champ (un seuil absent retombe seul).
+ */
+export function resolveThresholds(
+  def: DefaultThresholds,
+  current: KpiMonthlyTarget | null | undefined,
+  previous: KpiMonthlyTarget | null | undefined,
+): ResolvedThresholds {
+  return {
+    excellent:
+      current?.threshold_excellent ?? previous?.threshold_excellent ?? def.threshold_excellent ?? null,
+    amber: current?.threshold_amber ?? previous?.threshold_amber ?? def.threshold_amber ?? null,
+    red: current?.threshold_red ?? previous?.threshold_red ?? def.threshold_red ?? null,
+  };
 }
 
 export function getWeeklyTarget(target: KpiMonthlyTarget | null | undefined): number | null {

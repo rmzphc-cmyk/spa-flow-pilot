@@ -86,6 +86,11 @@ const OBJ_COL = {
   mode: "Mode hebdo",
   override: "Objectif hebdo (override)",
   actual: "Réel mensuel",
+  // Seuils spécifiques au mois (override). Vide = on retombe sur le mois précédent
+  // puis sur les seuils par défaut de l'onglet KPI (voir resolveThresholds).
+  thExc: "Seuil excellent (mois)",
+  thAmber: "Seuil ambre (mois)",
+  thRed: "Seuil rouge (mois)",
 } as const;
 
 const RESP_COL = {
@@ -131,7 +136,7 @@ export interface ExportParams {
 
 // Largeurs de colonnes par onglet (ordre = ordre des colonnes).
 const KPI_WIDTHS = [38, 24, 18, 18, 8, 14, 10, 8, 8, 14, 12, 12, 18, 30];
-const OBJ_WIDTHS = [38, 24, 14, 16, 14, 20, 14];
+const OBJ_WIDTHS = [38, 24, 14, 16, 14, 20, 14, 16, 14, 14];
 const RESP_WIDTHS = [38, 24, 16, 14];
 
 export async function exportKpiWorkbook(params: ExportParams): Promise<void> {
@@ -201,6 +206,9 @@ export async function exportKpiWorkbook(params: ExportParams): Promise<void> {
       MODE_LABELS[(t?.weekly_mode ?? "divide") as WeeklyMode],
       t?.weekly_override ?? "",
       t?.actual_monthly_value ?? "",
+      t?.threshold_excellent ?? "",
+      t?.threshold_amber ?? "",
+      t?.threshold_red ?? "",
     ]);
   });
   styleSheet(objWs, OBJ_WIDTHS, [1, 3]); // ID + Mois en texte
@@ -275,6 +283,9 @@ export interface ObjectiveRow {
   weekly_mode: WeeklyMode;
   weekly_override: number | null;
   actual_monthly_value: number | null;
+  threshold_excellent: number | null;
+  threshold_amber: number | null;
+  threshold_red: number | null;
 }
 export interface AssignmentRow {
   kpi_definition_id: string;
@@ -497,10 +508,16 @@ export async function parseKpiWorkbook(
     const monthly = parseNumberCell(r[OBJ_COL.monthly]);
     const override = parseNumberCell(r[OBJ_COL.override]);
     const actual = parseNumberCell(r[OBJ_COL.actual]);
+    const objExc = parseNumberCell(r[OBJ_COL.thExc]);
+    const objAmb = parseNumberCell(r[OBJ_COL.thAmber]);
+    const objRed = parseNumberCell(r[OBJ_COL.thRed]);
     for (const [field, p] of [
       [OBJ_COL.monthly, monthly],
       [OBJ_COL.override, override],
       [OBJ_COL.actual, actual],
+      [OBJ_COL.thExc, objExc],
+      [OBJ_COL.thAmber, objAmb],
+      [OBJ_COL.thRed, objRed],
     ] as const) {
       if (p.invalid) errors.push({ sheet: SHEET.obj, row: excelRow, message: `Valeur numérique invalide en « ${field} ».` });
     }
@@ -514,6 +531,9 @@ export async function parseKpiWorkbook(
       weekly_mode: mode,
       weekly_override: override.value,
       actual_monthly_value: actual.value,
+      threshold_excellent: objExc.value,
+      threshold_amber: objAmb.value,
+      threshold_red: objRed.value,
     });
   });
 
