@@ -52,9 +52,9 @@ export function saveSchedule(s: MeetingSchedule) {
   }
 }
 
-export async function saveScheduleToDb(schedule: MeetingSchedule): Promise<void> {
+export async function saveScheduleToDb(schedule: MeetingSchedule, spaId?: string): Promise<void> {
   const { error } = await supabase.functions.invoke("update-meeting-schedule", {
-    body: { meeting_schedule: schedule },
+    body: spaId ? { meeting_schedule: schedule, spa_id: spaId } : { meeting_schedule: schedule },
   });
   if (error) throw new Error(error.message ?? "Erreur de sauvegarde du calendrier");
   saveSchedule(schedule);
