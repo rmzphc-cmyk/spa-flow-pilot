@@ -452,7 +452,7 @@ export async function parseKpiWorkbook(
     if (isNew) {
       newKpis.push({ id, spa_id: ctx.spaId, created_by: ctx.userId, ...common });
     } else {
-      updKpis.push({ id, ...common });
+      updKpis.push({ id, spa_id: ctx.spaId, ...common });
     }
   });
 
