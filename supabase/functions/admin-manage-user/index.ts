@@ -265,23 +265,22 @@ Deno.serve(async (req) => {
       if (tErr) return json({ error: tErr.message }, 400);
       if (!target) return json({ error: "Utilisateur introuvable." }, 404);
 
-      // Authorization: admin can reset anyone; direction only managers of the
-      // spas it is granted access to (direction_spa_access). No self-elevation.
+      // Authorization: admin can reset anyone; direction only spa_managers of
+      // its own destination.
       if (caller.role === "direction") {
-        if (target.role !== "spa_manager" || !target.spa_id) {
+        const { data: full } = await admin
+          .from("users")
+          .select("destination_id")
+          .eq("id", body.user_id)
+          .maybeSingle();
+        if (target.role !== "spa_manager"
+            || (full as any)?.destination_id !== callerDestinationId) {
           return json({ error: "Forbidden" }, 403);
         }
-        const { data: access, error: aErr } = await admin
-          .from("direction_spa_access")
-          .select("spa_id")
-          .eq("user_id", caller.userId)
-          .eq("spa_id", target.spa_id)
-          .maybeSingle();
-        if (aErr) return json({ error: aErr.message }, 400);
-        if (!access) return json({ error: "Forbidden" }, 403);
       } else if (caller.role !== "admin") {
         return json({ error: "Forbidden" }, 403);
       }
+
 
       // Preserve existing user_metadata (full_name, language…), flip the flag.
       const { data: got } = await (admin as any).auth.admin.getUserById(body.user_id);
