@@ -66,7 +66,6 @@ Deno.serve(async (req) => {
 
     if (body.action === "invite") {
       if (!body.email || !body.role) return json({ error: "Missing email or role" }, 400);
-      // Garde-fou : rôle strictement validé avant toute écriture.
       if (!isInvitableRole(body.role)) return json({ error: `Invalid role: ${body.role}` }, 400);
       if (body.role === "spa_manager" && !body.spa_id) {
         return json({ error: "spa_id required for spa_manager" }, 400);
@@ -74,6 +73,16 @@ Deno.serve(async (req) => {
       if (body.role === "direction" && !body.destination_id && !body.organization_id) {
         return json({ error: "destination_id or organization_id required for direction" }, 400);
       }
+
+      // Direction : peut UNIQUEMENT inviter des spa_manager de sa destination.
+      if (caller.role === "direction") {
+        if (body.role !== "spa_manager") {
+          return json({ error: "Forbidden: direction ne peut inviter que des spa_manager." }, 403);
+        }
+        const denied = await assertSpaInDirectionDestination(body.spa_id!);
+        if (denied) return denied;
+      }
+
 
       // Pre-check: a public.users row may already exist with this email (from a
       // prior failed invite or manual insert). Its unique partial index would
