@@ -49,6 +49,18 @@ Deno.serve(async (req) => {
         return json({ error: "destination_id or organization_id required for direction" }, 400);
       }
 
+      // Pre-check: a public.users row may already exist with this email (from a
+      // prior failed invite or manual insert). Its unique partial index would
+      // make the handle_new_user trigger fail with an opaque 500. Detect early.
+      const { data: existing } = await admin
+        .from("users")
+        .select("id")
+        .eq("email", body.email)
+        .maybeSingle();
+      if (existing) {
+        return json({ error: "Un utilisateur avec cet email existe déjà." }, 409);
+      }
+
       const tempPassword = `Tmp-${crypto.randomUUID().slice(0, 12)}!A1`;
       const { data: created, error: createErr } = await (admin as any).auth.admin.createUser({
         email: body.email,
@@ -64,8 +76,11 @@ Deno.serve(async (req) => {
         },
       });
       if (createErr || !created?.user) {
-        const msg = createErr?.message ?? "createUser failed";
-        const isDup = /already been registered|already registered|email_exists/i.test(msg);
+        const rawMsg = createErr?.message
+          ?? (createErr ? JSON.stringify(createErr) : "")
+          ?? "";
+        const msg = rawMsg && rawMsg !== "{}" ? rawMsg : "createUser failed (unknown error)";
+        const isDup = /already been registered|already registered|email_exists|duplicate key|users_email/i.test(msg);
         return json(
           { error: isDup ? "Un utilisateur avec cet email existe déjà." : msg },
           isDup ? 409 : 400,
