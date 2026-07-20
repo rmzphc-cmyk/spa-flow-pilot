@@ -141,6 +141,7 @@ export interface RespInsertRow {
 }
 export interface RespUpdateRow {
   id: string;
+  spa_id: string;
   title: string;
   title_en: string | null;
   title_es: string | null;
