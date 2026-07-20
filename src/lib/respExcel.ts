@@ -271,7 +271,7 @@ export async function parseRespWorkbook(
     };
 
     if (isNew) newRows.push({ id, spa_id: ctx.spaId, ...common });
-    else updRows.push({ id, ...common });
+    else updRows.push({ id, spa_id: ctx.spaId, ...common });
   });
 
   return {
