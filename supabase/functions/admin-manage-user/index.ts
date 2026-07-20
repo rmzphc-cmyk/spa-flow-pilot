@@ -32,11 +32,37 @@ Deno.serve(async (req) => {
     const body = (await req.json()) as Payload;
     if (!body?.action) return json({ error: "Missing action" }, 400);
 
-    // Only admin manages users (invite/update/delete). "reset" is also allowed
-    // to direction, but scoped to their own spas — enforced inside that branch.
-    if (caller.role !== "admin" && body.action !== "reset") {
+    // Admin manages tout. Direction gère les spa_manager de sa destination
+    // (invite/update/delete/reset) — scoping vérifié plus bas.
+    if (caller.role !== "admin" && caller.role !== "direction") {
       return json({ error: "Forbidden" }, 403);
     }
+
+    // Charger la destination du caller (direction) une fois pour scoping.
+    let callerDestinationId: string | null = null;
+    if (caller.role === "direction") {
+      const { data: me } = await admin
+        .from("users")
+        .select("destination_id")
+        .eq("id", caller.userId)
+        .maybeSingle();
+      callerDestinationId = (me as any)?.destination_id ?? null;
+      if (!callerDestinationId) return json({ error: "Direction sans destination assignée." }, 403);
+    }
+
+    // Helper: le spa cible appartient-il à la destination du direction ?
+    const assertSpaInDirectionDestination = async (spaId: string) => {
+      if (caller.role !== "direction") return null;
+      const { data: spa } = await admin
+        .from("spas")
+        .select("destination_id")
+        .eq("id", spaId)
+        .maybeSingle();
+      if (!spa || (spa as any).destination_id !== callerDestinationId) {
+        return json({ error: "Forbidden: spa hors de votre destination." }, 403);
+      }
+      return null;
+    };
 
     if (body.action === "invite") {
       if (!body.email || !body.role) return json({ error: "Missing email or role" }, 400);
