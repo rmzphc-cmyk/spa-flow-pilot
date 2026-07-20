@@ -317,7 +317,7 @@ export default function RespConfig() {
             {t("respConfig.subtitle")}
           </p>
         </div>
-        {userRole === "admin" && (
+        {canPickSpa && (
           <Select value={adminSpaId ?? ""} onValueChange={(v) => setAdminSpaId(v || null)}>
             <SelectTrigger className="w-56 h-9">
               <SelectValue placeholder={t("respConfig.selectSpa")} />
@@ -367,7 +367,7 @@ export default function RespConfig() {
                   spaId={spaId}
                   spaName={spaName}
                   templates={templates}
-                  canImport={userRole === "admin" || userRole === "manager"}
+                  canImport={userRole === "admin" || userRole === "manager" || userRole === "direction"}
                 />
                 <Button
                   size="sm"
