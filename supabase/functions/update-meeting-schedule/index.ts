@@ -10,7 +10,7 @@ Deno.serve(async (req) => {
     if (!authResult.ok) return authResult.response;
     const { caller, admin } = authResult;
 
-    if (caller.role !== "spa_manager" && caller.role !== "admin") {
+    if (caller.role !== "spa_manager" && caller.role !== "admin" && caller.role !== "direction") {
       return json({ error: "Forbidden" }, 403);
     }
 
@@ -21,10 +21,19 @@ Deno.serve(async (req) => {
     }
 
     const targetSpaId: string | null =
-      caller.role === "admin" ? (body?.spa_id ?? caller.spaId ?? null) : caller.spaId;
+      caller.role === "spa_manager" ? caller.spaId : (body?.spa_id ?? caller.spaId ?? null);
 
     if (!targetSpaId) {
       return json({ error: "No spa associated to this user" }, 400);
+    }
+
+    if (caller.role === "direction") {
+      const { data: canManage, error: rpcError } = await admin.rpc("user_can_manage_spa", {
+        _spa_id: targetSpaId,
+      });
+      if (rpcError || !canManage) {
+        return json({ error: "Forbidden" }, 403);
+      }
     }
 
     const { error } = await admin
