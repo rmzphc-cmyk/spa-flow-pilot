@@ -141,6 +141,7 @@ export interface RespInsertRow {
 }
 export interface RespUpdateRow {
   id: string;
+  spa_id: string;
   title: string;
   title_en: string | null;
   title_es: string | null;
@@ -270,7 +271,7 @@ export async function parseRespWorkbook(
     };
 
     if (isNew) newRows.push({ id, spa_id: ctx.spaId, ...common });
-    else updRows.push({ id, ...common });
+    else updRows.push({ id, spa_id: ctx.spaId, ...common });
   });
 
   return {
