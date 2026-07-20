@@ -261,6 +261,7 @@ export interface KpiInsertRow {
 }
 export interface KpiUpdateRow {
   id: string;
+  spa_id: string;
   name: string;
   name_en: string | null;
   name_es: string | null;
