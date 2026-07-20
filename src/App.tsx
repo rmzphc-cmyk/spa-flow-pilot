@@ -89,12 +89,13 @@ const App = () => (
                 <Route path="/historique" element={<SpaHistory />} />
               </Route>
 
-              <Route element={<RoleGuard allow={["manager", "admin"]} />}>
+              <Route element={<RoleGuard allow={["manager", "direction", "admin"]} />}>
                 <Route element={<AppLayout />}>
                   <Route path="/admin/kpi" element={<KpiConfig />} />
                   <Route path="/admin/responsabilites" element={<RespConfig />} />
                 </Route>
               </Route>
+
 
               <Route element={<RoleGuard allow={["direction", "admin"]} />}>
                 <Route element={<AppLayout />}>

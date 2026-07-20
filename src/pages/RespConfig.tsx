@@ -125,24 +125,27 @@ const EMPTY_EDIT: EditingTemplate = {
 
 export default function RespConfig() {
   const { t } = useTranslation();
-  const { user, userRole, spaId: authSpaId } = useAuth();
+  const { user, userRole, spaId: authSpaId, destinationId } = useAuth();
+  const canPickSpa = userRole === "admin" || userRole === "direction";
   const { toast: showToast } = useToast();
   const [tab, setTab] = useState<TabKey>("templates");
   const [adminSpaId, setAdminSpaId] = useState<string | null>(null);
-  const spaId = userRole === "admin" ? adminSpaId : authSpaId;
+  const spaId = canPickSpa ? adminSpaId : authSpaId;
 
   const { data: spas } = useQuery({
-    queryKey: ["spas_list_admin"],
-    enabled: userRole === "admin",
+    queryKey: ["spas_list_admin", userRole, destinationId],
+    enabled: canPickSpa,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("spas")
-        .select("id, name")
-        .order("name");
+      let q = supabase.from("spas").select("id, name, destination_id").order("name");
+      if (userRole === "direction" && destinationId) {
+        q = q.eq("destination_id", destinationId);
+      }
+      const { data, error } = await q;
       if (error) throw error;
       return data ?? [];
     },
   });
+
 
   // ----- Templates state -----
   const { data: templates = [], isLoading } = useAllRespTemplates(spaId);
@@ -314,7 +317,7 @@ export default function RespConfig() {
             {t("respConfig.subtitle")}
           </p>
         </div>
-        {userRole === "admin" && (
+        {canPickSpa && (
           <Select value={adminSpaId ?? ""} onValueChange={(v) => setAdminSpaId(v || null)}>
             <SelectTrigger className="w-56 h-9">
               <SelectValue placeholder={t("respConfig.selectSpa")} />
@@ -364,7 +367,7 @@ export default function RespConfig() {
                   spaId={spaId}
                   spaName={spaName}
                   templates={templates}
-                  canImport={userRole === "admin" || userRole === "manager"}
+                  canImport={userRole === "admin" || userRole === "manager" || userRole === "direction"}
                 />
                 <Button
                   size="sm"

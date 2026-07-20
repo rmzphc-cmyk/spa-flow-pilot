@@ -12,6 +12,8 @@ interface AuthContextValue {
   session: Session | null;
   userRole: AppRole | null;
   spaId: string | null;
+  destinationId: string | null;
+  organizationId: string | null;
   mustChangePassword: boolean;
   isRecoveryMode: boolean;
   isLoading: boolean;
@@ -24,6 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isRecoveryMode, setIsRecoveryMode] = useState(false);
+  const [profile, setProfile] = useState<{ destination_id: string | null; organization_id: string | null } | null>(null);
 
   useEffect(() => {
     const { data: sub } = supabase.auth.onAuthStateChange((event, newSession) => {
@@ -31,7 +34,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
       if (event === "PASSWORD_RECOVERY") setIsRecoveryMode(true);
       if (event === "USER_UPDATED" || event === "SIGNED_IN") setIsRecoveryMode(false);
-      // Sync langue depuis user_metadata à chaque (re)connexion
       const lang = newSession?.user?.user_metadata?.language;
       if (lang && ["fr", "en", "es"].includes(lang) && i18n.language !== lang) {
         i18n.changeLanguage(lang);
@@ -55,13 +57,47 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const userMeta = (user?.user_metadata ?? {}) as Record<string, unknown>;
   const mustChangePassword = userMeta.must_change_password === true;
 
+  // Fetch destination_id / organization_id from public.users (not in JWT).
+  useEffect(() => {
+    let cancelled = false;
+    if (!user?.id) {
+      setProfile(null);
+      return;
+    }
+    supabase
+      .from("users")
+      .select("destination_id, organization_id")
+      .eq("id", user.id)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setProfile((data ?? null) as any);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
   const signOut = async () => {
     await supabase.auth.signOut();
     window.location.replace("/login");
   };
 
   return (
-    <AuthContext.Provider value={{ user, userId: user?.id ?? null, session, userRole, spaId, mustChangePassword, isRecoveryMode, isLoading, signOut }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        userId: user?.id ?? null,
+        session,
+        userRole,
+        spaId,
+        destinationId: profile?.destination_id ?? null,
+        organizationId: profile?.organization_id ?? null,
+        mustChangePassword,
+        isRecoveryMode,
+        isLoading,
+        signOut,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

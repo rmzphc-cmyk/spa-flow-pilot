@@ -69,8 +69,11 @@ import {
 
 export default function AdminOrganization() {
   const { t } = useTranslation();
-  const { userRole } = useAuth();
-  const readOnly = userRole === "direction";
+  const { userRole, destinationId } = useAuth();
+  const isDirection = userRole === "direction";
+  const directionDestId = isDirection ? destinationId : null;
+  // Direction : lecture seule sur les destinations, gestion complète des spas + managers de sa destination.
+  const destReadOnly = isDirection;
 
   const { data: orgs = [] } = useOrganizations();
   const [orgId, setOrgId] = useState<string | undefined>();
@@ -82,7 +85,7 @@ export default function AdminOrganization() {
         <div>
           <h1 className="text-2xl font-bold">{t("admin.title")}</h1>
           <p className="text-sm text-muted-foreground">
-            {readOnly ? t("admin.subtitleReadOnly") : t("admin.subtitle")}
+            {isDirection ? t("admin.subtitleReadOnly") : t("admin.subtitle")}
           </p>
         </div>
         {orgs.length > 1 && (
@@ -108,34 +111,39 @@ export default function AdminOrganization() {
           </CardContent>
         </Card>
       ) : (
-        <Tabs defaultValue="destinations" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+        <Tabs defaultValue={isDirection ? "spas" : "destinations"} className="w-full">
+          <TabsList className={`grid w-full max-w-2xl ${isDirection ? "grid-cols-3" : "grid-cols-4"}`}>
             <TabsTrigger value="destinations">{t("admin.tabs.destinations")}</TabsTrigger>
             <TabsTrigger value="spas">{t("admin.tabs.spas")}</TabsTrigger>
             <TabsTrigger value="managers">{t("admin.tabs.managers")}</TabsTrigger>
-            <TabsTrigger value="directors">{t("admin.tabs.directors")}</TabsTrigger>
+            {!isDirection && (
+              <TabsTrigger value="directors">{t("admin.tabs.directors")}</TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="destinations" className="mt-6">
-            <DestinationsTab organizationId={currentOrgId} readOnly={readOnly} />
+            <DestinationsTab organizationId={currentOrgId} readOnly={destReadOnly} />
           </TabsContent>
 
           <TabsContent value="spas" className="mt-6">
-            <SpasTab organizationId={currentOrgId} readOnly={readOnly} />
+            <SpasTab organizationId={currentOrgId} readOnly={false} directionDestId={directionDestId} />
           </TabsContent>
 
           <TabsContent value="managers" className="mt-6">
-            <ManagersTab organizationId={currentOrgId} readOnly={readOnly} />
+            <ManagersTab organizationId={currentOrgId} readOnly={false} directionDestId={directionDestId} />
           </TabsContent>
 
-          <TabsContent value="directors" className="mt-6">
-            <DirectorsTab organizationId={currentOrgId} readOnly={readOnly} />
-          </TabsContent>
+          {!isDirection && (
+            <TabsContent value="directors" className="mt-6">
+              <DirectorsTab organizationId={currentOrgId} readOnly={false} />
+            </TabsContent>
+          )}
         </Tabs>
       )}
     </div>
   );
 }
+
 
 // =================== Destinations ===================
 function DestinationsTab({ organizationId, readOnly }: { organizationId: string; readOnly: boolean }) {
@@ -323,15 +331,24 @@ function DestinationEditDialog({
 }
 
 // =================== Spas ===================
-function SpasTab({ organizationId, readOnly }: { organizationId: string; readOnly: boolean }) {
+function SpasTab({ organizationId, readOnly, directionDestId }: { organizationId: string; readOnly: boolean; directionDestId?: string | null }) {
   const { t } = useTranslation();
-  const { data: spas = [], isLoading } = useAdminSpas(organizationId);
-  const { data: destinations = [] } = useDestinations(organizationId);
+  const { data: spasAll = [], isLoading } = useAdminSpas(organizationId);
+  const { data: destinationsAll = [] } = useDestinations(organizationId);
   const createMut = useCreateSpa();
   const updateMut = useUpdateSpa();
   const deleteMut = useDeleteSpa();
 
-  const destById = useMemo(() => new Map(destinations.map((d) => [d.id, d])), [destinations]);
+  const spas = useMemo(
+    () => (directionDestId ? spasAll.filter((s) => s.destination_id === directionDestId) : spasAll),
+    [spasAll, directionDestId],
+  );
+  const destinations = useMemo(
+    () => (directionDestId ? destinationsAll.filter((d) => d.id === directionDestId) : destinationsAll),
+    [destinationsAll, directionDestId],
+  );
+
+  const destById = useMemo(() => new Map(destinationsAll.map((d) => [d.id, d])), [destinationsAll]);
 
   const [editing, setEditing] = useState<AdminSpa | null>(null);
   const [creating, setCreating] = useState(false);
@@ -346,6 +363,7 @@ function SpasTab({ organizationId, readOnly }: { organizationId: string; readOnl
             <Plus className="h-4 w-4 mr-2" /> {t("admin.spas.new")}
           </Button>
         )}
+
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -869,17 +887,24 @@ function DirectorEditDialog({
 }
 
 // =================== Managers ===================
-function ManagersTab({ organizationId, readOnly }: { organizationId: string; readOnly: boolean }) {
+function ManagersTab({ organizationId, readOnly, directionDestId }: { organizationId: string; readOnly: boolean; directionDestId?: string | null }) {
   const { t } = useTranslation();
   const { data: users = [], isLoading } = useAdminUsers(organizationId);
-  const { data: spas = [] } = useAdminSpas(organizationId);
+  const { data: spasAll = [] } = useAdminSpas(organizationId);
   const inviteMut = useInviteUser();
   const updateMut = useUpdateUser();
   const deleteMut = useDeleteUser();
   const resetMut = useResetUserPassword();
 
-  const spaById = useMemo(() => new Map(spas.map((s) => [s.id, s])), [spas]);
-  const managers = users.filter((u) => u.role === DB_ROLES.SPA_MANAGER);
+  const spas = useMemo(
+    () => (directionDestId ? spasAll.filter((s) => s.destination_id === directionDestId) : spasAll),
+    [spasAll, directionDestId],
+  );
+  const spaById = useMemo(() => new Map(spasAll.map((s) => [s.id, s])), [spasAll]);
+  const managers = users.filter(
+    (u) => u.role === DB_ROLES.SPA_MANAGER
+      && (!directionDestId || u.destination_id === directionDestId),
+  );
 
   const [inviting, setInviting] = useState(false);
   const [editing, setEditing] = useState<AdminUser | null>(null);

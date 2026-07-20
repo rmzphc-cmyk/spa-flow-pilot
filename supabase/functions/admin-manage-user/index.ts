@@ -32,15 +32,40 @@ Deno.serve(async (req) => {
     const body = (await req.json()) as Payload;
     if (!body?.action) return json({ error: "Missing action" }, 400);
 
-    // Only admin manages users (invite/update/delete). "reset" is also allowed
-    // to direction, but scoped to their own spas — enforced inside that branch.
-    if (caller.role !== "admin" && body.action !== "reset") {
+    // Admin manages tout. Direction gère les spa_manager de sa destination
+    // (invite/update/delete/reset) — scoping vérifié plus bas.
+    if (caller.role !== "admin" && caller.role !== "direction") {
       return json({ error: "Forbidden" }, 403);
     }
 
+    // Charger la destination du caller (direction) une fois pour scoping.
+    let callerDestinationId: string | null = null;
+    if (caller.role === "direction") {
+      const { data: me } = await admin
+        .from("users")
+        .select("destination_id")
+        .eq("id", caller.userId)
+        .maybeSingle();
+      callerDestinationId = (me as any)?.destination_id ?? null;
+      if (!callerDestinationId) return json({ error: "Direction sans destination assignée." }, 403);
+    }
+
+    // Helper: le spa cible appartient-il à la destination du direction ?
+    const assertSpaInDirectionDestination = async (spaId: string) => {
+      if (caller.role !== "direction") return null;
+      const { data: spa } = await admin
+        .from("spas")
+        .select("destination_id")
+        .eq("id", spaId)
+        .maybeSingle();
+      if (!spa || (spa as any).destination_id !== callerDestinationId) {
+        return json({ error: "Forbidden: spa hors de votre destination." }, 403);
+      }
+      return null;
+    };
+
     if (body.action === "invite") {
       if (!body.email || !body.role) return json({ error: "Missing email or role" }, 400);
-      // Garde-fou : rôle strictement validé avant toute écriture.
       if (!isInvitableRole(body.role)) return json({ error: `Invalid role: ${body.role}` }, 400);
       if (body.role === "spa_manager" && !body.spa_id) {
         return json({ error: "spa_id required for spa_manager" }, 400);
@@ -48,6 +73,16 @@ Deno.serve(async (req) => {
       if (body.role === "direction" && !body.destination_id && !body.organization_id) {
         return json({ error: "destination_id or organization_id required for direction" }, 400);
       }
+
+      // Direction : peut UNIQUEMENT inviter des spa_manager de sa destination.
+      if (caller.role === "direction") {
+        if (body.role !== "spa_manager") {
+          return json({ error: "Forbidden: direction ne peut inviter que des spa_manager." }, 403);
+        }
+        const denied = await assertSpaInDirectionDestination(body.spa_id!);
+        if (denied) return denied;
+      }
+
 
       // Pre-check: a public.users row may already exist with this email (from a
       // prior failed invite or manual insert). Its unique partial index would
@@ -121,12 +156,34 @@ Deno.serve(async (req) => {
     if (body.action === "update") {
       if (!body.user_id) return json({ error: "Missing user_id" }, 400);
 
+      // Charger la cible pour scoping direction (ne peut toucher que ses spa_manager).
+      const { data: target } = await admin
+        .from("users")
+        .select("role, destination_id, spa_id")
+        .eq("id", body.user_id)
+        .maybeSingle();
+      if (!target) return json({ error: "Utilisateur introuvable." }, 404);
+
+      if (caller.role === "direction") {
+        if ((target as any).role !== "spa_manager"
+            || (target as any).destination_id !== callerDestinationId) {
+          return json({ error: "Forbidden" }, 403);
+        }
+        // Direction ne peut pas changer le rôle ni la destination.
+        if (body.role !== undefined || body.destination_id !== undefined || body.organization_id !== undefined) {
+          return json({ error: "Forbidden: champs non autorisés." }, 403);
+        }
+        if (body.spa_id !== undefined && body.spa_id) {
+          const denied = await assertSpaInDirectionDestination(body.spa_id);
+          if (denied) return denied;
+        }
+      }
+
       const update: Record<string, unknown> = {};
       if (body.full_name !== undefined) update.full_name = body.full_name;
       if (body.role !== undefined) update.role = body.role;
       if (body.spa_id !== undefined) {
         update.spa_id = body.spa_id;
-        // Keep organization_id + destination_id in sync with the manager's spa.
         if (body.spa_id) {
           const { data: spa } = await admin
             .from("spas")
@@ -147,7 +204,6 @@ Deno.serve(async (req) => {
         if (updErr) return json({ error: updErr.message }, 400);
       }
 
-      // Sync app_metadata for role/spa_id changes
       if (body.role !== undefined || body.spa_id !== undefined) {
         const { data: cur } = await admin.from("users").select("role, spa_id").eq("id", body.user_id).maybeSingle();
         if (cur) {
@@ -160,10 +216,24 @@ Deno.serve(async (req) => {
       return json({ ok: true }, 200);
     }
 
+
     if (body.action === "delete") {
       if (!body.user_id) return json({ error: "Missing user_id" }, 400);
 
-      // Reassign NOT-NULL FK columns to the calling admin so cascades don't block.
+      if (caller.role === "direction") {
+        const { data: tgt } = await admin
+          .from("users")
+          .select("role, destination_id")
+          .eq("id", body.user_id)
+          .maybeSingle();
+        if (!tgt) return json({ error: "Utilisateur introuvable." }, 404);
+        if ((tgt as any).role !== "spa_manager"
+            || (tgt as any).destination_id !== callerDestinationId) {
+          return json({ error: "Forbidden" }, 403);
+        }
+      }
+
+      // Reassign NOT-NULL FK columns to the calling user so cascades don't block.
       await admin.from("direction_spa_access").update({ granted_by: caller.userId }).eq("granted_by", body.user_id);
       await admin.from("todos").update({ created_by: caller.userId }).eq("created_by", body.user_id);
       await admin.from("objectives").update({ created_by: caller.userId }).eq("created_by", body.user_id);
@@ -182,6 +252,7 @@ Deno.serve(async (req) => {
       return json({ ok: true }, 200);
     }
 
+
     if (body.action === "reset") {
       if (!body.user_id) return json({ error: "Missing user_id" }, 400);
 
@@ -194,23 +265,22 @@ Deno.serve(async (req) => {
       if (tErr) return json({ error: tErr.message }, 400);
       if (!target) return json({ error: "Utilisateur introuvable." }, 404);
 
-      // Authorization: admin can reset anyone; direction only managers of the
-      // spas it is granted access to (direction_spa_access). No self-elevation.
+      // Authorization: admin can reset anyone; direction only spa_managers of
+      // its own destination.
       if (caller.role === "direction") {
-        if (target.role !== "spa_manager" || !target.spa_id) {
+        const { data: full } = await admin
+          .from("users")
+          .select("destination_id")
+          .eq("id", body.user_id)
+          .maybeSingle();
+        if (target.role !== "spa_manager"
+            || (full as any)?.destination_id !== callerDestinationId) {
           return json({ error: "Forbidden" }, 403);
         }
-        const { data: access, error: aErr } = await admin
-          .from("direction_spa_access")
-          .select("spa_id")
-          .eq("user_id", caller.userId)
-          .eq("spa_id", target.spa_id)
-          .maybeSingle();
-        if (aErr) return json({ error: aErr.message }, 400);
-        if (!access) return json({ error: "Forbidden" }, 403);
       } else if (caller.role !== "admin") {
         return json({ error: "Forbidden" }, 403);
       }
+
 
       // Preserve existing user_metadata (full_name, language…), flip the flag.
       const { data: got } = await (admin as any).auth.admin.getUserById(body.user_id);
