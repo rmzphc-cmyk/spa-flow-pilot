@@ -156,12 +156,34 @@ Deno.serve(async (req) => {
     if (body.action === "update") {
       if (!body.user_id) return json({ error: "Missing user_id" }, 400);
 
+      // Charger la cible pour scoping direction (ne peut toucher que ses spa_manager).
+      const { data: target } = await admin
+        .from("users")
+        .select("role, destination_id, spa_id")
+        .eq("id", body.user_id)
+        .maybeSingle();
+      if (!target) return json({ error: "Utilisateur introuvable." }, 404);
+
+      if (caller.role === "direction") {
+        if ((target as any).role !== "spa_manager"
+            || (target as any).destination_id !== callerDestinationId) {
+          return json({ error: "Forbidden" }, 403);
+        }
+        // Direction ne peut pas changer le rôle ni la destination.
+        if (body.role !== undefined || body.destination_id !== undefined || body.organization_id !== undefined) {
+          return json({ error: "Forbidden: champs non autorisés." }, 403);
+        }
+        if (body.spa_id !== undefined && body.spa_id) {
+          const denied = await assertSpaInDirectionDestination(body.spa_id);
+          if (denied) return denied;
+        }
+      }
+
       const update: Record<string, unknown> = {};
       if (body.full_name !== undefined) update.full_name = body.full_name;
       if (body.role !== undefined) update.role = body.role;
       if (body.spa_id !== undefined) {
         update.spa_id = body.spa_id;
-        // Keep organization_id + destination_id in sync with the manager's spa.
         if (body.spa_id) {
           const { data: spa } = await admin
             .from("spas")
@@ -182,7 +204,6 @@ Deno.serve(async (req) => {
         if (updErr) return json({ error: updErr.message }, 400);
       }
 
-      // Sync app_metadata for role/spa_id changes
       if (body.role !== undefined || body.spa_id !== undefined) {
         const { data: cur } = await admin.from("users").select("role, spa_id").eq("id", body.user_id).maybeSingle();
         if (cur) {
@@ -194,6 +215,7 @@ Deno.serve(async (req) => {
 
       return json({ ok: true }, 200);
     }
+
 
     if (body.action === "delete") {
       if (!body.user_id) return json({ error: "Missing user_id" }, 400);
