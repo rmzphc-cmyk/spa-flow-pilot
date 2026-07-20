@@ -237,7 +237,7 @@ export default function KpiConfig() {
               {showInactive ? t("kpiConfig.hideInactive") : t("kpiConfig.showInactive", { count: inactiveCount })}
             </button>
           )}
-          {userRole === "admin" && (
+          {canPickSpa && (
             <Select value={adminSpaId ?? ""} onValueChange={(v) => setAdminSpaId(v || null)}>
               <SelectTrigger className="w-56 h-9">
                 <SelectValue placeholder={t("kpiConfig.selectSpa")} />
