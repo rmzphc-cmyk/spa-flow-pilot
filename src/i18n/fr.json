@@ -142,7 +142,7 @@
     "lastReport": "Dernier rapport",
     "alertBanner": "{{count}} points d'attention sur {{spas}} spas",
     "backToAll": "Tous les spas",
-    "backToManager": "Vue Manager",
+    
     "spaNotFound": "Spa introuvable",
     "notSubmittedNote": "Le rapport n'est pas encore soumis. Les données ci-dessous sont du dernier rapport validé.",
     "lastValidatedTitle": "Dernier rapport validé — {{period}}",
