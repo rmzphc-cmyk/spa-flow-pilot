@@ -69,8 +69,11 @@ import {
 
 export default function AdminOrganization() {
   const { t } = useTranslation();
-  const { userRole } = useAuth();
-  const readOnly = userRole === "direction";
+  const { userRole, destinationId } = useAuth();
+  const isDirection = userRole === "direction";
+  const directionDestId = isDirection ? destinationId : null;
+  // Direction : lecture seule sur les destinations, gestion complète des spas + managers de sa destination.
+  const destReadOnly = isDirection;
 
   const { data: orgs = [] } = useOrganizations();
   const [orgId, setOrgId] = useState<string | undefined>();
@@ -82,7 +85,7 @@ export default function AdminOrganization() {
         <div>
           <h1 className="text-2xl font-bold">{t("admin.title")}</h1>
           <p className="text-sm text-muted-foreground">
-            {readOnly ? t("admin.subtitleReadOnly") : t("admin.subtitle")}
+            {isDirection ? t("admin.subtitleReadOnly") : t("admin.subtitle")}
           </p>
         </div>
         {orgs.length > 1 && (
@@ -108,34 +111,39 @@ export default function AdminOrganization() {
           </CardContent>
         </Card>
       ) : (
-        <Tabs defaultValue="destinations" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 max-w-2xl">
+        <Tabs defaultValue={isDirection ? "spas" : "destinations"} className="w-full">
+          <TabsList className={`grid w-full max-w-2xl ${isDirection ? "grid-cols-3" : "grid-cols-4"}`}>
             <TabsTrigger value="destinations">{t("admin.tabs.destinations")}</TabsTrigger>
             <TabsTrigger value="spas">{t("admin.tabs.spas")}</TabsTrigger>
             <TabsTrigger value="managers">{t("admin.tabs.managers")}</TabsTrigger>
-            <TabsTrigger value="directors">{t("admin.tabs.directors")}</TabsTrigger>
+            {!isDirection && (
+              <TabsTrigger value="directors">{t("admin.tabs.directors")}</TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="destinations" className="mt-6">
-            <DestinationsTab organizationId={currentOrgId} readOnly={readOnly} />
+            <DestinationsTab organizationId={currentOrgId} readOnly={destReadOnly} />
           </TabsContent>
 
           <TabsContent value="spas" className="mt-6">
-            <SpasTab organizationId={currentOrgId} readOnly={readOnly} />
+            <SpasTab organizationId={currentOrgId} readOnly={false} directionDestId={directionDestId} />
           </TabsContent>
 
           <TabsContent value="managers" className="mt-6">
-            <ManagersTab organizationId={currentOrgId} readOnly={readOnly} />
+            <ManagersTab organizationId={currentOrgId} readOnly={false} directionDestId={directionDestId} />
           </TabsContent>
 
-          <TabsContent value="directors" className="mt-6">
-            <DirectorsTab organizationId={currentOrgId} readOnly={readOnly} />
-          </TabsContent>
+          {!isDirection && (
+            <TabsContent value="directors" className="mt-6">
+              <DirectorsTab organizationId={currentOrgId} readOnly={false} />
+            </TabsContent>
+          )}
         </Tabs>
       )}
     </div>
   );
 }
+
 
 // =================== Destinations ===================
 function DestinationsTab({ organizationId, readOnly }: { organizationId: string; readOnly: boolean }) {
