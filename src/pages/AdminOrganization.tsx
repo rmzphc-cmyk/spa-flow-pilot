@@ -887,17 +887,24 @@ function DirectorEditDialog({
 }
 
 // =================== Managers ===================
-function ManagersTab({ organizationId, readOnly }: { organizationId: string; readOnly: boolean }) {
+function ManagersTab({ organizationId, readOnly, directionDestId }: { organizationId: string; readOnly: boolean; directionDestId?: string | null }) {
   const { t } = useTranslation();
   const { data: users = [], isLoading } = useAdminUsers(organizationId);
-  const { data: spas = [] } = useAdminSpas(organizationId);
+  const { data: spasAll = [] } = useAdminSpas(organizationId);
   const inviteMut = useInviteUser();
   const updateMut = useUpdateUser();
   const deleteMut = useDeleteUser();
   const resetMut = useResetUserPassword();
 
-  const spaById = useMemo(() => new Map(spas.map((s) => [s.id, s])), [spas]);
-  const managers = users.filter((u) => u.role === DB_ROLES.SPA_MANAGER);
+  const spas = useMemo(
+    () => (directionDestId ? spasAll.filter((s) => s.destination_id === directionDestId) : spasAll),
+    [spasAll, directionDestId],
+  );
+  const spaById = useMemo(() => new Map(spasAll.map((s) => [s.id, s])), [spasAll]);
+  const managers = users.filter(
+    (u) => u.role === DB_ROLES.SPA_MANAGER
+      && (!directionDestId || u.destination_id === directionDestId),
+  );
 
   const [inviting, setInviting] = useState(false);
   const [editing, setEditing] = useState<AdminUser | null>(null);
