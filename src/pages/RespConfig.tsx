@@ -125,24 +125,27 @@ const EMPTY_EDIT: EditingTemplate = {
 
 export default function RespConfig() {
   const { t } = useTranslation();
-  const { user, userRole, spaId: authSpaId } = useAuth();
+  const { user, userRole, spaId: authSpaId, destinationId } = useAuth();
+  const canPickSpa = userRole === "admin" || userRole === "direction";
   const { toast: showToast } = useToast();
   const [tab, setTab] = useState<TabKey>("templates");
   const [adminSpaId, setAdminSpaId] = useState<string | null>(null);
-  const spaId = userRole === "admin" ? adminSpaId : authSpaId;
+  const spaId = canPickSpa ? adminSpaId : authSpaId;
 
   const { data: spas } = useQuery({
-    queryKey: ["spas_list_admin"],
-    enabled: userRole === "admin",
+    queryKey: ["spas_list_admin", userRole, destinationId],
+    enabled: canPickSpa,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("spas")
-        .select("id, name")
-        .order("name");
+      let q = supabase.from("spas").select("id, name, destination_id").order("name");
+      if (userRole === "direction" && destinationId) {
+        q = q.eq("destination_id", destinationId);
+      }
+      const { data, error } = await q;
       if (error) throw error;
       return data ?? [];
     },
   });
+
 
   // ----- Templates state -----
   const { data: templates = [], isLoading } = useAllRespTemplates(spaId);
