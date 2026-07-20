@@ -1615,6 +1615,11 @@ export type Database = {
       current_user_spa_id: { Args: never; Returns: string }
       custom_access_token_hook: { Args: { event: Json }; Returns: Json }
       user_can_access_spa: { Args: { _spa_id: string }; Returns: boolean }
+      user_can_manage_destination: {
+        Args: { _destination_id: string }
+        Returns: boolean
+      }
+      user_can_manage_spa: { Args: { _spa_id: string }; Returns: boolean }
     }
     Enums: {
       comparison_direction: "higher_is_better" | "lower_is_better"
