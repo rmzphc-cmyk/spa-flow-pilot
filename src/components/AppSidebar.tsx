@@ -88,8 +88,8 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
   const location = useLocation();
   const navigate = useNavigate();
   const isInReport = location.pathname.startsWith("/rapport/");
-  const isDirection = useAuth().userRole === "direction";
   const { spaId, userRole, user } = useAuth();
+  const isDirection = userRole === "direction";
   const isAdmin = userRole === "admin";
   const { data: directionSpas = [] } = useDirectionSpas();
 
