@@ -142,7 +142,7 @@
     "lastReport": "Last report",
     "alertBanner": "{{count}} alerts across {{spas}} spas",
     "backToAll": "All spas",
-    "backToManager": "Manager View",
+    
     "spaNotFound": "Spa not found",
     "notSubmittedNote": "The report has not been submitted yet. The data below is from the last validated report.",
     "lastValidatedTitle": "Last validated report — {{period}}",

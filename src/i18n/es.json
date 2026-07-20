@@ -142,7 +142,7 @@
     "lastReport": "Último informe",
     "alertBanner": "{{count}} alertas en {{spas}} spas",
     "backToAll": "Todos los spas",
-    "backToManager": "Vista Manager",
+    
     "spaNotFound": "Spa no encontrado",
     "notSubmittedNote": "El informe aún no ha sido enviado. Los datos a continuación son del último informe validado.",
     "lastValidatedTitle": "Último informe validado — {{period}}",
