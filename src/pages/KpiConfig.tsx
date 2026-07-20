@@ -73,27 +73,30 @@ type KpiGroup = "spa" | "manager";
 
 export default function KpiConfig() {
   const { t, i18n } = useTranslation();
-  const { user, userId, userRole, spaId: authSpaId } = useAuth();
+  const { user, userId, userRole, spaId: authSpaId, destinationId } = useAuth();
+  const canPickSpa = userRole === "admin" || userRole === "direction";
   const [adminSpaId, setAdminSpaId] = useState<string | null>(null);
   const [yearMonth, setYearMonth] = useState(() => {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   });
 
-  const spaId = userRole === "admin" ? adminSpaId : authSpaId;
+  const spaId = canPickSpa ? adminSpaId : authSpaId;
 
   const { data: spas } = useQuery({
-    queryKey: ["spas_list_admin"],
-    enabled: userRole === "admin",
+    queryKey: ["spas_list_admin", userRole, destinationId],
+    enabled: canPickSpa,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("spas")
-        .select("id, name")
-        .order("name");
+      let q = supabase.from("spas").select("id, name, destination_id").order("name");
+      if (userRole === "direction" && destinationId) {
+        q = q.eq("destination_id", destinationId);
+      }
+      const { data, error } = await q;
       if (error) throw error;
       return data ?? [];
     },
   });
+
 
   const { data: items = [], isLoading } = useAllKpiDefinitions(spaId);
   const addMut = useAddKpiDefinition();
