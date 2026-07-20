@@ -28,10 +28,30 @@ Deno.serve(async (req) => {
     }
 
     if (caller.role === "direction") {
-      const { data: canManage, error: rpcError } = await admin.rpc("user_can_manage_spa", {
-        _spa_id: targetSpaId,
-      });
-      if (rpcError || !canManage) {
+      const [{ data: directionUser, error: userError }, { data: targetSpa, error: spaError }] =
+        await Promise.all([
+          admin
+            .from("users")
+            .select("destination_id")
+            .eq("id", caller.userId)
+            .maybeSingle(),
+          admin
+            .from("spas")
+            .select("destination_id")
+            .eq("id", targetSpaId)
+            .maybeSingle(),
+        ]);
+
+      if (userError || spaError) {
+        console.error("update-meeting-schedule scope lookup error", { userError, spaError });
+        return json({ error: "Internal server error" }, 500);
+      }
+
+      if (
+        !directionUser?.destination_id ||
+        !targetSpa?.destination_id ||
+        directionUser.destination_id !== targetSpa.destination_id
+      ) {
         return json({ error: "Forbidden" }, 403);
       }
     }
