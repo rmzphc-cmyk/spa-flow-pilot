@@ -260,7 +260,7 @@ export default function KpiConfig() {
               kpis={items}
               targets={targets}
               assignments={roleAssignments}
-              canImport={userRole === "admin" || userRole === "manager"}
+              canImport={userRole === "admin" || userRole === "manager" || userRole === "direction"}
             />
           )}
           <Button
