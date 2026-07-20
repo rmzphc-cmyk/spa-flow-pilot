@@ -331,15 +331,24 @@ function DestinationEditDialog({
 }
 
 // =================== Spas ===================
-function SpasTab({ organizationId, readOnly }: { organizationId: string; readOnly: boolean }) {
+function SpasTab({ organizationId, readOnly, directionDestId }: { organizationId: string; readOnly: boolean; directionDestId?: string | null }) {
   const { t } = useTranslation();
-  const { data: spas = [], isLoading } = useAdminSpas(organizationId);
-  const { data: destinations = [] } = useDestinations(organizationId);
+  const { data: spasAll = [], isLoading } = useAdminSpas(organizationId);
+  const { data: destinationsAll = [] } = useDestinations(organizationId);
   const createMut = useCreateSpa();
   const updateMut = useUpdateSpa();
   const deleteMut = useDeleteSpa();
 
-  const destById = useMemo(() => new Map(destinations.map((d) => [d.id, d])), [destinations]);
+  const spas = useMemo(
+    () => (directionDestId ? spasAll.filter((s) => s.destination_id === directionDestId) : spasAll),
+    [spasAll, directionDestId],
+  );
+  const destinations = useMemo(
+    () => (directionDestId ? destinationsAll.filter((d) => d.id === directionDestId) : destinationsAll),
+    [destinationsAll, directionDestId],
+  );
+
+  const destById = useMemo(() => new Map(destinationsAll.map((d) => [d.id, d])), [destinationsAll]);
 
   const [editing, setEditing] = useState<AdminSpa | null>(null);
   const [creating, setCreating] = useState(false);
@@ -354,6 +363,7 @@ function SpasTab({ organizationId, readOnly }: { organizationId: string; readOnl
             <Plus className="h-4 w-4 mr-2" /> {t("admin.spas.new")}
           </Button>
         )}
+
       </CardHeader>
       <CardContent>
         {isLoading ? (
