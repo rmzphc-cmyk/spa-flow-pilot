@@ -14,9 +14,9 @@ import {
   ChevronRight,
   
   Eye,
-  ArrowLeft,
   PenLine,
   Building2,
+
 } from "lucide-react";
 import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
@@ -269,15 +269,6 @@ export function AppSidebar({ activeSection, onSectionChange, sectionStatuses, re
             </NavLink>
           </nav>
 
-          <div className="p-3 border-t border-border">
-            <NavLink
-              to="/"
-              className="flex items-center gap-2 text-xs text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              <span className="lg:inline hidden">{t("direction.backToManager")}</span>
-            </NavLink>
-          </div>
         </>
       )}
 
