@@ -270,7 +270,7 @@ export default function RespConfig() {
     const timer = setTimeout(async () => {
       setIsSavingSchedule(true);
       try {
-        await saveScheduleToDb(schedule);
+        await saveScheduleToDb(schedule, spaId);
         await queryClient.invalidateQueries({ queryKey: ["spa-schedule", spaId] });
         showToast({ title: t("respConfig.scheduleSaved"), description: t("respConfig.scheduleSavedDesc") });
       } catch (e: any) {
