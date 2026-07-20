@@ -220,7 +220,20 @@ Deno.serve(async (req) => {
     if (body.action === "delete") {
       if (!body.user_id) return json({ error: "Missing user_id" }, 400);
 
-      // Reassign NOT-NULL FK columns to the calling admin so cascades don't block.
+      if (caller.role === "direction") {
+        const { data: tgt } = await admin
+          .from("users")
+          .select("role, destination_id")
+          .eq("id", body.user_id)
+          .maybeSingle();
+        if (!tgt) return json({ error: "Utilisateur introuvable." }, 404);
+        if ((tgt as any).role !== "spa_manager"
+            || (tgt as any).destination_id !== callerDestinationId) {
+          return json({ error: "Forbidden" }, 403);
+        }
+      }
+
+      // Reassign NOT-NULL FK columns to the calling user so cascades don't block.
       await admin.from("direction_spa_access").update({ granted_by: caller.userId }).eq("granted_by", body.user_id);
       await admin.from("todos").update({ created_by: caller.userId }).eq("created_by", body.user_id);
       await admin.from("objectives").update({ created_by: caller.userId }).eq("created_by", body.user_id);
@@ -238,6 +251,7 @@ Deno.serve(async (req) => {
       if (delErr) return json({ error: delErr.message }, 400);
       return json({ ok: true }, 200);
     }
+
 
     if (body.action === "reset") {
       if (!body.user_id) return json({ error: "Missing user_id" }, 400);
