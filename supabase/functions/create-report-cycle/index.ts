@@ -29,17 +29,22 @@ Deno.serve(async (req) => {
       }
     }
 
-    const { data: existingRows, error: existingErr } = await admin
-      .from("reports")
-      .select("id")
-      .eq("spa_id", body.spa_id)
-      .eq("cycle_type", body.cycle_type)
-      .neq("status", "validated")
-      .limit(1);
-    if (existingErr) throw existingErr;
-    if (existingRows && existingRows.length > 0) {
-      return json({ error: "Un rapport actif existe déjà pour ce cycle." }, 409);
+    // Un seul cycle hebdomadaire actif à la fois. Les cycles mensuels peuvent
+    // coexister en brouillon (rattrapage d'un mois manquant, par ex.).
+    if (body.cycle_type === "weekly") {
+      const { data: existingRows, error: existingErr } = await admin
+        .from("reports")
+        .select("id")
+        .eq("spa_id", body.spa_id)
+        .eq("cycle_type", body.cycle_type)
+        .neq("status", "validated")
+        .limit(1);
+      if (existingErr) throw existingErr;
+      if (existingRows && existingRows.length > 0) {
+        return json({ error: "Un rapport actif existe déjà pour ce cycle." }, 409);
+      }
     }
+
 
     // Vérifier qu'aucun rapport n'existe pour cette période exacte (quel que soit le statut)
     const { data: existingPeriodRows, error: periodErr } = await admin
